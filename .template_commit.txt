@@ -1,0 +1,19 @@
+#type: 
+#	type of commit
+#		- bugfix [name] [version]
+#		- feature [name] [version]
+#		- other(makefile - archi) [name] [version]
+#		- norm [file] 
+
+#description :
+#	“If applied, this commit will…“.
+
+#footer(s) :
+#	link trello
+
+#Exemple :
+#other - Makefile v0 
+
+#add a makefile of this project
+
+#https://trello.com/c/WlaSTWVd
