@@ -1,19 +1,22 @@
-#type: 
+#object: 
 #	type of commit
-#		- bugfix [name] [version]
-#		- feature [name] [version]
-#		- other(makefile - archi) [name] [version]
-#		- norm [file] 
+#		- [bugfix]
+#		- [feature] - name of feature -
+#		- [Makefile]
+#		- [git]
+#		- [norm] 
+#	+ “If applied, this commit will…“.
+
 
 #description :
-#	“If applied, this commit will…“.
+#	more description of push
 
 #footer(s) :
 #	link trello
 
 #Exemple :
-#other - Makefile v0 
+#[Makefile] v0 add a makefile of this project
 
-#add a makefile of this project
+# first Makefile with dep but no color and no compilation information
 
 #https://trello.com/c/WlaSTWVd
