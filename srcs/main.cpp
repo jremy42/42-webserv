@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: deus <deus@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/09/19 21:33:28 by deus             ###   ########.fr       */
+/*   Updated: 2022/09/21 12:40:51 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,39 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <signal.h>
 
 
+void treat_co(int sock)
+{
+	struct sockaddr_in addr;
+	socklen_t size;
+	char buffer[256];
+	size = sizeof(struct sockaddr_in);
+	if (getpeername(sock, (struct sockaddr *)&addr, &size) < 0)
+	{
+		perror("getpeername");
+		return;
+	}
+	sprintf(buffer, "IP = %s, Port = %u \n",
+	inet_ntoa(addr.sin_addr),
+	ntohs(addr.sin_port));
+	fprintf(stdout, "Connexion : locale ");
+	//print_socket(sock);
+	fprintf(stdout, " distante %s", buffer);
+	write(sock, "Votre adresse : ", 16);
+	write(sock, buffer, strlen(buffer));
+	while(1)
+	{
+		char buffer2[1000];
+		read(sock, buffer2, 1000);
+		printf("%s\n", buffer2);
+	}
+	close(sock);
+}
 
  int cree_socket_stream (void)
 {
@@ -44,7 +75,7 @@
 		perror("bind");
 		return -1;
 	}
-	fprintf(stdout, "IP = %s, Port = %u \n", inet_ntoa(_addr.sin_addr), ntohs(_addr.sin_port));
+	fprintf(stdout, "IP = %s, Port =make %u \n", inet_ntoa(_addr.sin_addr), ntohs(_addr.sin_port));
 	return sock;
 }
 
@@ -71,10 +102,12 @@ int main()
  	case 0 : /* fils */
  		close(_serveur_fd);
  		std::cout  << " treat connection" << std::endl;
- 		exit(EXIT_SUCCESS);
+		treat_co(_client_fd);
+ 		exit(0);
  	default : /* père */
  		close(_client_fd);
  	}
+	signal (SIGCHLD, SIG_IGN); // permet de kill tout les processus zombies 
  }
  return 0;
 }
