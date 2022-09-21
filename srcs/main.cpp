@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/09/21 12:40:51 by jremy            ###   ########.fr       */
+/*   Updated: 2022/09/21 15:39:59 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <iostream>
+#include <string>
 
+int	g_signal;
+int	run;
+
+void __signal(int signal)
+{
+	(void)signal;
+	g_signal = 0;
+	run = 0;
+}
 
 void treat_co(int sock)
 {
@@ -33,6 +44,7 @@ void treat_co(int sock)
 	socklen_t size;
 	char buffer[256];
 	size = sizeof(struct sockaddr_in);
+	g_signal = 1;
 	if (getpeername(sock, (struct sockaddr *)&addr, &size) < 0)
 	{
 		perror("getpeername");
@@ -46,19 +58,27 @@ void treat_co(int sock)
 	fprintf(stdout, " distante %s", buffer);
 	write(sock, "Votre adresse : ", 16);
 	write(sock, buffer, strlen(buffer));
-	while(1)
+	while(g_signal)
 	{
+		ssize_t r = 0; 
 		char buffer2[1000];
-		read(sock, buffer2, 1000);
-		printf("%s\n", buffer2);
+		memset(buffer2, 0, 1000);
+		r = read(sock, buffer2, 1000);
+		if (r <= 0)
+			break;
+		buffer2[r] = 0;
+		printf("sock = %d\n", sock);
+		write(sock, buffer2, r);
+		printf("%s", buffer2);
 	}
-	close(sock);
+	shutdown(sock, SHUT_RDWR);
 }
 
  int cree_socket_stream (void)
 {
 	int							sock;
 	struct sockaddr_in			_addr;
+	int							aut;
 
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
@@ -69,6 +89,8 @@ void treat_co(int sock)
 	_addr.sin_family = AF_INET;
 	_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	_addr.sin_port = htons(5000);
+	aut = 1;
+ 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, & aut, sizeof(int));
 	if (bind(sock, (struct sockaddr *)&_addr , sizeof(struct sockaddr_in)) < 0)
 	{
 		close(sock);
@@ -84,7 +106,6 @@ int main()
 	int _serveur_fd;
 	int _client_fd;
 	struct sockaddr_in adresse;
-	int run;
 
 	run =  1;
 	std::cout << "lets go to webserv!!" << std::endl;
@@ -92,7 +113,6 @@ int main()
 	if (_serveur_fd == -1)
 		return 1;
 	listen(_serveur_fd, 1000);
-
 	while (run)
 	{
 		socklen_t size = sizeof(struct sockaddr_in);
