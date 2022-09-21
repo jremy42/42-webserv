@@ -1,0 +1,19 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+	editor = vim
+[remote "origin"]
+	url = git@github.com:Carni13/webserv.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+[commit]
+	template = .template_commit.txt
+[alias]
+	hist = !git --no-pager log --graph --pretty=format:'%C(yellow)%h%Creset -%C(cyan)%d%Creset %s %Cgreen|%ad| %C(bold blue)<%an>%Creset' --abbrev-commit --date=human
+	a = add
