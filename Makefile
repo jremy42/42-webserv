@@ -18,7 +18,7 @@ DIR_DUP		= mkdir -p $(@D)
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(CC) $^ -o $@
+	$(CC) $^ -L/usr/local/lib -lreadline -o $@
 	$(info CREATED $(NAME))
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp

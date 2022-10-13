@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/09/21 15:39:59 by jremy            ###   ########.fr       */
+/*   Updated: 2022/10/13 15:52:11 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,20 @@
 #include <signal.h>
 #include <iostream>
 #include <string>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <errno.h>
+#include <unistd.h>
+#include <iostream>
+#include <string>
+#include <stdbool.h>
 
 int	g_signal;
 int	run;
@@ -38,22 +52,17 @@ void __signal(int signal)
 	run = 0;
 }
 
-void treat_co(int sock)
+void treat_co(int sock, struct sockaddr_in * claddr)
 {
-	struct sockaddr_in addr;
 	socklen_t size;
 	char buffer[256];
 	size = sizeof(struct sockaddr_in);
 	g_signal = 1;
-	if (getpeername(sock, (struct sockaddr *)&addr, &size) < 0)
-	{
-		perror("getpeername");
-		return;
-	}
+	printf("sock = %d\n", sock);
 	sprintf(buffer, "IP = %s, Port = %u \n",
-	inet_ntoa(addr.sin_addr),
-	ntohs(addr.sin_port));
-	fprintf(stdout, "Connexion : locale ");
+	inet_ntoa(claddr->sin_addr),
+	ntohs(claddr->sin_port));
+	fprintf(stdout, "Connexion : ");
 	//print_socket(sock);
 	fprintf(stdout, " distante %s", buffer);
 	write(sock, "Votre adresse : ", 16);
@@ -67,7 +76,7 @@ void treat_co(int sock)
 		if (r <= 0)
 			break;
 		buffer2[r] = 0;
-		printf("sock = %d\n", sock);
+		//printf("sock = %d\n", sock);
 		write(sock, buffer2, r);
 		printf("%s", buffer2);
 	}
@@ -87,10 +96,10 @@ void treat_co(int sock)
 	}
 	memset((char *)&_addr, 0, sizeof(_addr));
 	_addr.sin_family = AF_INET;
-	_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	_addr.sin_port = htons(5000);
 	aut = 1;
- 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, & aut, sizeof(int));
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, & aut, sizeof(int));
 	if (bind(sock, (struct sockaddr *)&_addr , sizeof(struct sockaddr_in)) < 0)
 	{
 		close(sock);
@@ -101,33 +110,94 @@ void treat_co(int sock)
 	return sock;
 }
 
+static int inetPassiveSocket(const char *service, int type, socklen_t *addrlen, int doListen, int backlog)
+{
+	struct addrinfo hints;
+	struct addrinfo *result;
+	struct addrinfo *rp;
+	int sfd;
+	int optval;
+	int s;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
+	hints.ai_family =AF_INET;
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_socktype = type;
+	s = getaddrinfo(NULL, service, &hints, &result);
+	if (s != 0)
+		return -1;
+	for (rp = result; rp != NULL; rp = rp->ai_next)
+	{
+		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		if (sfd == -1)
+			continue;
+		if (doListen)
+		{
+			if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
+			{
+				close(sfd);
+				freeaddrinfo(result);
+				return -1;
+			}
+		}
+		if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
+			break;
+		close(sfd);
+	}
+	if (rp != NULL && doListen)
+		if (listen(sfd, backlog) == -1)
+		{
+			freeaddrinfo(result);
+			return -1;
+		}
+	if (rp != NULL && addrlen != NULL)
+		*addrlen = rp->ai_addrlen;
+	freeaddrinfo(result);
+	return (rp == NULL) ? -1 : sfd;
+}
+
+int inetListen(const char *service, int backlog, socklen_t *addrlen)
+{
+ 	return inetPassiveSocket(service, SOCK_STREAM, addrlen, 1, backlog);
+}
+
+int inetBind(const char *service, int type, socklen_t *addrlen)
+{
+	 return inetPassiveSocket(service, type, addrlen, 0, 0);
+}
 int main()
 {
 	int _serveur_fd;
 	int _client_fd;
-	struct sockaddr_in adresse;
-
+ 	struct sockaddr_in claddr;
+ 	socklen_t addrlen;
 	run =  1;
 	std::cout << "lets go to webserv!!" << std::endl;
-	_serveur_fd =  cree_socket_stream();
-	if (_serveur_fd == -1)
-		return 1;
-	listen(_serveur_fd, 1000);
+	_serveur_fd = inetListen("5000", 1000, &addrlen);
 	while (run)
 	{
-		socklen_t size = sizeof(struct sockaddr_in);
+		addrlen = sizeof(struct sockaddr_in);
 		std::cout <<  "accept" << std::endl;
-		_client_fd = accept(_serveur_fd, (struct sockaddr *)& adresse,& size);
+		_client_fd = accept(_serveur_fd, (struct sockaddr *)& claddr, &addrlen);
+		if(_client_fd == -1)
+		{
+			perror("accept");
+			return 1;
+		}
 	switch (fork()) {
  	case 0 : /* fils */
  		close(_serveur_fd);
  		std::cout  << " treat connection" << std::endl;
-		treat_co(_client_fd);
+		treat_co(_client_fd, &claddr);
  		exit(0);
  	default : /* père */
  		close(_client_fd);
  	}
 	signal (SIGCHLD, SIG_IGN); // permet de kill tout les processus zombies 
  }
+ close(_serveur_fd);
  return 0;
 }
