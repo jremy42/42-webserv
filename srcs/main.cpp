@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/10/13 15:52:11 by jremy            ###   ########.fr       */
+/*   Updated: 2022/10/14 18:18:09 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -168,20 +168,34 @@ int inetBind(const char *service, int type, socklen_t *addrlen)
 {
 	 return inetPassiveSocket(service, type, addrlen, 0, 0);
 }
+
+void inetAddressPrint(const struct sockaddr *addr, socklen_t addrlen)
+{
+	char host[NI_MAXHOST];
+	char service[NI_MAXSERV];
+	if (getnameinfo(addr, addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV) == 0)
+ 		printf("(Host:[%s], service[%s])\n", host, service);
+	else
+		printf("(?UNKNOWN?)\n");
+}
+
 int main()
 {
 	int _serveur_fd;
 	int _client_fd;
+	int _chanel_fd;
  	struct sockaddr_in claddr;
  	socklen_t addrlen;
 	run =  1;
 	std::cout << "lets go to webserv!!" << std::endl;
 	_serveur_fd = inetListen("5000", 1000, &addrlen);
+	
 	while (run)
 	{
 		addrlen = sizeof(struct sockaddr_in);
 		std::cout <<  "accept" << std::endl;
 		_client_fd = accept(_serveur_fd, (struct sockaddr *)& claddr, &addrlen);
+		inetAddressPrint((struct sockaddr *)& claddr, addrlen);
 		if(_client_fd == -1)
 		{
 			perror("accept");
@@ -196,8 +210,7 @@ int main()
  	default : /* père */
  		close(_client_fd);
  	}
-	signal (SIGCHLD, SIG_IGN); // permet de kill tout les processus zombies 
- }
+  }
  close(_serveur_fd);
  return 0;
 }
