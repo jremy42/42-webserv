@@ -1,6 +1,6 @@
 NAME		:= webserv
 SRC_DIR     := srcs/
-SRCS        := main.cpp
+SRCS        := main.cpp Epoll.cpp
 SRCS        := $(SRCS:%=$(SRC_DIR)/%)
 BUILD_DIR	:= .build/
 OBJS        := $(subst .cpp,.o,$(SRCS))

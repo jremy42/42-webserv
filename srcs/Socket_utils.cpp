@@ -99,6 +99,12 @@ int main ( int ac, char **av)
 			break ;
 		}
 		write(fd, buffer.c_str(), strlen(buffer.c_str()));
+		buffer.clear();
+		char buff[1000];
+		read(fd, buff, 1000);
+		printf("%s", buff);
+		std::cout << buffer;
+
 	}
 	close(fd);
 }

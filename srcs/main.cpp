@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/10/14 18:18:09 by jremy            ###   ########.fr       */
+/*   Updated: 2022/10/18 18:28:41 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@
 #include <iostream>
 #include <string>
 #include <stdbool.h>
+#include "Epoll.hpp"
 
 int	g_signal;
 int	run;
@@ -179,38 +180,73 @@ void inetAddressPrint(const struct sockaddr *addr, socklen_t addrlen)
 		printf("(?UNKNOWN?)\n");
 }
 
+// int main()
+
+
+// {
+// 	int _serveur_fd;
+// 	int _client_fd;
+// 	//int _chanel_fd;
+//  	struct sockaddr_in claddr;
+//  	socklen_t addrlen;
+// 	run =  1;
+// 	std::cout << "lets go to webserv!!" << std::endl;
+// 	_serveur_fd = inetListen("5000", 1000, &addrlen);
+	
+// 	while (run)
+// 	{
+// 		addrlen = sizeof(struct sockaddr_in);
+// 		std::cout <<  "accept" << std::endl;
+// 		_client_fd = accept(_serveur_fd, (struct sockaddr *)& claddr, &addrlen);
+// 		inetAddressPrint((struct sockaddr *)& claddr, addrlen);
+// 		if(_client_fd == -1)
+// 		{
+// 			perror("accept");
+// 			return 1;
+// 		}
+// 	switch (fork()) {
+//  	case 0 : /* fils */
+//  		close(_serveur_fd);
+//  		std::cout  << " treat connection" << std::endl;
+// 		treat_co(_client_fd, &claddr);
+//  		exit(0);
+//  	default : /* père */
+//  		close(_client_fd);
+//  	}
+//   }
+//  close(_serveur_fd);
+//  return 0;
+// }
+
 int main()
 {
 	int _serveur_fd;
 	int _client_fd;
-	int _chanel_fd;
  	struct sockaddr_in claddr;
  	socklen_t addrlen;
+	Epoll poll;
+	
 	run =  1;
 	std::cout << "lets go to webserv!!" << std::endl;
 	_serveur_fd = inetListen("5000", 1000, &addrlen);
-	
+	fcntl(_serveur_fd, F_SETFL, O_NONBLOCK);
 	while (run)
 	{
 		addrlen = sizeof(struct sockaddr_in);
-		std::cout <<  "accept" << std::endl;
+		//std::cout <<  "accept" << std::endl;
 		_client_fd = accept(_serveur_fd, (struct sockaddr *)& claddr, &addrlen);
-		inetAddressPrint((struct sockaddr *)& claddr, addrlen);
-		if(_client_fd == -1)
+		//printf("client_fd = %d\n", _client_fd);
+		//inetAddressPrint((struct sockaddr *)& claddr, addrlen);
+		if (_client_fd > 1)
+			poll.add_fd(_client_fd, EPOLLIN | EPOLLOUT);
+		if (poll.fd_ready())
 		{
-			perror("accept");
-			return 1;
+			poll.print_event();
+			poll.read_fd();
+			poll.write_fd();
 		}
-	switch (fork()) {
- 	case 0 : /* fils */
- 		close(_serveur_fd);
- 		std::cout  << " treat connection" << std::endl;
-		treat_co(_client_fd, &claddr);
- 		exit(0);
- 	default : /* père */
- 		close(_client_fd);
- 	}
-  }
- close(_serveur_fd);
- return 0;
+		_client_fd = 0;
+	
+	}
+	
 }
