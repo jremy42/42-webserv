@@ -2,22 +2,30 @@
 # define WEBSERV_HPP
 
 # include <iostream>
-# include <sys/epoll.h>
 # include <fcntl.h>
-# include <stdio.h>
 # include <unistd.h>
 # include <stdlib.h>
-# include <string.h>
-# define MAX_CLIENT 5
+
+# include "Server.hpp"
 
 class Webserv
 {
-	public: 
-		Webserv();
-		~Webserv();
+	typedef std::vector<Server>	v_server;
+	typedef v_server::iterator	v_iterator;
+	typedef std::string			string;
 
+	public:
+		Webserv(std::string config_filename);
+		Webserv(const Webserv &src);
+		~Webserv(void);
+		Webserv &operator=(const Webserv &rhs);
 
-	private: 
+		int	createServerListFromRawConfig(void); // open filename, parser et add les serveurs a serverlist au fur et a mesure
+		int	execServerLoop(void); // Boucle sur la liste de serveur avec les actions acceptNewClient et execClientList
+
+	private:
+		v_server	_serverList;
+		string		_rawConfig;
 };
 
 #endif

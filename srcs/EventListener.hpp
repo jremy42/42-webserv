@@ -12,7 +12,7 @@
 
 class EventListener
 {
-	public: 
+	public:
 		EventListener();
 		~EventListener();
 		EventListener(const EventListener &src);
@@ -23,9 +23,8 @@ class EventListener
 		void printEvent() const;
 
 	private:
-		struct epoll_event _evlist[MAX_CLIENT];
-		int _epfd;
-
+		struct epoll_event	_evlist[MAX_CLIENT];
+		int					_epfd;
 };
 
 #endif

@@ -27,6 +27,7 @@ class Epoll
 		int print_event();
 		int read_fd();
 		int write_fd();
+
 	private:
 		int epfd, ready, fd;
 		struct epoll_event ev;
