@@ -4,16 +4,7 @@ Server: webserv
 Last-Modified: Tue, 01 Dec 2009 20:18:22 GMT
 ETag: "51142bc1-7449-479b075b2891b"
 Accept-Ranges: bytes
-Content-Length: 29769
-Content-Type: text/html
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8" />
-        <title>Titre</title>
-    </head>
+Content-Length: 5
+Content-Type: text/plain
 
-    <body>
-	<h1> webserv </h1>;
-    </body>
-</html>
+salut

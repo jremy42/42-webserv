@@ -32,6 +32,8 @@ class Epoll
 		struct epoll_event ev;
 		struct epoll_event evlist[MAX_EVENTS];
 		char buff[MAX_BUFF];
+		char wbuff[MAX_BUFF];
+		int http_fd;
 		map r_fd;
 		iterator it;
 };
