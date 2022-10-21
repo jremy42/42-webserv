@@ -1,37 +1,51 @@
 #include "Webserv.hpp"
 #include "iostream"
 
-Webserv::Webserv(string config_filename)
+Webserv::Webserv(char **configArray)
 {
 	std::string		nextLine;
 	std::ifstream	fs;
+	int				viableConfig = 0;
 
-	std::cout	<< "Opening and reading config: "
-				<< config_filename
-				<< std::endl;
-
-	fs.open(filename.c_str(), std::ifstream::in);
-	if (fs.good())
-		std::cout << "Successfully opened config file : '" << filename << "'" << std::endl;
-	else
+	++configArray;
+	while (*configArray)
 	{
-		std::cerr << "Failure opening config file : '" << filename << "' : " << strerror(errno) << std::endl;
-		return ;
-	}
-	while (std::getline(fs, nextLine))
-	{
-		if (DEBUG)
+		fs.open(*configArray, std::ifstream::in);
+		if (fs.good())
+			std::cout << "Successfully opened config file : '" << *configArray << "'" << std::endl;
+		else
 		{
-			if (nextLine.length() == 0)
-				std::cout << "[Empty Line]" << std::endl;
-			else
-				std::cout << nextLine << std::endl;
+			std::cerr << "Failure opening config file : '" << *configArray << "' : " << strerror(errno) << std::endl;
+			fs.close();
+			break ;
 		}
-		this->_rawConfig += nextLine;
+		_rawConfig.push_back("");
+		while (std::getline(fs, nextLine))
+		{
+			if (DEBUG)
+			{
+				if (nextLine.length() == 0)
+					std::cout << "[Empty Line]" << std::endl;
+				else
+					std::cout << nextLine << std::endl;
+			}
+			if (nextLine != "")
+			{
+				_rawConfig.back() += nextLine;
+				_rawConfig.back() += "\n";
+			}
+		}
+		fs.close();
+		++configArray;
 	}
-	if (DEBUG)
-		std::cout << "rawConfig : [" << this->_rawConfig "]" << std::endl;
-	fs.close();
+	std::cout << "Config list :" << std::endl;
+	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+	{
+		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
+		viableConfig |= (*it != "");
+	}
+	if (viableConfig == 0)
+		throw NotEnoughValidConfigFilesException();
 	return ;
 }
 
@@ -45,6 +59,7 @@ Webserv::~Webserv(void)
 
 }
 
+
 Webserv &Webserv::operator=(const Webserv &rhs)
 {
 	this->_serverList = rhs._serverList;
@@ -52,14 +67,22 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 	return (*this);
 }
 
+int		Webserv::parseRawConfig(void)
+{
+	return (1);
+}
+
 int		Webserv::createServerListFromRawConfig(void)
 {
 	return (1);
-
 }
-
 
 int		Webserv::execServerLoop(void)
 {
 	return (1);
+}
+
+const char	*Webserv::NotEnoughValidConfigFilesException::what(void) const throw ()
+{
+	return ("Need at least one valid configuration file to launch Webserv");
 }
