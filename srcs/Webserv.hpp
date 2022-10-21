@@ -8,6 +8,8 @@
 
 # include "Server.hpp"
 
+# define DEBUG 1
+
 class Webserv
 {
 	typedef std::vector<Server>	v_server;
@@ -15,7 +17,7 @@ class Webserv
 	typedef std::string			string;
 
 	public:
-		Webserv(std::string config_filename);
+		Webserv(string config_filename);
 		Webserv(const Webserv &src);
 		~Webserv(void);
 		Webserv &operator=(const Webserv &rhs);
