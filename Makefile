@@ -8,7 +8,7 @@ OBJS        := $(subst $(SRC_DIR),$(BUILD_DIR),$(OBJS))
 DEPS        := $(subst .o,.d,$(OBJS))
 -include $(DEPS)
 
-CC          := c++
+CC          := clang++
 CFLAGS      := -Wall -Wextra -Werror -std=c++98
 CPPFLAGS    := -MMD -MP -I includes
 RM          := rm -f
@@ -25,7 +25,11 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(DIR_DUP)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 	$(info CREATED $@)
-
+docker:
+	docker build -t webserv .
+	docker run --network host --name my_webserv webserv
+docker_stop:
+	docker rm -f my_webserv
 clean:
 	$(RM) -R $(BUILD_DIR)
 

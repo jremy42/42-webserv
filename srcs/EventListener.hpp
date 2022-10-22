@@ -25,6 +25,7 @@ class EventListener
 	private:
 		struct epoll_event	_evlist[MAX_CLIENT];
 		int					_epfd;
+		int					_cli_available;
 };
 
 #endif
