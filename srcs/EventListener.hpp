@@ -19,7 +19,7 @@ class EventListener
 		EventListener & operator=(const EventListener &src);
 		int trackNewClient(int cli_fd, int cli_option);
 		int clientAvailable();
-		const struct epoll_event & getClientList() const;
+		int getClientFlag(int fd) const;
 		void printEvent(int time_sleep) const;
 
 	private:

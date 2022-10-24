@@ -56,11 +56,11 @@ static int inetListen(const char *service, int backlog, socklen_t *addrlen)
 
 Server::Server(const Config &config_source)
 {
-    int epfd;
-
-    epfd =
 	_config = config_source;
-}
+	_serverFd = inetListen(std::to_string(_config.getCharListenPort()).c_str(), 1000, &_addrlen);
+	fcntl(_serverFd, F_SETFL, O_NONBLOCK);
+};
+
 Server::~Server(){};
 
 Server::Server(const Server & src)
@@ -71,11 +71,11 @@ Server::Server(const Server & src)
 	}
 };
 
-const Server &Server::operator=(const Server &src)
+Server &Server::operator=(const Server &src)
 {
 	if (this != &src)
 	{
-		_config = src.config;
+		_config = src._config;
         _evLst = src._evLst;
         _clientList = src._clientList;
 	}
@@ -85,10 +85,40 @@ const Server &Server::operator=(const Server &src)
 
 int Server::acceptNewClient(void)
 {
+	int clientFd;
+	socklen_t addrlen;
+	struct sockaddr_in claddr;
 
+	addrlen = sizeof(struct sockaddr_in);
+	clientFd = accept(_serverFd, (struct sockaddr *)& claddr, &addrlen);
+	Client *newClient = new Client(clientFd);
+	_clientList.push_back(newClient);
+	_evLst.trackNewClient(clientFd, EPOLLIN | EPOLLOUT);
 }
 
-int execClientList(void)
+int Server::listenEvent(void)
 {
+	struct epoll_event	_evlist[MAX_CLIENT];
+	v_iterator ite = _clientList.end();
 
+	if(_evLst.clientAvailable() > 1);
+	{
+		for (v_iterator i = _clientList.begin(); i != ite; ++i)
+			(*i)->setAvailableActions(_evLst.getClienFlag((*it)->getClientFd()));
+	}
+}
+
+int Server::execClientList(void)
+{
+	v_iterator ite = _clientList.end();
+
+	if (_currentCli == _clientList.end())
+		_currentCli = _clientList.begin();
+	
+	for (; _currentCli != ite; ++_currentCli)
+	{
+		if ((*_currentCli)->executAction())
+			break;
+	}
+	++_currentCli;
 }

@@ -59,8 +59,14 @@ void EventListener::printEvent(int time_sleep) const
 	sleep(time_sleep);
 };
 
-const struct epoll_event & EventListener::getClientList() const
+int EventListener::getClientFlag(int fd) const
 {
-    return *_evlist; //warning
+
+	for (int i = 0; i < MAX_CLIENT; i++)
+	{
+		if(_evlist[i].data.fd == fd)
+			return _evlist[i].events;
+	}
+    return -1;
 };
 

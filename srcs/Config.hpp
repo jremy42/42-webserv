@@ -11,12 +11,14 @@ class Config
 	typedef std::string			string;
 
 	public:
+		Config();
 		Config(int listenPort);
 		Config(const Config &src);
 		~Config(void);
 		Config &operator=(const Config &rhs);
 
 		int	getListenPort(void) const;
+		char*	getCharListenPort(void) const;
 
 	private:
 		int	_listenPort;
