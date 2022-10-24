@@ -74,6 +74,39 @@ int		Webserv::parseRawConfig(void)
 
 int		Webserv::createServerListFromRawConfig(void)
 {
+	int									port;
+	std::vector<int>					usedPort;
+	int									viableConfig = 0;
+	std::vector<std::string>::iterator	it;
+
+	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+	{
+		port = atoi((*it).c_str());
+		if (port < 1024)
+		{
+			std::cerr << "Wrong Port : " << port << ". Value must be above 1024" << std::cerr;
+			continue ;
+		}
+		if (port > 65536)
+		{
+			std::cerr << "Wrong Port : " << port << ". Value must be below 65536" << std::cerr;
+			continue ;
+		}
+		if (find(usedPort.begin(), usedPort.end(), port) != usedPort.end())
+		{
+			std::cerr << "Wrong Port : " << port << ". Value already in use" << std::cerr;
+			continue ;
+		}
+		else
+		{
+			viableConfig |= 1;
+			usedPort.push_back(port);
+			_configList.push_back(port);
+			_serverList.push_back(_configList.back());
+		}
+	}
+	if (viableConfig == 0)
+		throw NotEnoughValidConfigFilesException();
 	return (1);
 }
 

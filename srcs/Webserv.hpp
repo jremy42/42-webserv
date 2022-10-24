@@ -7,6 +7,7 @@
 # include <stdlib.h>
 
 # include "Server.hpp"
+# include "Config.hpp"
 
 # define DEBUG 1
 
@@ -15,6 +16,7 @@ class Webserv
 	typedef std::string			string;
 	typedef	std::vector<string>	v_rawConfig; // Deviens un vector pour avoir un fichier par serveur supp
 	typedef std::vector<Server>	v_server;
+	typedef std::vector<Config>	v_config;
 	typedef v_server::iterator	v_iterator;
 
 	public:
@@ -35,6 +37,7 @@ class Webserv
 
 	private:
 		v_server		_serverList;
+		v_config		_configList;
 		v_rawConfig		_rawConfig;
 };
 
