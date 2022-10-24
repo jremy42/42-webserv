@@ -69,11 +69,6 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 
 int		Webserv::parseRawConfig(void)
 {
-	return (1);
-}
-
-int		Webserv::createServerListFromRawConfig(void)
-{
 	int									port;
 	std::vector<int>					usedPort;
 	int									viableConfig = 0;
@@ -102,11 +97,21 @@ int		Webserv::createServerListFromRawConfig(void)
 			viableConfig |= 1;
 			usedPort.push_back(port);
 			_configList.push_back(port);
-			_serverList.push_back(_configList.back());
 		}
 	}
 	if (viableConfig == 0)
 		throw NotEnoughValidConfigFilesException();
+	return (1);
+}
+
+int		Webserv::createServerListFromRawConfig(void)
+{
+	v_server::iterator it;
+
+	for (it = _configList.begin(); it != _configList.end(); it++)
+	{
+			_serverList.push_back(Server(*it));
+	}
 	return (1);
 }
 
