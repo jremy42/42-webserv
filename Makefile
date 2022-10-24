@@ -27,9 +27,9 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(info CREATED $@)
 docker:
 	docker build -t webserv .
-	docker run --network host --name my_webserv webserv
+	docker run --rm -p 5000:5000 --name my_webserv webserv
 docker_stop:
-	docker rm -f my_webserv
+	docker stop my_webserv
 clean:
 	$(RM) -R $(BUILD_DIR)
 

@@ -39,7 +39,7 @@ Webserv::Webserv(char **configArray)
 		++configArray;
 	}
 	std::cout << "Config list :" << std::endl;
-	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+	for (v_rawConfig::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
 	{
 		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
 		viableConfig |= (*it != "");
