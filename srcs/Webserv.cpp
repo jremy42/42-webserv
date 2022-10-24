@@ -1,7 +1,6 @@
 #include "Webserv.hpp"
-#include "iostream"
 
-Webserv::Webserv(char **av) : _configArray(av);
+Webserv::Webserv(char **av) : _configArray(av)
 {
 	std::string		nextLine;
 	std::ifstream	fs;
@@ -9,14 +8,14 @@ Webserv::Webserv(char **av) : _configArray(av);
 	int				i = 0;
 
 	++_configArray;
-	while (configArray[i])
+	while (_configArray[i])
 	{
-		fs.open(configArray[i], std::ifstream::in);
+		fs.open(_configArray[i], std::ifstream::in);
 		if (fs.good())
-			std::cout << "Successfully opened config file : '" << configArray[i] << "'" << std::endl;
+			std::cout << "Successfully opened config file : '" << _configArray[i] << "'" << std::endl;
 		else
 		{
-			std::cerr << "Failure opening config file : '" << configArray[i] << "' : " << strerror(errno) << std::endl;
+			std::cerr << "Failure opening config file : '" << _configArray[i] << "' : " << strerror(errno) << std::endl;
 			fs.close();
 			break ;
 		}
@@ -40,7 +39,7 @@ Webserv::Webserv(char **av) : _configArray(av);
 		i++;
 	}
 	std::cout << "Config list :" << std::endl;
-	for (v_rawConfig::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
 	{
 		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
 		viableConfig |= (*it != "");
@@ -76,9 +75,14 @@ int		Webserv::parseRawConfig(void)
 	std::vector<std::string>::iterator	it;
 	int									i = 0;
 
+	// A faire dans une boucle
 	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++,i++)
 	{
+		if (DEBUG)
+			std::cout << "Calling atoi on :" << *it << std::endl;
 		port = atoi((*it).c_str());
+		if (DEBUG)
+			std::cout << "Atoi value : " << port << std::endl;
 		if (port < 1024)
 		{
 			std::cerr << _configArray[i] << ": Wrong Port : " << port << ". Value must be above 1024" << std::cerr;
@@ -98,7 +102,8 @@ int		Webserv::parseRawConfig(void)
 		{
 			viableConfig |= 1;
 			usedPort.push_back(port);
-			_configList.push_back(port);
+			_configList.push_back(it->substr(0, 4));
+	
 		}
 	}
 	if (viableConfig == 0)
@@ -108,11 +113,13 @@ int		Webserv::parseRawConfig(void)
 
 int		Webserv::createServerListFromRawConfig(void)
 {
-	v_server::iterator it;
+	v_config::iterator it;
+
 
 	for (it = _configList.begin(); it != _configList.end(); it++)
 	{
-			_serverList.push_back(Server(*it));
+		Server *newServer = new Server(*it);
+		_serverList.push_back(newServer);
 	}
 	return (1);
 }
@@ -121,10 +128,17 @@ int		Webserv::execServerLoop(void)
 {
 	v_server::iterator it;
 
-	for (it = _serverList.begin(); it != _serverList.end(); it++)
+	while (true)
 	{
-		it->acceptNewClient();
-		it->execClientList();
+		for (it = _serverList.begin(); it != _serverList.end(); it++)
+		{
+			//std::cout << "accept new client" << std::endl;
+			(*it)->acceptNewClient();
+			//std::cout << "listen event" << std::endl;
+			(*it)->listenEvent();
+			//std::cout << "exec Client" << std::endl;
+			(*it)->execClientList();
+		}
 	}
 	return (1);
 }

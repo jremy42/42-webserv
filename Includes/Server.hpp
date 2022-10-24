@@ -17,21 +17,22 @@
 # include "Client.hpp"
 # include "Config.hpp"
 # include "EventListener.hpp"
+# define DEBUG 1
 
 class client;
 class Config;
 
 class Server
 {
-	typedef std::vector<client*>	v_client;
+	typedef std::vector<Client*>	v_client;
 	typedef v_client::iterator	v_iterator;
 	typedef std::string			string;
 
 	public:
 		Server(const Config &config_source);
-		Server(const Config &src);
+		Server(const Server &src);
 		~Server(void);
-		Server &operator=(const Config &rhs);
+		Server &operator=(const Server &rhs);
 		int	acceptNewClient(void); // si != -1 Fait un accept, ajoute le fd a la client list et ajoute au epoll_ctl le fd
 		int	execClientList(void); // Fait 1 epoll_wait et demande a 1 client de faire une seule action (read ou write)
 		int listenEvent(void);
@@ -43,7 +44,7 @@ class Server
 		v_client		_clientList;
 		int				_serverFd;
 		socklen_t		_addrlen;
-		v_iterator		_currentCli;
+		struct sockaddr_in	_listenSockaddr;
 
 };
 

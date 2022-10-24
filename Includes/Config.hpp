@@ -12,16 +12,15 @@ class Config
 
 	public:
 		Config();
-		Config(int listenPort);
+		Config(string listenPort);
 		Config(const Config &src);
 		~Config(void);
 		Config &operator=(const Config &rhs);
 
-		int	getListenPort(void) const;
-		char*	getCharListenPort(void) const;
+		const char*	getListenPort(void) const;
 
 	private:
-		int	_listenPort;
+		string	_listenPort;
 		// et ? ....
 };
 

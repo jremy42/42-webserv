@@ -4,7 +4,9 @@ EventListener::EventListener()
 {
 	_epfd = epoll_create(100);
     _cli_available = 0;
+	std::cout << "create event listener\n";
 }
+
 EventListener::~EventListener(){};
 
 EventListener::EventListener(const EventListener & src)
@@ -49,7 +51,7 @@ void EventListener::printEvent(int time_sleep) const
 {
 	for (int i = 0; i < _cli_available; i++)
 	{
-		printf(" fd:[%d], events [%s][%s][%s][%s]\n", _evlist[i].data.fd,
+		printf(" fd:[%d], events [%s][%s][%s][%s][%s]\n", _evlist[i].data.fd,
 		(_evlist[i].events & EPOLLIN) ? "EPOLLIN " : "",
  		(_evlist[i].events & EPOLLOUT) ? "EPOLLOUT " : "",
  		(_evlist[i].events & EPOLLERR) ? "EPOLLERR " : "",

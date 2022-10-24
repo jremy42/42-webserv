@@ -3,9 +3,12 @@
 
 #define WRITE_BUFFER_SIZE 1024
 
-#include "Request.hpp"
+# include "Request.hpp"
+# include <string>
+# include <vector>
+# include <map>
 
-Class Response
+class Response
 {
 	typedef std::string					string;
 	typedef std::map<string, string>	m_ss;
@@ -13,7 +16,7 @@ Class Response
 
 	public:
 
-		Response(int clientFd, const &Request);
+		Response(int clientFd, const Request &request);
 		Response(const Response &src);
 		const Response &operator=(const Response &rhs) const;
 		~Response(void);

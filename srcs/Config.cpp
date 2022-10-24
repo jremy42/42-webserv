@@ -1,9 +1,10 @@
-#include "Config.cpp"
+#include "Config.hpp"
 #include "iostream"
 
-Config::Config(int listenPort) : _listenPort(listenPort)
+Config::Config(){};
+Config::Config(string listenPort) : _listenPort(listenPort)
 {
-
+	std::cout << "create config with port :" << _listenPort << std::endl;
 }
 
 Config::Config(const Config &src)
@@ -11,18 +12,18 @@ Config::Config(const Config &src)
 	*this = src;
 }
 
-Config::~Config(int listenPort) : _listenPort(listenPort)
+Config::~Config(void)
 {
 
 }
 
-Config	&Config::operator=(const Config &rhs) const
+Config	&Config::operator=(const Config &rhs)
 {
 	this->_listenPort = rhs._listenPort;
 	return (*this);
 }
 
-int		Config::getListenPort(void) const
+const char*		Config::getListenPort(void) const
 {
-	return (this->_listenPort);
+	return (_listenPort.c_str());
 }

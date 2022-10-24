@@ -3,7 +3,11 @@
 
 #define READ_BUFFER_SIZE 1024
 
-Class Request
+# include <string>
+# include <vector>
+# include <map>
+
+class Request
 {
 	typedef std::string					string;
 	typedef std::map<string, string>	m_ss;
