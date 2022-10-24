@@ -6,9 +6,9 @@
 # include <unistd.h>
 # include <stdlib.h>
 
-# include <Client.hpp>
-# include <Config.hpp>
-# include <srcs/EventListener.hpp>
+# include "Client.hpp"
+# include "Config.hpp"
+# include "EventListener.hpp"
 
 class Server
 {
@@ -21,7 +21,6 @@ class Server
 		Server(const Config &src);
 		~Server(void);
 		Server &operator=(const Config &rhs);
-
 		int	acceptNewClient(void); // si != -1 Fait un accept, ajoute le fd a la client list et ajoute au epoll_ctl le fd
 		int	execClientList(void); // Fait 1 epoll_wait et demande a 1 client de faire une seule action (read ou write)
 
@@ -31,6 +30,7 @@ class Server
 		Config			_config;
 		EventListener	_evLst;
 		v_client		_clientList;
+		int				_epfd;
 };
 
 #endif
