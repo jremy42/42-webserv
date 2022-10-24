@@ -14,7 +14,7 @@
 class Webserv
 {
 	typedef std::string			string;
-	typedef	std::vector<string>	v_rawConfig; // Deviens un vector pour avoir un fichier par serveur supp
+	typedef	std::vector<string>	v_string; // Deviens un vector pour avoir un fichier par serveur supp
 	typedef std::vector<Server>	v_server;
 	typedef std::vector<Config>	v_config;
 	typedef v_server::iterator	v_iterator;
@@ -38,7 +38,8 @@ class Webserv
 	private:
 		v_server		_serverList;
 		v_config		_configList;
-		v_rawConfig		_rawConfig;
+		v_string		_rawConfig;
+		char			**_av;
 };
 
 #endif

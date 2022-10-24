@@ -1,21 +1,22 @@
 #include "Webserv.hpp"
 #include "iostream"
 
-Webserv::Webserv(char **configArray)
+Webserv::Webserv(char **av) : _configArray(av);
 {
 	std::string		nextLine;
 	std::ifstream	fs;
 	int				viableConfig = 0;
+	int				i = 0;
 
-	++configArray;
-	while (*configArray)
+	++_configArray;
+	while (configArray[i])
 	{
-		fs.open(*configArray, std::ifstream::in);
+		fs.open(configArray[i], std::ifstream::in);
 		if (fs.good())
-			std::cout << "Successfully opened config file : '" << *configArray << "'" << std::endl;
+			std::cout << "Successfully opened config file : '" << configArray[i] << "'" << std::endl;
 		else
 		{
-			std::cerr << "Failure opening config file : '" << *configArray << "' : " << strerror(errno) << std::endl;
+			std::cerr << "Failure opening config file : '" << configArray[i] << "' : " << strerror(errno) << std::endl;
 			fs.close();
 			break ;
 		}
@@ -36,7 +37,7 @@ Webserv::Webserv(char **configArray)
 			}
 		}
 		fs.close();
-		++configArray;
+		i++;
 	}
 	std::cout << "Config list :" << std::endl;
 	for (v_rawConfig::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
@@ -73,23 +74,24 @@ int		Webserv::parseRawConfig(void)
 	std::vector<int>					usedPort;
 	int									viableConfig = 0;
 	std::vector<std::string>::iterator	it;
+	int									i = 0;
 
-	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++,i++)
 	{
 		port = atoi((*it).c_str());
 		if (port < 1024)
 		{
-			std::cerr << "Wrong Port : " << port << ". Value must be above 1024" << std::cerr;
+			std::cerr << _configArray[i] << ": Wrong Port : " << port << ". Value must be above 1024" << std::cerr;
 			continue ;
 		}
 		if (port > 65536)
 		{
-			std::cerr << "Wrong Port : " << port << ". Value must be below 65536" << std::cerr;
+			std::cerr << _configArray[i] << ": Wrong Port : " << port << ". Value must be below 65536" << std::cerr;
 			continue ;
 		}
 		if (find(usedPort.begin(), usedPort.end(), port) != usedPort.end())
 		{
-			std::cerr << "Wrong Port : " << port << ". Value already in use" << std::cerr;
+			std::cerr << _configArray[i] << ": Wrong Port : " << port << ". Value already in use" << std::cerr;
 			continue ;
 		}
 		else
@@ -117,6 +119,13 @@ int		Webserv::createServerListFromRawConfig(void)
 
 int		Webserv::execServerLoop(void)
 {
+	v_server::iterator it;
+
+	for (it = _serverList.begin(); it != _serverList.end(); it++)
+	{
+		it->acceptNewClient();
+		it->execClientList();
+	}
 	return (1);
 }
 
