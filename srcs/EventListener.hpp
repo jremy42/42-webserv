@@ -17,10 +17,10 @@ class EventListener
 		~EventListener();
 		EventListener(const EventListener &src);
 		EventListener & operator=(const EventListener &src);
-		void trackNewClient(int cli_fd, int cli_option);
+		int trackNewClient(int cli_fd, int cli_option);
 		int clientAvailable();
 		const struct epoll_event & getClientList() const;
-		void printEvent() const;
+		void printEvent(int time_sleep) const;
 
 	private:
 		struct epoll_event	_evlist[MAX_CLIENT];

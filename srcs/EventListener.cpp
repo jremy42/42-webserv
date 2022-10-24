@@ -15,11 +15,11 @@ EventListener::EventListener(const EventListener & src)
 	}
 };
 
-const EventListener &EventListener::operator=(const EventListener &src)
+EventListener &EventListener::operator=(const EventListener &src)
 {
 	if (this != &src)
 	{
-		_epfd = src.epfd;
+		_epfd = src._epfd;
 
 		for(int i = 0; i < MAX_CLIENT; i++)
 		{
@@ -28,6 +28,7 @@ const EventListener &EventListener::operator=(const EventListener &src)
 	}
 	return *this;
 };
+
 int EventListener::trackNewClient(int cli_fd, int option)
 {
     struct epoll_event ev;
@@ -40,27 +41,26 @@ int EventListener::trackNewClient(int cli_fd, int option)
 
 int EventListener::clientAvailable()
 {
-    _cli_available = 0;
 	_cli_available = epoll_wait(_epfd, _evlist, MAX_CLIENT, 0);
 	return  _cli_available;
 };
 
-int EventListener::print_event()
+void EventListener::printEvent(int time_sleep) const
 {
 	for (int i = 0; i < _cli_available; i++)
 	{
-		printf(" fd:[%d], events [%s][%s][%s][%s]\n", evlist[i].data.fd,
-		(evlist[i].events & EPOLLIN) ? "EPOLLIN " : "",
- 		(evlist[i].events & EPOLLOUT) ? "EPOLLOUT " : "",
- 		(evlist[i].events & EPOLLERR) ? "EPOLLERR " : "",
-		(evlist[i].events & EPOLLERR) ? "EPOLLRDHUP " : "");
+		printf(" fd:[%d], events [%s][%s][%s][%s]\n", _evlist[i].data.fd,
+		(_evlist[i].events & EPOLLIN) ? "EPOLLIN " : "",
+ 		(_evlist[i].events & EPOLLOUT) ? "EPOLLOUT " : "",
+ 		(_evlist[i].events & EPOLLERR) ? "EPOLLERR " : "",
+		(_evlist[i].events & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
+		(_evlist[i].events & EPOLLHUP) ? "EPOLLHUP " : "");
 	}
-	sleep(1);
-	return 0;
+	sleep(time_sleep);
 };
 
 const struct epoll_event & EventListener::getClientList() const
 {
-    return _evlist;
+    return *_evlist; //warning
 };
 
