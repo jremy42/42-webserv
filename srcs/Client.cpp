@@ -1,11 +1,11 @@
 #include "Client.hpp"
 
-Client::Client()
+Client::Client() : _request(-1)
 {
 	_clientFd = 0;
 }
 
-Client::Client(int clientFd)
+Client::Client(int clientFd) : _request(clientFd)
 {
 	_clientFd = clientFd;
 	std::cout << "create client with fd :" << _clientFd << std::endl;
@@ -46,6 +46,8 @@ int Client::executeAction()
  		(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
 		(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
 		(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
+	if (_availableActions & EPOLLIN)
+		_state = _request.readClientRequest();
 	return 0;
 }
 

@@ -28,7 +28,7 @@ class Client
 	private:
 
 		int			_clientFd;
-		//Request		_request;
+		Request		_request;
 		//Response	_response;
 		int			_state;
 		int			_availableActions;

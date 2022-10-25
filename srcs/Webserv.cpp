@@ -102,8 +102,8 @@ int		Webserv::parseRawConfig(void)
 		{
 			viableConfig |= 1;
 			usedPort.push_back(port);
+			// Ajout d'une nouvelle config
 			_configList.push_back(it->substr(0, 4));
-	
 		}
 	}
 	if (viableConfig == 0)
