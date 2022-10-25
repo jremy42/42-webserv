@@ -17,6 +17,7 @@
 # include "Client.hpp"
 # include "Config.hpp"
 # include "EventListener.hpp"
+# include <stdexcept>
 # define DEBUG 1
 
 class client;
@@ -43,8 +44,10 @@ class Server
 		EventListener	_evLst;
 		v_client		_clientList;
 		int				_serverFd;
-		socklen_t		_addrlen;
 		struct sockaddr_in	_listenSockaddr;
+		int					_backlog;
+		void 				_createPassiveSocket(const char *service);
+		void 				_clientAddressPrint(struct sockaddr *cliAddr);
 
 };
 

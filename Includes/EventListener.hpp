@@ -8,6 +8,7 @@
 # include <unistd.h>
 # include <stdlib.h>
 # include <string.h>
+# include <cerrno>
 # define MAX_CLIENT 5
 
 class EventListener
@@ -17,7 +18,7 @@ class EventListener
 		~EventListener();
 		EventListener(const EventListener &src);
 		EventListener & operator=(const EventListener &src);
-		int trackNewClient(int cli_fd, int cli_option);
+		void trackNewClient(int cli_fd, int cli_option);
 		int clientAvailable();
 		int getClientFlag(int fd) const;
 		void printEvent(int time_sleep) const;

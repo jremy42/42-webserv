@@ -3,6 +3,8 @@
 EventListener::EventListener()
 {
 	_epfd = epoll_create(100);
+	if (_epfd == -1)
+		throw(std::runtime_error(strerror(errno)));
     _cli_available = 0;
 	std::cout << "create event listener\n";
 }
@@ -31,19 +33,20 @@ EventListener &EventListener::operator=(const EventListener &src)
 	return *this;
 };
 
-int EventListener::trackNewClient(int cli_fd, int option)
+void EventListener::trackNewClient(int cli_fd, int option)
 {
     struct epoll_event ev;
 	ev.events = option;
 	ev.data.fd = cli_fd;
 	if (epoll_ctl(_epfd, EPOLL_CTL_ADD, cli_fd, &ev) == -1)
- 		return (-1);
-	return (0);
+		throw(std::runtime_error(strerror(errno)));
 };
 
 int EventListener::clientAvailable()
 {
 	_cli_available = epoll_wait(_epfd, _evlist, MAX_CLIENT, 0);
+	if (_cli_available == -1)
+		throw(std::runtime_error(strerror(errno)));
 	return  _cli_available;
 };
 

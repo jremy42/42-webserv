@@ -1,13 +1,12 @@
 #include "Server.hpp"
 
-static int inetPassiveSocket(const char *service, int type, socklen_t *addrlen, int doListen, int backlog, struct sockaddr * _sockaddr)
+void 				Server::_createPassiveSocket(const char *service)
 {
 	struct addrinfo hints;
 	struct addrinfo *result;
-	struct addrinfo *rp;
-	int sfd;
+	struct addrinfo *result_it;
 	int optval;
-	int s;
+	int g_error;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_canonname = NULL;
@@ -15,54 +14,42 @@ static int inetPassiveSocket(const char *service, int type, socklen_t *addrlen, 
 	hints.ai_next = NULL;
 	hints.ai_family =AF_INET;
 	hints.ai_flags = AI_PASSIVE;
-	hints.ai_socktype = type;
-	s = getaddrinfo(NULL, service, &hints, &result);
-	if (s != 0)
-		return -1;
-	for (rp = result; rp != NULL; rp = rp->ai_next)
+	hints.ai_socktype = SOCK_STREAM;
+	if ((g_error = getaddrinfo(NULL, service, &hints, &result )) != 0)
+		throw(std::runtime_error(gai_strerror(g_error)));
+	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
 	{
-		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-		if (sfd == -1)
+		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
+		if (_serverFd == -1)
 			continue;
-		if (doListen)
+		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
 		{
-			if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
-			{
-				close(sfd);
+				close(_serverFd);
 				freeaddrinfo(result);
-				return -1;
-			}
+				throw(std::runtime_error(strerror(errno)));
+
 		}
-		if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
+		if (bind(_serverFd, result_it->ai_addr, result_it->ai_addrlen) == 0)
 			break;
-		close(sfd);
+		close(_serverFd);
 	}
-	if (rp != NULL && doListen)
-		if (listen(sfd, backlog) == -1)
-		{
-			freeaddrinfo(result);
-			return -1;
-		}
-	if (rp != NULL && addrlen != NULL)
+	if (!result_it)
+		throw(std::runtime_error("enable to create and bind listening socket"));
+	if (listen(_serverFd, _backlog) == -1)
 	{
-		*addrlen = rp->ai_addrlen;
-		_sockaddr = rp->ai_addr;
+		close(_serverFd);
+		freeaddrinfo(result);
+		throw(std::runtime_error(strerror(errno)));
 	}
+	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
 	freeaddrinfo(result);
-	return (rp == NULL) ? -1 : sfd;
 }
 
-static int inetListen(const char *service, int backlog, socklen_t *addrlen, struct sockaddr *_sockaddr)
-{
- 	return inetPassiveSocket(service, SOCK_STREAM, addrlen, 1, backlog, _sockaddr);
-}
-
-static void inetAddressPrint(struct sockaddr *addr, socklen_t addrlen)
+void Server::_clientAddressPrint(struct sockaddr *cliAddr)
 {
 	char host[NI_MAXHOST];
 	char service[NI_MAXSERV];
-	(void)addrlen;
-	int r = getnameinfo(addr, addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV); 
+	int r = getnameinfo( cliAddr, sizeof(_listenSockaddr), host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV); 
 	
 	if (r == 0)
  		printf("(Host:[%s], service[%s])\n", host, service);
@@ -73,9 +60,17 @@ static void inetAddressPrint(struct sockaddr *addr, socklen_t addrlen)
 Server::Server(const Config &config_source)
 {
 	_config = config_source;
-	_serverFd = inetListen(_config.getListenPort(), 1000, &_addrlen,(struct sockaddr *) &_listenSockaddr);
-	printf("_serverFd = %d\n", _serverFd);
-	fcntl(_serverFd, F_SETFL, O_NONBLOCK);
+	_backlog = 1000;
+	try 
+	{
+		_createPassiveSocket(_config.getListenPort());
+		if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
+				throw(std::runtime_error(strerror(errno)));
+	} catch (const std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+		throw(std::runtime_error("Server creation failure"));
+	}
 	printf("_serverFd = %d\n", _serverFd);
 	std::cout << "Create server listen port :" << _config.getListenPort() << std::endl;
 };
@@ -112,13 +107,14 @@ int Server::acceptNewClient(void)
 	struct sockaddr_in claddr;
 
 	addrlen = sizeof(struct sockaddr_in);
-	//printf("ici\n");
 	clientFd = accept(_serverFd, (struct sockaddr *)& claddr, &addrlen);
+	if (clientFd == -1 && (errno != EAGAIN || errno != EWOULDBLOCK))
+		throw(std::runtime_error(strerror(errno)));
 	printf("serverFd: [%d] | client fd : [%d]\n",_serverFd, clientFd);
 	sleep(1);
 	if (clientFd > 0)
 	{
-		inetAddressPrint((struct sockaddr *)& claddr, _addrlen);
+		_clientAddressPrint((struct sockaddr *)& claddr);
 		Client *newClient = new Client(clientFd);
 		_clientList.push_back(newClient);
 		_evLst.trackNewClient(clientFd, EPOLLIN | EPOLLOUT);
@@ -131,7 +127,7 @@ int Server::listenEvent(void)
 {
 	v_iterator ite = _clientList.end();
 
-	if(_evLst.clientAvailable() > 1)
+	if(_evLst.clientAvailable() > 0)
 	{
 		for (v_iterator i = _clientList.begin(); i != ite; ++i)
 			(*i)->setAvailableActions(_evLst.getClientFlag((*i)->getClientFd()));
@@ -139,7 +135,7 @@ int Server::listenEvent(void)
 	return (1);
 }
 
-int Server::execClientList(void)
+int Server::execClientList(void) // mode naif activate 
 {
 	v_iterator ite = _clientList.end();
 	
