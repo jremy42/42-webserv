@@ -12,6 +12,7 @@
 # include <errno.h>
 # include <iostream>
 # include <sstream>
+# include <iterator>
 
 enum {R_REQUESTLINE, R_HEADER, R_BODY, R_END, R_ERROR};
 
@@ -20,6 +21,7 @@ class Request
 	typedef std::string					string;
 	typedef std::map<string, string>	m_ss;
 	typedef std::vector<char>			v_c;
+	typedef v_c::iterator				v_c_it;
 
 	public:
 
@@ -39,8 +41,12 @@ class Request
 		m_ss		_header;
 		v_c			_body;
 		v_c			_rawRequest;
-
-		int	parseError(string rawRequestLine);
+		string 		_rawRequestLine;
+		static string _requestLineField[3];
+		static string _headerField[3];
+		static string _validRequest[3];
+		void _handleRequestLine(void);
+		int	parseRequestLine(string rawRequestLine);
 };
 
 #endif
