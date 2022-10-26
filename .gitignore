@@ -33,3 +33,8 @@
 
 # Vim
 *.vim
+
+# Debug files
+*.log
+*test*
+*.txt

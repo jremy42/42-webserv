@@ -41,13 +41,16 @@ class Request
 		m_ss		_header;
 		v_c			_body;
 		v_c			_rawRequest;
-		string 		_rawRequestLine;
+		string		_rawRequestLine;
 		static string _requestLineField[3];
 		static string _headerField[3];
 		static string _validRequest[3];
 		void _handleRequestLine(void);
 		void _handleHeader(void);
 		int	parseRequestLine(string rawRequestLine);
+		int	parseHeader(string rawRequestLine);
 };
+
+std::string	&strtrim(std::string &str, const std::string &charset);
 
 #endif
