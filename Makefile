@@ -8,7 +8,7 @@ OBJS        := $(subst $(SRC_DIR),$(BUILD_DIR),$(OBJS))
 DEPS        := $(subst .o,.d,$(OBJS))
 
 CC          := clang++ 
-CPPFLAGS    := -Wall -Wextra -Werror -std=c++98 -MMD -MP -I Includes -g3
+CPPFLAGS    := -Wall -Wextra -Werror -std=c++98 -MMD -MP -I includes -g3
 RM          := rm -rf
 MAKE        := $(MAKE) --jobs --no-print-directory
 DIR_DUP		= mkdir -p $(@D)
