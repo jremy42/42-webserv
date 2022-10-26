@@ -6,6 +6,7 @@ std::string Request::_headerField[3] = {"Host", "User-Agent", "Accept"};
 
 std::string Request::_validRequest[3] = {"GET", "POST", "DELETE"};
 
+std::string	Request::_stateStr[5] = {"R_REQUESTLINE", "R_HEADER", "R_BODY", "R_END", "R_ERROR"};
 
 Request::Request(void)
 {
@@ -75,10 +76,10 @@ int	Request::parseHeader(string rawHeader)
 		}
 		header_key = string(bufExtract.begin(), bufExtract.begin() + colonPos);
 		header_value = string(bufExtract.begin() + colonPos + 1, bufExtract.end());
-		std::cout << "BEFORE" "[" << header_key << "][" << header_value << "]" << std::endl;
+		//std::cout << "BEFORE" "[" << header_key << "][" << header_value << "]" << std::endl;
 		header_key = strtrim(header_key, "\f\t\n\r\v ");
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
-		std::cout << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
+		//std::cout << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
 		for (int i = 0; i < 3; i++)
 		{
 			if (header_key == _headerField[i])
@@ -149,21 +150,33 @@ int Request::readClientRequest(void)
 	//char		*next_nl;
 	//char		*headerStart;
 
-
+	std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
 	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
-	std::cout << "READ BUFFER START" << std::endl << buf << std::endl << "READ BUFFER END" << std::endl;
+	std::cout << "\x1b[33mREAD BUFFER START\x1b[0m" << std::endl << buf << std::endl
+			<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
-
-	if (_state == R_REQUESTLINE )
+	if (_state == R_REQUESTLINE)
 		_handleRequestLine();
 	if (_state == R_HEADER)
 		_handleHeader();
+	if (read_ret < READ_BUFFER_SIZE && _state == R_BODY)
+		_state = R_END;
+	std::cout << "Request State at end of readClientRequest :" <<  getStateStr() << std::endl;
+	return (_state);
+}
 
-	return (1);
+int Request::getState(void) const
+{
+	return (_state);
+}
+
+std::string &Request::getStateStr(void) const
+{
+	return(_stateStr[_state]);
 }
 
 std::string	&strtrim(std::string &str, const std::string &charset)

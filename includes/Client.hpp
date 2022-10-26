@@ -11,6 +11,8 @@
 # include <stdlib.h>
 # include <string.h>
 
+# define DEBUG 1
+
 enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER};
 
 class Client
@@ -25,6 +27,9 @@ class Client
 		void	setAvailableActions(int epoll_flags); //Set les actions (read request ou write response)
 		int		executeAction(void); //Fait une action de read request ou de write response selon l'etat
 		int		getClientFd(void) const;
+		int			getState(void) const;
+		std::string		&getStateStr(void) const;
+
 	private:
 
 		int			_clientFd;
@@ -32,6 +37,7 @@ class Client
 		//Response	_response;
 		int			_state;
 		int			_availableActions;
+		static std::string	_stateStr[4];
 };
 
 #endif

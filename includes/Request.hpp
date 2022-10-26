@@ -31,24 +31,28 @@ class Request
 		Request &operator=(const Request &rhs);
 		~Request(void);
 
-		int	readClientRequest(void);
+		int			readClientRequest(void);
+		int			getState(void) const;
+		string		&getStateStr(void) const;
 
 	private:
 
-		int			_state;
-		int			_clientFd;
-		m_ss		_requestLine;
-		m_ss		_header;
-		v_c			_body;
-		v_c			_rawRequest;
-		string		_rawRequestLine;
-		static string _requestLineField[3];
-		static string _headerField[3];
-		static string _validRequest[3];
-		void _handleRequestLine(void);
-		void _handleHeader(void);
-		int	parseRequestLine(string rawRequestLine);
-		int	parseHeader(string rawRequestLine);
+		int				_state;
+		int				_clientFd;
+		m_ss			_requestLine;
+		m_ss			_header;
+		v_c				_body;
+		v_c				_rawRequest;
+		string			_rawRequestLine;
+		static string	_requestLineField[3];
+		static string	_headerField[3];
+		static string	_validRequest[3];
+		static string	_stateStr[5];
+
+		void	_handleRequestLine(void);
+		void	_handleHeader(void);
+		int		parseRequestLine(string rawRequestLine);
+		int		parseHeader(string rawRequestLine);
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);
