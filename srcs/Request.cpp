@@ -75,6 +75,11 @@ void Request::_handleRequestLine(void)
 	}
 }
 
+void Request::_handleHeader(void)
+{
+
+};
+
 int Request::readClientRequest(void)
 {
 	std::string	rawRequestLine;
@@ -95,6 +100,7 @@ int Request::readClientRequest(void)
 	if (_state == R_REQUESTLINE )
 		_handleRequestLine();
 	if (_state == R_HEADER)
-		
+		_handleHeader();
+
 	return (1);
 }

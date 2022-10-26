@@ -46,6 +46,7 @@ class Request
 		static string _headerField[3];
 		static string _validRequest[3];
 		void _handleRequestLine(void);
+		void _handleHeader(void);
 		int	parseRequestLine(string rawRequestLine);
 };
 
