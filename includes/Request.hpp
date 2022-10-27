@@ -13,6 +13,10 @@
 # include <iostream>
 # include <sstream>
 # include <iterator>
+# define VALID_REQUEST_N 3
+# define HEADER_FIELD 3
+# define REQUEST_LINE_FIELD 3
+
 
 enum {R_REQUESTLINE, R_HEADER, R_BODY, R_END, R_ERROR};
 
@@ -34,11 +38,16 @@ class Request
 		int			readClientRequest(void);
 		int			getState(void) const;
 		string		&getStateStr(void) const;
+		string		getMethod(void) const;
+		string		getProtocol(void) const;
+		string		getTarget(void) const;
+		int			getStatusCode(void) const;
 
 	private:
 
 		int				_state;
 		int				_clientFd;
+		int				_statusCode;
 		m_ss			_requestLine;
 		m_ss			_header;
 		v_c				_body;
@@ -53,6 +62,9 @@ class Request
 		void	_handleHeader(void);
 		int		parseRequestLine(string rawRequestLine);
 		int		parseHeader(string rawRequestLine);
+		int		checkRequestLine(void);
+		int		checkHeader(void);
+
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);

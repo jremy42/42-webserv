@@ -34,7 +34,7 @@ class Client
 
 		int			_clientFd;
 		Request		_request;
-		//Response	_response;
+		Response	_response;
 		int			_state;
 		int			_availableActions;
 		static std::string	_stateStr[4];

@@ -8,7 +8,7 @@ Client::Client() : _request(-1)
 	_state = S_INIT;
 }
 
-Client::Client(int clientFd) : _request(clientFd)
+Client::Client(int clientFd) : _request(clientFd), _response(clientFd)
 {
 	_clientFd = clientFd;
 	std::cout << "create client with fd :" << _clientFd << std::endl;
@@ -63,6 +63,10 @@ int Client::executeAction()
 	}
 	else if((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
+		
+		_response.setRequest(&_request);
+		_response.createResponse();
+		_response.writeClientResponse();
 		//Code idem if precedent mais pour la response
 		std::cout << "Response write a implementer" << std::endl;
 	}

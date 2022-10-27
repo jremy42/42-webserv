@@ -1,22 +1,25 @@
 # include "Request.hpp"
 
-std::string Request::_requestLineField[3] = {"method", "request_uri", "http_version"};
+std::string Request::_requestLineField[REQUEST_LINE_FIELD] = {"method", "request_target", "http_version"};
 
-std::string Request::_headerField[3] = {"Host", "User-Agent", "Accept"};
+std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept"};
 
-std::string Request::_validRequest[3] = {"GET", "POST", "DELETE"};
+std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
-std::string	Request::_stateStr[5] = {"R_REQUESTLINE", "R_HEADER", "R_BODY", "R_END", "R_ERROR"};
+std::string	Request::_stateStr[5] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m"};
 
 Request::Request(void)
 {
 	_state = R_REQUESTLINE;
+	_clientFd = -1;
+	_statusCode = 200;
 }
 
 Request::Request(int clientFd)
 {
 	_state = R_REQUESTLINE;
 	_clientFd = clientFd;
+	_statusCode = 200;
 }
 
 Request::Request(const Request &src)
@@ -38,6 +41,33 @@ Request	&Request::operator=(const Request &rhs)
 	return (*this);
 }
 
+int Request::checkRequestLine(void)
+{
+	for (int i = 0; i < VALID_REQUEST_N; i++) 
+	{
+		if (_requestLine.find("method")->second == _validRequest[i])
+			break;
+		if (i == VALID_REQUEST_N -1)
+		{
+			_statusCode = 405;
+			return -1;
+		}
+	}
+	if (_requestLine.find("request_target")->second == "")
+	{
+		_statusCode = 405;
+		return -1;
+	}
+
+	if (_requestLine.find("http_version")->second != "HTTP/1.1" 
+	&& _requestLine.find("http_version")->second != "HTTP/1.0")
+	{
+		_statusCode = 405;
+		return -1;
+	}
+	return 0;
+}
+
 int	Request::parseRequestLine(string rawRequestLine)
 {
 	std::istringstream	buf(rawRequestLine);
@@ -52,7 +82,18 @@ int	Request::parseRequestLine(string rawRequestLine)
 		std::cout << "[" << _requestLine.find(_requestLineField[i])->second << "]" << std::endl;
 		i++;
 	}
+	if (checkRequestLine() == -1)
+		return -1;
 	return (0);
+}
+
+int Request::checkHeader()
+{
+	if (_requestLine.find("http_version")->second == "HTTP/1.1"
+	&& ( _header.find("host") != _header.end()
+	|| _header.find("host")->second == ""))
+		return -1;
+	return 0;
 }
 
 int	Request::parseHeader(string rawHeader)
@@ -90,6 +131,8 @@ int	Request::parseHeader(string rawHeader)
 			}
 		}
 	}
+	if (checkHeader() == -1)
+		return -1;
 	return (0);
 }
 
@@ -105,7 +148,7 @@ void Request::_handleRequestLine(void)
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
 		{
 			string rawRequestLine(_rawRequest.begin(), it);
-			if(this->parseRequestLine(rawRequestLine))
+			if(this->parseRequestLine(rawRequestLine) == -1)
 				_state = R_ERROR;
 			if (_state == R_ERROR)
 				return;
@@ -176,7 +219,7 @@ int Request::getState(void) const
 
 std::string &Request::getStateStr(void) const
 {
-	return(_stateStr[_state]);
+	return( _stateStr[_state]);
 }
 
 std::string	&strtrim(std::string &str, const std::string &charset)
@@ -192,4 +235,26 @@ std::string	&strtrim(std::string &str, const std::string &charset)
 		end -= str.length() - last - 1;
 	str = std::string(begin, end);
 	return (str);
+}
+
+
+std::string Request::getMethod(void) const
+{
+	return (_requestLine.find("method")->second);
+}
+
+std::string Request::getTarget(void) const
+{
+	return (_requestLine.find("request_target")->second);
+}
+
+
+std::string Request::getProtocol(void) const
+{
+	return (_requestLine.find("http_version")->second);
+}
+
+int	Request::getStatusCode(void) const
+{
+	return _statusCode;
 }
