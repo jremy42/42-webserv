@@ -35,9 +35,13 @@ class Response
 		string							_lineStatus;
 		m_ss							_header;
 		v_c								_body;
+		string							_bodyToSend; // tmp
 		const Request *					_request;
 		static std::map<int, string>	_errorMessage;
+		static string					_errorBodyTemplate;
 		static m_is 					_initErrorMessage(void);
+		void							_createErrorMessageBody(void);
+
 
 };
  
