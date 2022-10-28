@@ -1,10 +1,14 @@
 #include "Config.hpp"
 #include "iostream"
 
-Config::Config(){};
-Config::Config(string listenPort) : _listenPort(listenPort)
+Config::Config(void)
 {
-	std::cout << "create config with port :" << _listenPort << std::endl;
+
+};
+
+Config::Config(string listenPort, string rootDirectory) : _listenPort(listenPort), _rootDirectory(rootDirectory)
+{
+	std::cout << "create config with port :" << _listenPort << " and root dir :" << _rootDirectory << std::endl;
 }
 
 Config::Config(const Config &src)

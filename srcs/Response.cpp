@@ -2,7 +2,6 @@
 
 Response::m_is Response::_errorMessage = _initErrorMessage();
 
-
 Response::m_is Response::_initErrorMessage()
 {
 	m_is ret;
@@ -32,7 +31,7 @@ Response::~Response(void)
 
 }
 
-Response	&Response::operator=(const Response &rhs) 
+Response	&Response::operator=(const Response &rhs)
 {
 	_clientFd = rhs._clientFd;
 	_responseReady = rhs._responseReady;
@@ -51,7 +50,7 @@ void Response::setRequest(const Request *request)
 
 int Response::createResponse(void)
 {
-	     //status-line = HTTP-version SP status-code SP reason-phrase CRLF
+	//status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	_lineStatus = string(_request->getProtocol() + " "
 	+ _itoa(_statusCode) + " "
 	+ _errorMessage.find(_statusCode)->second + "\r\n");
@@ -70,4 +69,3 @@ std::string _itoa(int statusCode)
 	out << statusCode;
 	return out.str();
 }
-
