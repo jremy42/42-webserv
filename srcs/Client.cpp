@@ -65,10 +65,13 @@ int Client::executeAction()
 	{
 		_response.setRequest(&_request);
 		_response.createResponse();
-		_response.writeClientResponse();
+		if (_response.writeClientResponse())
+			_state = S_OVER;
 		//Code idem if precedent mais pour la response
 		std::cout << "Response write a implementer" << std::endl;
 	}
+	if(_state == S_OVER)
+		return (1);
 	std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
 	return 0;
 }
