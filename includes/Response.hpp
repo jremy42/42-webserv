@@ -8,6 +8,8 @@
 # include <vector>
 # include <map>
 # include <sstream>
+# include <sys/types.h>
+# include <sys/socket.h>
 
 
 class Response
@@ -35,6 +37,7 @@ class Response
 		string							_lineStatus;
 		m_ss							_header;
 		v_c								_body;
+		v_c								_fullResponse;
 		string							_bodyToSend; // tmp
 		const Request *					_request;
 		static std::map<int, string>	_errorMessage;

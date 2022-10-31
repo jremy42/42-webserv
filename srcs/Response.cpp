@@ -54,7 +54,6 @@ void Response::_createErrorMessageBody(void)
 		_bodyToSend.erase(pos, strlen("Error_placeholder"));
 		_bodyToSend.insert(pos, errorMessage);
 	}
-	std::cerr <<"1\n";
 	string::iterator ite = _bodyToSend.end();
 	for (string::iterator it = _bodyToSend.begin(); it != ite; it++)
 		_body.push_back(*it);
@@ -75,14 +74,11 @@ int Response::createResponse(void)
 	std::cerr << "0\n";
 	if (_statusCode > 200)
 		_createErrorMessageBody();
-	     //status-line = HTTP-version SP status-code SP reason-phrase CRLF
-/*
->>>>>>> 1cbadef460ffa391b5b557a420c879ef8c7e95e9
+	//status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	_lineStatus = string(_request->getProtocol() + " "
 	+ _itoa(_statusCode) + " "
 	+ _errorMessage.find(_statusCode)->second + "\r\n");
 	std::cout << _lineStatus;
-*/
 	return 0;
 }
 
@@ -110,7 +106,7 @@ int Response::writeClientResponse(void)
 	std::cout <<"3\n";
 	std::cout << buff;
 	std::cout << "4\n";
-	write(_clientFd, buff, strlen(buff));
+	send(_clientFd, buff, strlen(buff), 0);
 	_lineStatus.clear();
 	_bodyToSend.clear();
 	_body.clear();
