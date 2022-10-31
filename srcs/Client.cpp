@@ -32,7 +32,6 @@ Client &Client::operator=(const Client &src)
 		_clientFd = src._clientFd;
 		_state = src._state;
 		_availableActions = src._availableActions;
-
 	}
 	return *this;
 };
