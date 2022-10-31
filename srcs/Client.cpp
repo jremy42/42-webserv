@@ -48,8 +48,8 @@ int Client::executeAction()
 	std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
 	printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
 		(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
- 		(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
- 		(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
+		(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
+		(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
 		(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
 		(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
 	if ((_availableActions & EPOLLIN)
@@ -62,13 +62,15 @@ int Client::executeAction()
 	}
 	else if((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
-		
 		_response.setRequest(&_request);
 		_response.createResponse();
-		_response.writeClientResponse();
+		if (_response.writeClientResponse())
+			_state = S_OVER;
 		//Code idem if precedent mais pour la response
 		std::cout << "Response write a implementer" << std::endl;
 	}
+	if(_state == S_OVER)
+		return (1);
 	std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
 	return 0;
 }

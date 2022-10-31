@@ -27,6 +27,8 @@ class Webserv
 		~Webserv(void);
 		Webserv &operator=(const Webserv &rhs);
 
+		std::string	getNextServerBlock(std::string &rawConfig);
+		std::map<std::string, std::string> createServerInfoMap(std::string &rawServerConf);
 		int parseRawConfig(void);
 		int	createServerListFromRawConfig(void); // add les serveurs a serverlist au fur et a mesure a partir rawConfig
 		int	execServerLoop(void); // Boucle sur la liste de serveur avec les actions acceptNewClient et execClientList
@@ -42,6 +44,10 @@ class Webserv
 		v_config		_configList;
 		v_string		_rawConfig;
 		char			**_configArray;
+
+		static std::vector<string>	_configField;
+		static std::vector<string> _initConfigField(void);
+
 };
 
 #endif

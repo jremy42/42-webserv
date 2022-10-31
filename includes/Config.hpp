@@ -11,8 +11,8 @@ class Config
 	typedef std::string			string;
 
 	public:
-		Config();
-		Config(string listenPort);
+		Config(void);
+		Config(string listenPort, string rootDirectory);
 		Config(const Config &src);
 		~Config(void);
 		Config &operator=(const Config &rhs);
@@ -21,7 +21,7 @@ class Config
 
 	private:
 		string	_listenPort;
-		// et ? ....
+		string	_rootDirectory;
 };
 
 #endif
