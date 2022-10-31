@@ -93,7 +93,15 @@ void Response::_createBody(void)
 
 void Response::_createHeader(void)
 {
+	string contentType(_request->getTarget());
+	size_t pos = contentType.find_last_of(".");
+	if (pos != std::string::npos)
+		contentType = string(contentType.begin() + pos + 1, contentType.end());
 	_header = "content-length: " + _itoa(_body.size()) + "\n";
+	if (contentType == "jpg")
+		_header += "content-type: image/" + contentType + "\n";
+
+
 	std::cout << _header << std::endl;
 }
 
@@ -127,29 +135,42 @@ int Response::createResponse(void)
 
 int Response::writeClientResponse(void)
 {
+	int		ret;
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
 	char buff[WRITE_BUFFER_SIZE];
 	memset(buff, 0, WRITE_BUFFER_SIZE);
 	int i = 0;
 	v_c::iterator ite = _fullResponse.end();
-	
-	for (v_c::iterator it = _fullResponse.begin(); i < WRITE_BUFFER_SIZE && it != ite;i++, it++)
+	for (v_c::iterator it = _fullResponse.begin(); i < WRITE_BUFFER_SIZE && it != ite; i++, it++)
 		buff[i] = *it;
-
-	buff[i] = 0;
-	std::cout << "3\n";
-	std::cout << buff;
-	std::cout << "4\n";
-	send(_clientFd, buff, strlen(buff), 0);
-	_lineStatus.clear();
-	_bodyToSend.clear();
-	_body.clear();
-	_fullResponse.clear();
-	return 0;
+	std::cout << "About to write on fd [" << _clientFd << "]" << std::endl;
+	ret = send(_clientFd, buff, i, 0);
+	if (ret == -1)
+		std::cerr << "Error in writeClientResponse" << std::endl;
+	else
+	{
+		/*
+		std::cout << "-------------Raw Buffer start------------" << std::endl;
+		write(1, buff, ret);
+		std::cout << "-------------Raw Buffer start------------" << std::endl;
+		*/
+		_fullResponse.erase(_fullResponse.begin(), _fullResponse.begin() + ret);
+		std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullResponse.size() << "]" <<std::endl;
+	}
+	if (_fullResponse.empty())
+		return (0);
+	return 1;
 }
+
+void Response::reset(void)
+{
+	*this = Response(_clientFd);
+}
+
 std::string _itoa(int statusCode)
 {
 	std::stringstream out;
 	out << statusCode;
 	return out.str();
 }
+

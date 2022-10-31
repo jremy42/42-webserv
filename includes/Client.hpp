@@ -10,10 +10,11 @@
 # include <unistd.h>
 # include <stdlib.h>
 # include <string.h>
+# include <algorithm>
 
 # define DEBUG 1
 
-enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER};
+enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};
 
 class Client
 {

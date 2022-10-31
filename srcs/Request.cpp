@@ -198,7 +198,8 @@ int Request::readClientRequest(void)
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
 	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
-	std::cout << "\x1b[33mREAD BUFFER START\x1b[0m" << std::endl << buf << std::endl
+	std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd <<
+	"]\x1b[0m" << std::endl << buf << std::endl
 			<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
@@ -208,6 +209,8 @@ int Request::readClientRequest(void)
 		_handleHeader();
 	if (read_ret < READ_BUFFER_SIZE && _state == R_BODY)
 		_state = R_END;
+	if (read_ret == 0)
+		_state = R_ZERO_READ;
 	std::cout << "Request State at end of readClientRequest :" <<  getStateStr() << std::endl;
 	return (_state);
 }
@@ -257,4 +260,9 @@ std::string Request::getProtocol(void) const
 int	Request::getStatusCode(void) const
 {
 	return _statusCode;
+}
+
+void Request::reset(void)
+{
+	*this = Request(_clientFd);
 }

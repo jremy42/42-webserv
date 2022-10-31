@@ -110,8 +110,8 @@ int Server::acceptNewClient(void)
 	clientFd = accept(_serverFd, (struct sockaddr *)& claddr, &addrlen);
 	if (clientFd == -1 && (errno != EAGAIN || errno != EWOULDBLOCK))
 		throw(std::runtime_error(strerror(errno)));
-	printf("serverFd: [%d] | client fd : [%d]\n",_serverFd, clientFd);
-	sleep(1);
+	//printf("serverFd: [%d] | client fd : [%d]\n",_serverFd, clientFd);
+	usleep(100000);
 	if (clientFd > 0)
 	{
 		_clientAddressPrint((struct sockaddr *)& claddr);
@@ -138,11 +138,20 @@ int Server::listenEvent(void)
 int Server::execClientList(void) // mode naif activate 
 {
 	v_iterator ite = _clientList.end();
-	
 	for (v_iterator _currentCli = _clientList.begin(); _currentCli != ite; _currentCli++)
 	{
 		if ((*_currentCli)->executeAction())
+		{
+			if ((*_currentCli)->getState() == S_CLOSE_FD)
+			{
+				std::cout << "Closing and removing Client with read return = 0" << std::endl;
+				close((*_currentCli)->getClientFd());
+				_clientList.erase(_currentCli);
+			}
+			if (_currentCli + 1 != ite)
+			rotate(_clientList.begin(), _currentCli + 1, ite);
 			break;
+		}
 	}
 	return 1;
 }

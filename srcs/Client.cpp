@@ -44,6 +44,7 @@ void	Client::setAvailableActions(int epollFlags)
 int Client::executeAction()
 {
 	int	actionReturnValue;
+	int	actionMade = 0;
 
 	std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
 	printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
@@ -52,27 +53,36 @@ int Client::executeAction()
 		(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
 		(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
 		(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
+	if (_availableActions & EPOLLERR)
+		return S_CLOSE_FD;
 	if ((_availableActions & EPOLLIN)
 		&& (_state == S_INIT || _state == S_REQREAD))
 	{
 		_state = S_REQREAD;
 		actionReturnValue = _request.readClientRequest();
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR)
+		{
 			_state = S_RESWRITE;
+			_response.setRequest(&_request);
+			_response.createResponse();
+		}
+		if (actionReturnValue == R_ZERO_READ)
+			_state = S_CLOSE_FD;
+		actionMade++;
 	}
 	else if((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
-		_response.setRequest(&_request);
-		_response.createResponse();
-		if (_response.writeClientResponse())
+		if (_response.writeClientResponse() == 0)
 			_state = S_OVER;
-		//Code idem if precedent mais pour la response
-		std::cout << "Response write a implementer" << std::endl;
+		actionMade++;
 	}
 	if(_state == S_OVER)
-		return (1);
+	{
+		_request.reset();
+		_state = S_INIT;
+	}
 	std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
-	return 0;
+	return (actionMade);
 }
 
 int Client::getClientFd(void) const

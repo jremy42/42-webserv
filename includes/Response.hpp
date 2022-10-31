@@ -1,7 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#define WRITE_BUFFER_SIZE 2000
+#define WRITE_BUFFER_SIZE 1024
 
 # include "Request.hpp"
 # include <string>
@@ -30,6 +30,7 @@ class Response
 		void setRequest(const Request *request);
 		int	createResponse(void);
 		int	writeClientResponse(void);
+		void reset(void);
 
 	private:
 

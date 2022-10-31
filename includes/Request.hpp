@@ -18,7 +18,7 @@
 # define REQUEST_LINE_FIELD 3
 
 
-enum {R_REQUESTLINE, R_HEADER, R_BODY, R_END, R_ERROR};
+enum {R_REQUESTLINE, R_HEADER, R_BODY, R_END, R_ERROR, R_ZERO_READ};
 
 class Request
 {
@@ -42,6 +42,7 @@ class Request
 		string		getProtocol(void) const;
 		string		getTarget(void) const;
 		int			getStatusCode(void) const;
+		void 		reset(void);
 
 	private:
 
