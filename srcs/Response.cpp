@@ -20,7 +20,6 @@ Response::Response(){};
 Response::Response(int clientFd)
 {
 	_clientFd = clientFd;
-
 }
 
 Response::Response(const Response &src) : _request(src._request)
@@ -30,10 +29,9 @@ Response::Response(const Response &src) : _request(src._request)
 
 Response::~Response(void)
 {
-
 }
 
-Response	&Response::operator=(const Response &rhs)
+Response &Response::operator=(const Response &rhs)
 {
 	_clientFd = rhs._clientFd;
 	_responseReady = rhs._responseReady;
@@ -46,7 +44,7 @@ Response	&Response::operator=(const Response &rhs)
 
 void Response::_createErrorMessageBody(void)
 {
-	string errorMessage( _itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second);
+	string errorMessage(_itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second);
 	_bodyToSend = _errorBodyTemplate;
 	for (int i = 0; i < 2; i++)
 	{
@@ -54,11 +52,8 @@ void Response::_createErrorMessageBody(void)
 		_bodyToSend.erase(pos, strlen("Error_placeholder"));
 		_bodyToSend.insert(pos, errorMessage);
 	}
-	string::iterator ite = _bodyToSend.end();
-	for (string::iterator it = _bodyToSend.begin(); it != ite; it++)
-		_body.push_back(*it);
+	_body = v_c(_bodyToSend.begin(), _bodyToSend.end());
 	std::cout << _bodyToSend;
-
 }
 
 void Response::setRequest(const Request *request)
@@ -67,49 +62,89 @@ void Response::setRequest(const Request *request)
 	_statusCode = _request->getStatusCode();
 }
 
+void Response::_createBody(void)
+{
+	std::string nextLine;
+	std::ifstream fs;
+	char *buff;
+	int length;
+	std::string fileName("./www" + _request->getTarget() + "" );
+	std::cout << "fileName: " << fileName << std::endl;
+	fs.open( fileName.c_str(), std::ifstream::in | std::ifstream::binary);
+
+	if (fs.good())
+		std::cout << "Successfully opened body file "<< std::endl;
+	else
+	{
+		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
+		fs.close();
+	}
+	fs.seekg(0, fs.end);
+	length = fs.tellg();
+	fs.seekg(0, fs.beg);
+	std::cout << "length: [" << length << "]\n";
+	buff = new char[length];
+	fs.read(buff, length);
+	_body = v_c(buff, buff + length);
+	delete buff;
+	fs.close();
+}
+
+
+void Response::_createHeader(void)
+{
+	_header = "content-length: " + _itoa(_body.size()) + "\n";
+	std::cout << _header << std::endl;
+}
+
+void Response::_createFullResponse(void)
+{
+	_fullResponse = v_c(_lineStatus.begin(), _lineStatus.end());
+	_fullResponse.insert(_fullResponse.end(), _header.begin(), _header.end());
+	_fullResponse.push_back('\n');
+	_fullResponse.push_back('\n');
+	_fullResponse.insert(_fullResponse.end(), _body.begin(), _body.end());
+	//std::cout << _fullResponse << std::endl;
+}
+
 int Response::createResponse(void)
 {
-	//status-line = HTTP-version SP status-code SP reason-phrase CRLF
-	_statusCode = 404;
-	std::cerr << "0\n";
-	if (_statusCode > 200)
+	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
+	//_statusCode = 404;
+	//std::cerr << "0\n";
+
+	if (_statusCode == 200)
+		_createBody();
+	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
+	else
 		_createErrorMessageBody();
-	//status-line = HTTP-version SP status-code SP reason-phrase CRLF
-	_lineStatus = string(_request->getProtocol() + " "
-	+ _itoa(_statusCode) + " "
-	+ _errorMessage.find(_statusCode)->second + "\r\n");
-	std::cout << _lineStatus;
+	_createHeader();
+	_lineStatus = string(_request->getProtocol() + " " + _itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second + "\r\n");
+	_createFullResponse();
+	//std::cout << _lineStatus;
 	return 0;
 }
 
 int Response::writeClientResponse(void)
 {
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
-	char 			buff[WRITE_BUFFER_SIZE];
-	size_t 			i = 0;
-	v_c::iterator 	ite = _body.end();
-
-	memset(buff,0,WRITE_BUFFER_SIZE);
-	std::cout <<"2\n";
-	for (; i < WRITE_BUFFER_SIZE && i < _lineStatus.length(); i++)
-		buff[i] = _lineStatus[i];
-	string length("content-length: " + _itoa(_bodyToSend.length()) + "\n");
-	std::cerr << length << std::endl;
-	for (size_t y = 0; i < WRITE_BUFFER_SIZE && y < length.length(); i++)
-		buff[i] = length[y++];
-	buff[i] = '\n';
-	buff[i++] = '\n';
-	for (v_c::iterator it = _body.begin(); i < WRITE_BUFFER_SIZE && it != ite; i++)
-		buff[i] = *it++;
+	char buff[WRITE_BUFFER_SIZE];
+	memset(buff, 0, WRITE_BUFFER_SIZE);
+	int i = 0;
+	v_c::iterator ite = _fullResponse.end();
 	
+	for (v_c::iterator it = _fullResponse.begin(); i < WRITE_BUFFER_SIZE && it != ite;i++, it++)
+		buff[i] = *it;
+
 	buff[i] = 0;
-	std::cout <<"3\n";
+	std::cout << "3\n";
 	std::cout << buff;
 	std::cout << "4\n";
 	send(_clientFd, buff, strlen(buff), 0);
 	_lineStatus.clear();
 	_bodyToSend.clear();
 	_body.clear();
+	_fullResponse.clear();
 	return 0;
 }
 std::string _itoa(int statusCode)

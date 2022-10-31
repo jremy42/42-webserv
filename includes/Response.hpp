@@ -1,7 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#define WRITE_BUFFER_SIZE 1024
+#define WRITE_BUFFER_SIZE 2000
 
 # include "Request.hpp"
 # include <string>
@@ -10,6 +10,8 @@
 # include <sstream>
 # include <sys/types.h>
 # include <sys/socket.h>
+# include <fstream>
+# include <algorithm>
 
 
 class Response
@@ -35,7 +37,7 @@ class Response
 		int								_clientFd;
 		int								_statusCode;
 		string							_lineStatus;
-		m_ss							_header;
+		string							_header;
 		v_c								_body;
 		v_c								_fullResponse;
 		string							_bodyToSend; // tmp
@@ -44,6 +46,9 @@ class Response
 		static string					_errorBodyTemplate;
 		static m_is 					_initErrorMessage(void);
 		void							_createErrorMessageBody(void);
+		void							_createBody(void);
+		void							_createHeader(void);
+		void							_createFullResponse(void);
 
 
 };
