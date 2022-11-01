@@ -25,9 +25,12 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(info CREATED $@)
 
 dbuild:
+	docker build -t valgrind-webserv -f Dockerfile_valgrind .
 	docker build -t webserv .
 drun:
-	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv
+	docker run -ti --sig-proxy=true --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv
+dvrun:
+	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv valgrind-webserv
 drm:
 	docker rm -f my_webserv
 dclean:

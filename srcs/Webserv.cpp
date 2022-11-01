@@ -5,7 +5,7 @@
 
 std::map<std::string, int>	Webserv::_configField = _initConfigField();
 
-std::vector<std::string, int>	Webserv::_initConfigField()
+std::map<std::string, int>	Webserv::_initConfigField()
 {
 	std::map<string, int> configField;
 
@@ -111,8 +111,7 @@ std::string	Webserv::getNextServerBlock(std::string &rawConfig)
 
 	//init serverInfoMap
 	for (std::map<std::string, int>::iterator it = _configField.begin(); it != _configField.end(); it++)
-		serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >(*it,
-		std::vector<string>()));
+		serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
 	//init serverInfoMap
 	while (getline(stream, nextLine))
 	{
