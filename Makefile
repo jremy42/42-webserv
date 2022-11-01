@@ -7,7 +7,7 @@ OBJS        := $(subst .cpp,.o,$(SRCS))
 OBJS        := $(subst $(SRC_DIR),$(BUILD_DIR),$(OBJS))
 DEPS        := $(subst .o,.d,$(OBJS))
 
-CC          := clang++ 
+CC          := clang++
 CPPFLAGS    := -Wall -Wextra -Werror -std=c++98 -MMD -MP -I includes -g3
 RM          := rm -rf
 MAKE        := $(MAKE) --jobs --no-print-directory
@@ -23,15 +23,20 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(DIR_DUP)
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 	$(info CREATED $@)
-docker:
+
+dbuild:
 	docker build -t webserv .
-	docker run --rm -p 5000-5010:5000-5010 --name my_webserv webserv
-docker_stop:
-	docker stop my_webserv
+drun:
+	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv
+drm:
+	docker rm -f my_webserv
+dclean:
+	docker system prune --all --volumes --force
+
 clean:
 	$(RM) $(BUILD_DIR)
 
-fclean: clean
+fclean: clean dclean
 	$(RM) $(NAME)
 
 re:
