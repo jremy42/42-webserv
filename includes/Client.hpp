@@ -11,6 +11,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include <algorithm>
+# include "Config.hpp"
 
 # define DEBUG 1
 
@@ -20,7 +21,7 @@ class Client
 {
 	public:
 		Client();
-		Client(int clientFd);
+		Client(int clientFd, Config *config);
 		Client(const Client &src);
 		Client &operator=(const Client &rhs);
 		~Client(void);
@@ -34,11 +35,13 @@ class Client
 	private:
 
 		int			_clientFd;
-		Request		_request;
-		Response	_response;
+		Request		*_request;
+		Response	*_response;
 		int			_state;
 		int			_availableActions;
 		static std::string	_stateStr[4];
+		Config		*_config;
+		
 };
 
 #endif

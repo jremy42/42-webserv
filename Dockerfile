@@ -5,4 +5,5 @@ COPY ./ webserv/
 WORKDIR /webserv
 RUN chmod 777 entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
+#CMD [ "./webserv conf/default.config" ]
 CMD [ "valgrind --leak-check=full --show-leak-kinds=all ./webserv conf/default.config" ]

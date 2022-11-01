@@ -17,12 +17,16 @@ std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placehold
 
 Response::Response(){};
 
-Response::Response(int clientFd)
+Response::Response(int clientFd, Request *request, Config *config)
 {
 	_clientFd = clientFd;
+	_request = request;
+	_config = config;
+	_statusCode = _request->getStatusCode();
+	std::cout << "\e[31m create response with request with target " << request->getTarget() << "\e[0m\n";
 }
 
-Response::Response(const Response &src) : _request(src._request)
+Response::Response(const Response &src)
 {
 	*this = src;
 }
@@ -38,6 +42,7 @@ Response &Response::operator=(const Response &rhs)
 	_statusCode = rhs._statusCode;
 	_header = rhs._header;
 	_body = rhs._body;
+	_config = rhs._config;
 
 	return (*this);
 }
@@ -58,6 +63,7 @@ void Response::_createErrorMessageBody(void)
 
 void Response::setRequest(const Request *request)
 {
+	std::cout << "\e[31m set request with target " << request->getTarget() << "\e[0m\n";
 	_request = request;
 	_statusCode = _request->getStatusCode();
 }
@@ -68,7 +74,8 @@ void Response::_createBody(void)
 	std::ifstream fs;
 	char *buff;
 	int length;
-	std::string fileName("./www" + _request->getTarget() + "" );
+	std::cout << "getrootDir:[" << _config->getRootDir() << "]\n";
+	std::string fileName(_config->getRootDir() + _request->getTarget() + "" );
 	std::cout << "fileName: " << fileName << std::endl;
 	fs.open( fileName.c_str(), std::ifstream::in | std::ifstream::binary);
 
@@ -77,7 +84,9 @@ void Response::_createBody(void)
 	else
 	{
 		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
+		_statusCode = 404;
 		fs.close();
+		return;
 	}
 	fs.seekg(0, fs.end);
 	length = fs.tellg();
@@ -124,7 +133,7 @@ int Response::createResponse(void)
 	if (_statusCode == 200)
 		_createBody();
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
-	else
+	if(_statusCode > 200)
 		_createErrorMessageBody();
 	_createHeader();
 	_lineStatus = string(_request->getProtocol() + " " + _itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second + "\r\n");
@@ -165,13 +174,22 @@ int Response::createResponse(void)
 int Response::writeClientResponse(void)
 {
 	int		ret;
+	int 	buff_size;
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
 	char *buff;
-
-	buff = new char[_fullResponse.size()];
+	if (_fullResponse.size() > BUFF_MAX)
+	{
+		buff = new char[BUFF_MAX];
+		buff_size = BUFF_MAX;
+	}
+	else
+	{
+		buff = new char[_fullResponse.size()];
+		buff_size = _fullResponse.size();
+	}
 	int i = 0;
 	v_c::iterator ite = _fullResponse.end();
-	for (v_c::iterator it = _fullResponse.begin(); it != ite; i++, it++)
+	for (v_c::iterator it = _fullResponse.begin(); i < buff_size && it != ite; i++, it++)
 		buff[i] = *it;
 	std::cout << "About to write on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, 0);
@@ -196,7 +214,7 @@ int Response::writeClientResponse(void)
 void Response::reset(void)
 {
 	std::cout << "\x1b[31m Clean Response \x1b[0m" << std::endl;
-	*this = Response(_clientFd);
+	//*this = Response(_clientFd);
 }
 
 std::string _itoa(int statusCode)

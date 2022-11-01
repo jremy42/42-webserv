@@ -1,7 +1,8 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#define WRITE_BUFFER_SIZE 1024
+#define WRITE_BUFFER_SIZE	1024
+#define BUFF_MAX			1024*1024*8
 
 # include "Request.hpp"
 # include <string>
@@ -12,6 +13,7 @@
 # include <sys/socket.h>
 # include <fstream>
 # include <algorithm>
+# include "Config.hpp"
 
 
 class Response
@@ -23,7 +25,7 @@ class Response
 
 	public:
 		Response(void);
-		Response(int clientFd);
+		Response(int clientFd, Request *request, Config *config);
 		Response(const Response &src);
 		Response &operator=(const Response &rhs);
 		~Response(void);
@@ -43,6 +45,7 @@ class Response
 		v_c								_fullResponse;
 		string							_bodyToSend; // tmp
 		const Request *					_request;
+		Config *						_config;
 		static std::map<int, string>	_errorMessage;
 		static string					_errorBodyTemplate;
 		static m_is 					_initErrorMessage(void);

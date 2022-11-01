@@ -264,5 +264,6 @@ int	Request::getStatusCode(void) const
 
 void Request::reset(void)
 {
+	
 	*this = Request(_clientFd);
 }

@@ -18,6 +18,7 @@ class Config
 		Config &operator=(const Config &rhs);
 
 		const char*	getListenPort(void) const;
+		const char * getRootDir(void) const;
 
 	private:
 		string	_listenPort;
