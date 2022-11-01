@@ -110,7 +110,7 @@ void Response::_createFullResponse(void)
 	_fullResponse = v_c(_lineStatus.begin(), _lineStatus.end());
 	_fullResponse.insert(_fullResponse.end(), _header.begin(), _header.end());
 	_fullResponse.push_back('\n');
-	_fullResponse.push_back('\n');
+	//_fullResponse.push_back('\n');
 	_fullResponse.insert(_fullResponse.end(), _body.begin(), _body.end());
 	//std::cout << _fullResponse << std::endl;
 }
@@ -133,15 +133,45 @@ int Response::createResponse(void)
 	return 0;
 }
 
+// int Response::writeClientResponse(void)
+// {
+// 	int		ret;
+// 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
+// 	char buff[WRITE_BUFFER_SIZE];
+// 	memset(buff, 0, WRITE_BUFFER_SIZE);
+// 	int i = 0;
+// 	v_c::iterator ite = _fullResponse.end();
+// 	for (v_c::iterator it = _fullResponse.begin(); i < WRITE_BUFFER_SIZE && it != ite; i++, it++)
+// 		buff[i] = *it;
+// 	std::cout << "About to write on fd [" << _clientFd << "]" << std::endl;
+// 	ret = send(_clientFd, buff, i, 0);
+// 	if (ret == -1)
+// 		std::cerr << "Error in writeClientResponse" << std::endl;
+// 	else
+// 	{
+// 		/*
+// 		std::cout << "-------------Raw Buffer start------------" << std::endl;
+// 		write(1, buff, ret);
+// 		std::cout << "-------------Raw Buffer start------------" << std::endl;
+// 		*/
+// 		_fullResponse.erase(_fullResponse.begin(), _fullResponse.begin() + ret);
+// 		std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullResponse.size() << "]" <<std::endl;
+// 	}
+// 	if (_fullResponse.empty())
+// 		return (0);
+// 	return 1;
+// }
+
 int Response::writeClientResponse(void)
 {
 	int		ret;
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
-	char buff[WRITE_BUFFER_SIZE];
-	memset(buff, 0, WRITE_BUFFER_SIZE);
+	char *buff;
+
+	buff = new char[_fullResponse.size()];
 	int i = 0;
 	v_c::iterator ite = _fullResponse.end();
-	for (v_c::iterator it = _fullResponse.begin(); i < WRITE_BUFFER_SIZE && it != ite; i++, it++)
+	for (v_c::iterator it = _fullResponse.begin(); it != ite; i++, it++)
 		buff[i] = *it;
 	std::cout << "About to write on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, 0);
@@ -157,6 +187,7 @@ int Response::writeClientResponse(void)
 		_fullResponse.erase(_fullResponse.begin(), _fullResponse.begin() + ret);
 		std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullResponse.size() << "]" <<std::endl;
 	}
+	delete buff;
 	if (_fullResponse.empty())
 		return (0);
 	return 1;
@@ -164,6 +195,7 @@ int Response::writeClientResponse(void)
 
 void Response::reset(void)
 {
+	std::cout << "\x1b[31m Clean Response \x1b[0m" << std::endl;
 	*this = Response(_clientFd);
 }
 

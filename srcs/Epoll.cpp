@@ -65,13 +65,13 @@ int Epoll::print_event()
 {
 	for (int i = 0; i < ready; i++)
 	{
-		printf(" fd:[%d], events [%s][%s][%s][%s]\n", evlist[i].data.fd,
-		(evlist[i].events & EPOLLIN) ? "EPOLLIN " : "",
- 		(evlist[i].events & EPOLLOUT) ? "EPOLLOUT " : "",
- 		(evlist[i].events & EPOLLERR) ? "EPOLLERR " : "",
-		(evlist[i].events & EPOLLERR) ? "EPOLLRDHUP " : "");
+		// printf(" fd:[%d], events [%s][%s][%s][%s]\n", evlist[i].data.fd,
+		// (evlist[i].events & EPOLLIN) ? "EPOLLIN " : "",
+ 		// (evlist[i].events & EPOLLOUT) ? "EPOLLOUT " : "",
+ 		// (evlist[i].events & EPOLLERR) ? "EPOLLERR " : "",
+		// (evlist[i].events & EPOLLERR) ? "EPOLLRDHUP " : "");
 	}
-	sleep(1);
+	//sleep(1);
 	return 0;
 };
 
@@ -91,7 +91,7 @@ int Epoll::read_fd()
 			if (r == -1)
 				return (-1);
 			buff[r] = 0;
-			printf("r =[%d]\n", r);
+			//printf("r =[%d]\n", r);
 			std::string request(buff);
 			std::cout << request;
 			//if (request == "get\n")
@@ -101,8 +101,8 @@ int Epoll::read_fd()
 				else
 				{
 					r_fd.insert(std::make_pair(evlist[i].data.fd, "get"));
-					printf("insert\n");
-					printf("%s\n", buff);
+					//printf("insert\n");
+					//printf("%s\n", buff);
 				}
 		}
 		if( evlist[i].events & (EPOLLHUP | EPOLLERR))
