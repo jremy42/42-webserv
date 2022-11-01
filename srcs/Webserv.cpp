@@ -3,14 +3,14 @@
 #include "iterator"
 #include <algorithm>
 
-std::vector<std::string>	Webserv::_configField = _initConfigField();
+std::map<std::string, int>	Webserv::_configField = _initConfigField();
 
-std::vector<std::string>	Webserv::_initConfigField()
+std::vector<std::string, int>	Webserv::_initConfigField()
 {
-	std::vector<string> configField;
+	std::map<string, int> configField;
 
-	configField.push_back("listen");
-	configField.push_back("root");
+	configField.insert(std::pair<std::string, int>("listen", 1));
+	configField.insert(std::pair<std::string, int>("root", 1));
 	return (configField);
 }
 
@@ -98,20 +98,21 @@ std::string	Webserv::getNextServerBlock(std::string &rawConfig)
 		return(rawServerConf);
 }
 
- std::map<std::string, std::string> Webserv::createServerInfoMap(std::string &rawServerConf)
+ std::map<std::string, std::vector<std::string> > Webserv::createServerInfoMap(std::string &rawServerConf)
 {
-	std::map<std::string, std::string>	serverInfoMap;
-	std::vector<std::string>			serverInfoArray;
-	std::stringbuf						buffer(rawServerConf);
-	std::istream						stream(&buffer);
-	std::string							nextLine;
-	std::size_t							nextBlankToReplace;
-	std::size_t							replaceOffset;
-	int									missingMandatoryField = _configField.size(); // A recup pour les tableaux des autres classes
+	m_s_vs											serverInfoMap;
+	std::vector<std::string>						serverInfoArray;
+	std::stringbuf									buffer(rawServerConf);
+	std::istream									stream(&buffer);
+	std::string										nextLine;
+	std::size_t										nextBlankToReplace;
+	std::size_t										replaceOffset;
+	int												missingMandatoryField = _configField.size(); // A recup pour les tableaux des autres classes
 
 	//init serverInfoMap
-	for (std::vector<std::string>::iterator it = _configField.begin(); it != _configField.end(); it++)
-		serverInfoMap.insert(std::pair<std::string, std::string>(*it, ""));
+	for (std::map<std::string, int>::iterator it = _configField.begin(); it != _configField.end(); it++)
+		serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >(*it,
+		std::vector<string>()));
 	//init serverInfoMap
 	while (getline(stream, nextLine))
 	{
@@ -143,11 +144,13 @@ std::string	Webserv::getNextServerBlock(std::string &rawConfig)
 			std::cerr << "Too many or too few parameters for Server Info Array" << std:: endl;
 			break ;
 		}
-		if (find(_configField.begin(), _configField.end(), it->substr(0, it->find_first_of(' '))) != _configField.end())
+		//if (find(_configField.begin(), _configField.end(), it->substr(0, it->find_first_of(' '))) != _configField.end())
+		if (_configField.find(it->substr(0, it->find_first_of(' '))) != _configField.end())
 		{
 			if (DEBUG)
 				std::cout << "Found a mandatory Field : [" << *it << "]" << std::endl;
-			serverInfoMap[it->substr(0, it->find_first_of(' '))] = it->substr(it->find_first_of(' ') + 1);
+			serverInfoMap[it->substr(0, it->find_first_of(' '))].push_back(it->substr(it->find_first_of(' ') + 1));
+			//TODO : checker qu'on a pas trop de field !!!!
 			--missingMandatoryField;
 		}
 	}
@@ -170,7 +173,7 @@ int		Webserv::parseRawConfig(void)
 	std::vector<std::string>::iterator	it;
 	int									configArrayIndex = 0;
 	std::string							rawServerConf;
-	std::map<std::string, std::string>	serverInfoMap;
+	m_s_vs								serverInfoMap;
 
 	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++,configArrayIndex++)
 	{
@@ -187,8 +190,8 @@ int		Webserv::parseRawConfig(void)
 				continue ;
 			}
 			if (DEBUG)
-				std::cout << "Calling atoi on :" << serverInfoMap["listen"] << std::endl;
-			port = atoi(serverInfoMap["listen"].c_str());
+				std::cout << "Calling atoi on :" << serverInfoMap["listen"][0] << std::endl;
+			port = atoi(serverInfoMap["listen"][0].c_str());
 			if (DEBUG)
 				std::cout << "Atoi value : " << port << std::endl;
 			// A integrer dans un fx de verif du port !
@@ -217,7 +220,7 @@ int		Webserv::parseRawConfig(void)
 				viableConfig |= 1;
 				usedPort.push_back(port);
 				//Constructeur de config a faire avec la map au lieu des 2 premiers fields!!!!
-				_configList.push_back(Config(serverInfoMap["listen"], serverInfoMap["root"]));
+				_configList.push_back(Config(serverInfoMap["listen"][0], serverInfoMap["root"][0]));
 			}
 			//rawServerConf = getNextServerBlock(*it);
 		}
