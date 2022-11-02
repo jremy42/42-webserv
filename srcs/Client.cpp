@@ -77,7 +77,7 @@ int Client::executeAction()
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR)
 		{
 			std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";
-			_response = new Response(_clientFd, _request,_config);
+			_response = new Response(_clientFd, _request,_config); // passer la bonne config
 			_state = S_RESWRITE;
 			_response->createResponse();
 		}
