@@ -15,6 +15,7 @@
 # include <algorithm>
 # include "Config.hpp"
 
+class Config;
 
 class Response
 {

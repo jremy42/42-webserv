@@ -21,7 +21,6 @@ class Webserv
 	typedef std::vector<Server*>	v_server;
 	typedef std::vector<Config>	v_config;
 	typedef v_server::iterator	v_iterator;
-	typedef std::map<string, std::vector<string> > m_s_vs;
 
 		Webserv(char **configArray); // open filenames, populates _rawConfig
 		Webserv(const Webserv &src);
@@ -29,7 +28,6 @@ class Webserv
 		Webserv &operator=(const Webserv &rhs);
 
 		std::string	getNextServerBlock(std::string &rawConfig);
-		std::map<std::string, std::vector<std::string> > createServerInfoMap(std::string &rawServerConf);
 		int parseRawConfig(void);
 		int	createServerListFromRawConfig(void); // add les serveurs a serverlist au fur et a mesure a partir rawConfig
 		int	execServerLoop(void); // Boucle sur la liste de serveur avec les actions acceptNewClient et execClientList
@@ -46,8 +44,6 @@ class Webserv
 		v_string		_rawConfig;
 		char			**_configArray;
 
-		static std::map<string, int>	_configField;
-		static std::map<string, int> _initConfigField(void);
 
 };
 

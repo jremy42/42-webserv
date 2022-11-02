@@ -63,7 +63,7 @@ Server::Server(const Config &config_source)
 	_backlog = 1000;
 	try 
 	{
-		_createPassiveSocket(_config.getListenPort());
+		_createPassiveSocket(_config.getListenPortStr().c_str());
 		if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
 				throw(std::runtime_error(strerror(errno)));
 	} catch (const std::exception &e)
@@ -72,7 +72,7 @@ Server::Server(const Config &config_source)
 		throw(std::runtime_error("Server creation failure"));
 	}
 	printf("_serverFd = %d\n", _serverFd);
-	std::cout << "Create server listen port :" << _config.getListenPort() << std::endl;
+	std::cout << "Create server listen port :" << _config.getListenPortStr() << std::endl;
 };
 
 Server::~Server(){

@@ -8,7 +8,7 @@ Client::Client()
 	_request = NULL;
 	_response = NULL;
 	_state = S_INIT;
-	_config = new Config("1000", "toto");
+	_config = NULL;
 }
 
 Client::Client(int clientFd, Config* config)
