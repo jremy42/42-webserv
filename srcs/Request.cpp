@@ -232,10 +232,13 @@ std::string	&strtrim(std::string &str, const std::string &charset)
 	std::string::iterator begin			= str.begin();
 	std::string::iterator end			= str.end();
 
-	if (first != std::string::npos)
-		begin += first;
-	if (last != std::string::npos)
-		end -= str.length() - last - 1;
+	if (first == std::string::npos)
+	{
+		str = "";
+		return (str);
+	}
+	begin += first;
+	end -= str.length() - last - 1;
 	str = std::string(begin, end);
 	return (str);
 }

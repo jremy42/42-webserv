@@ -78,27 +78,50 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 	return (*this);
 }
 
+std::string::iterator	findMatchingBracket(std::string &str, std::size_t openBracketPos)
+{
+	std::string::iterator	it = str.begin() + openBracketPos + 1;
+	std::string::iterator	ite = str.end();
+	int						count = 1;
+
+	for (; it != ite; it++)
+	{
+		if (*it == '{')
+			count++;
+		else if (*it == '}')
+			count--;
+		if (count == 0)
+			break;
+	}
+	return (it);
+}
+
 std::string	Webserv::getNextServerBlock(std::string &rawConfig)
 {
 	std::string							rawServerConf;
-	std::size_t							startServer;
-	std::size_t							endServer;
+	std::string							whiteSpaces("\f\t\n\r\v ");
+	std::size_t							startServerWord;
+	std::size_t							openBracketServer;
+	std::string::iterator				closeBracketServer;
 
-	startServer = rawConfig.find("server");
-	if (startServer == std::string::npos)
+	startServerWord = rawConfig.find("server");
+	if (startServerWord == std::string::npos)
 		return (rawServerConf);
-	startServer = rawConfig.find("{", startServer);
-	if (startServer == std::string::npos)
+	openBracketServer = rawConfig.find("{", startServerWord);
+	if (openBracketServer == std::string::npos)
 		return (rawServerConf);
-	endServer = rawConfig.find("}", startServer);
-	if (endServer == std::string::npos)
+	std::string tmp = rawConfig.substr(startServerWord + 6, openBracketServer - (startServerWord + 6));
+	if (strtrim(tmp, whiteSpaces).size() != 0)
 		return (rawServerConf);
-	rawServerConf = std::string(rawConfig.begin() + startServer, rawConfig.begin() + endServer + 1);
-	rawConfig = std::string(rawConfig, endServer);
+	closeBracketServer = findMatchingBracket(rawConfig, openBracketServer);
+	if (closeBracketServer == rawConfig.end())
+		return (rawServerConf);
+	rawServerConf = std::string(rawConfig.begin() + openBracketServer, closeBracketServer + 1);
+	rawConfig = std::string(closeBracketServer + 1, rawConfig.end());
 		return(rawServerConf);
 }
 
- std::map<std::string, std::vector<std::string> > Webserv::createServerInfoMap(std::string &rawServerConf)
+std::map<std::string, std::vector<std::string> > Webserv::createServerInfoMap(std::string &rawServerConf)
 {
 	m_s_vs											serverInfoMap;
 	std::vector<std::string>						serverInfoArray;
