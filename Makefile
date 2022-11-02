@@ -27,10 +27,12 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 dbuild:
 	docker build -t webserv-img -f ./docker/my_webserv/Dockerfile .
 	docker build -t nginx-img -f ./docker/nginx/Dockerfile .
-drun:
-	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img ./webserv conf/default.config &
+drun: 
+	docker run -d --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img ./webserv conf/default.config
+	docker attach my_webserv --sig-proxy=false
 dnrun:
 	docker run --rm -p 6001-6010:6001-6010 --name my_nginx nginx-img
+	
 dvrun:
 	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img valgrind --leak-check=full --show-leak-kinds=all ./webserv conf/default.config
 drm:
@@ -42,7 +44,7 @@ dclean:
 clean:
 	$(RM) $(BUILD_DIR)
 
-fclean: clean dclean
+fclean: clean
 	$(RM) $(NAME)
 
 re:
