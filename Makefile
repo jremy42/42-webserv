@@ -25,12 +25,11 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(info CREATED $@)
 
 dbuild:
-	docker build -t valgrind-webserv -f Dockerfile_valgrind .
-	docker build -t webserv .
+	docker build -t webserv-img ./docker
 drun:
-	docker run -ti --sig-proxy=true --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv
+	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img ./webserv conf/default.config &
 dvrun:
-	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv valgrind-webserv
+	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img valgrind --leak-check=full --show-leak-kinds=all ./webserv conf/default.config
 drm:
 	docker rm -f my_webserv
 dclean:
