@@ -27,7 +27,8 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 dbuild:
 	docker build -t webserv-img ./docker
 drun:
-	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img ./webserv conf/default.config &
+	docker run -d --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img ./webserv conf/default.config
+	docker attach my_webserv --sig-proxy=false
 dvrun:
 	docker run --rm -p 5001-5010:5001-5010 --name my_webserv -v $(shell pwd):/webserv webserv-img valgrind --leak-check=full --show-leak-kinds=all ./webserv conf/default.config
 drm:
