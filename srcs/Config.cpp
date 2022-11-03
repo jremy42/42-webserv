@@ -8,6 +8,7 @@ std::map<std::string, int>	Config::_initConfigField()
 
 	configField.insert(std::pair<std::string, int>("listen", 1));
 	configField.insert(std::pair<std::string, int>("root", 1));
+	configField.insert(std::pair<std::string, int>( "server_name", 0));
 	return (configField);
 }
 
@@ -18,6 +19,11 @@ Config::Config(void)
 
 Config::Config(std::string rawServerConfig)
 {
+	while(rawServerConfig.at(0) != '{')
+		rawServerConfig.erase(0,1);
+	rawServerConfig.erase(0,1);
+	rawServerConfig.erase(rawServerConfig.end() - 1);
+	std::cout << "rawServerConfig : >" << rawServerConfig << "<" << std::endl;
 	_serverInfoMap = _createServerInfoMap(rawServerConfig);
 	if (DEBUG)
 		std::cout << "Found a viable 'server {}' conf : >" << rawServerConfig << "<" << std::endl;
@@ -83,21 +89,26 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 {
 	m_s_vs											serverInfoMap;
 	std::vector<std::string>						serverInfoArray;
-	std::stringbuf									buffer(rawServerConf);
-	std::istream									stream(&buffer);
+	std::istringstream								istr(rawServerConf);
 	std::string										nextLine;
 	std::size_t										nextBlankToReplace;
 	std::size_t										replaceOffset;
 	int												missingMandatoryField = _configField.size(); // A recup pour les tableaux des autres classes
-
+	char											nextBlockDelim = '0';
+	std::size_t										nextPosDelim = 0;											
 	//init serverInfoMap
 	for (std::map<std::string, int>::iterator it = _configField.begin(); it != _configField.end(); it++)
 		serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
 	//init serverInfoMap
-	while (getline(stream, nextLine))
+	if ((nextPosDelim = istr.str().find_first_of("{;") )!= string::npos)
+		nextBlockDelim = istr.str()[nextPosDelim];
+	std::cout << "nextBlockDelim: ["<< nextBlockDelim << "]" <<std::endl;
+	exit(1);
+	while (getline(istr, nextLine, ';'))
 	{
+		if(nextLine.find('{'))
 		replaceOffset = 0;
-		strtrim(nextLine, "\f\t\r\v ");
+		strtrim(nextLine, "\f\t\r\v\n ");
 		// On remplace tout les blank par un seul blanck
 		while (replaceOffset < nextLine.length()
 			&& (nextBlankToReplace = nextLine.find_first_of("\f\t\r\v ", replaceOffset)) != std::string::npos)
