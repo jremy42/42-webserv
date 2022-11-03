@@ -25,13 +25,18 @@ Config::Config(std::string rawServerConfig)
 	rawServerConfig.erase(rawServerConfig.end() - 1);
 	std::cout << "rawServerConfig : >" << rawServerConfig << "<" << std::endl;
 	_serverInfoMap = _createServerInfoMap(rawServerConfig);
-	if (DEBUG)
+
+	
+	std::cout << " map size serverInfoMap: [" << _serverInfoMap.size() <<"]" << std::endl;
+	 if (DEBUG)
 		std::cout << "Found a viable 'server {}' conf : >" << rawServerConfig << "<" << std::endl;
 	if (_serverInfoMap.empty())
 		throw(std::runtime_error("webserv: empty conf, server block ignored"));
-	if (DEBUG)
-			std::cout << "Calling atoi on :" << _serverInfoMap["listen"][0] << std::endl;
-		_listenPort = atoi(_serverInfoMap["listen"][0].c_str());
+	std::vector<string> test = _serverInfoMap["listen"];
+	std::cout << "test" << test.front() << std::endl;
+	//if (DEBUG)
+	//	std::cout << "Calling atoi on :" << _serverInfoMap["listen"][0] << std::endl;
+	_listenPort = atoi(_serverInfoMap["listen"][0].c_str());
 	if (DEBUG)
 		std::cout << "Atoi value : " << _listenPort << std::endl;
 		// A integrer dans un fx de verif du port !
@@ -85,18 +90,17 @@ const char* Config::getRootDir(void) const
 	return (_rootDirectory.c_str());
 }
 
-char	Config::getNextBlockDelim(std::string str) const
+char	Config::getNextBlockDelim(std::string str, int pos) const
 {
 	char			nextBlockDelim = '0';
-	std::size_t		nextPosDelim;											
+	std::size_t		nextPosDelim;								
+	string			tmp(str.begin() + pos, str.end());
 
-	std::cout << "Str for next delim [" << str << "]" << std::endl;
-	if ((nextPosDelim = str.find_first_of("{;") )!= std::string::npos)
+	if ((nextPosDelim = tmp.find_first_of("{;") )!= std::string::npos)
 	{
-		nextBlockDelim = str[nextPosDelim];
-		nextBlockDelim = (nextPosDelim == ';') ? ';' : '}';
+		nextBlockDelim = tmp[nextPosDelim];
+		nextBlockDelim = (nextBlockDelim == ';') ? ';' : '}';
 	}
-	std::cout << "nextBlockDelim: ["<< nextBlockDelim << "]" <<std::endl;
 	return (nextBlockDelim);
 }
 
@@ -116,9 +120,11 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 	for (std::map<std::string, int>::iterator it = _configField.begin(); it != _configField.end(); it++)
 		serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
 	//init serverInfoMap
-	while ((nextBlockDelim = getNextBlockDelim(istr.str())) != '0' && getline(istr, nextLine, nextBlockDelim))
+	nextBlockDelim = getNextBlockDelim(istr.str(), istr.tellg());
+	while ( nextBlockDelim != '0' && getline(istr, nextLine, nextBlockDelim))
 	{
-		if (nextLine.find('}'))
+		//std::cout << "stream position: [" << istr.tellg() << "]\n";
+		if (nextBlockDelim == '}')
 		{
 			std::cout << "nextLine inside {} : [" << nextLine << "]" <<std::endl;
 		}
@@ -138,9 +144,13 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 			}
 			// On remplace tout les blank par un seul blanck
 			configLine = parseConfigBlock(nextLine);
-			serverInfoMap.insert(parseConfigBlock(nextLine));
-			std::cout << "inserted a new Config key-value(s) for key [" << configLine.first << "]" <<std::endl;
+			std::cout << "\e[31m configLine :[" << configLine.first << "]" << "[" << configLine.second[0] << "]\e[0m\n"; 
+			serverInfoMap[configLine.first] = configLine.second;
 		}
+		if (istr.tellg() < 0)
+			break;
+		nextBlockDelim = getNextBlockDelim(istr.str(), istr.tellg());
+		std::cout << "\e[32m nexBlockDelim [" << nextBlockDelim << "] \e[0m" << std::endl;
 	}
 	/*
 	   if (missingMandatoryField != 0)
@@ -151,6 +161,7 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 	   else if (DEBUG)
 	   std::cout << "Valid ServerInfoArray !" << std::endl;
 	 */
+	std::cout << "inserted a new Config key-value(s) for key [" << serverInfoMap["server_name"][0] << "]" <<std::endl;
 	return (serverInfoMap);
 }
 
@@ -168,7 +179,10 @@ std::pair<std::string, std::vector<std::string > >	Config::parseConfigBlock(std:
 			std::cout << "Found a mandatory Field : [" << key << "]" << std::endl;
 		ret.first = key;
 		while (getline(iss, value, ' '))
+		{
+			std::cout << "\e[33m add value:[" << value << "\e[0m\n";
 			ret.second.push_back(value);
+		}
 	}
 	else
 	{

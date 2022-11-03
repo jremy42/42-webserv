@@ -40,7 +40,7 @@ class Config
 		string	_rootDirectory;
 		std::map<std::string, std::vector<std::string> > _createServerInfoMap(std::string &rawServerConf);
 		m_s_vs	_serverInfoMap;
-		char	getNextBlockDelim(std::string str) const;
+		char	getNextBlockDelim(std::string str, int pos) const;
 		std::pair<std::string, std::vector<std::string > >	parseConfigBlock(std::string &nextLine);
 		static std::map<string, int>	_configField;
 		static std::map<string, int> _initConfigField(void);

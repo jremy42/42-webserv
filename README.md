@@ -15,3 +15,7 @@ https://blog.stack-labs.com/code/git_perfect_commit_message/
 # ctrl h -> find replace
 # ctrl shift a -> comment
 # ctrl ] -> indent 
+# ctr l -> select current ligne
+# ctrl alt shif <> : select at end of world
+# alt -> : move block or ligne
+# ctrl k && ctrl f : indent selection
