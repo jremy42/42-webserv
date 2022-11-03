@@ -85,73 +85,95 @@ const char* Config::getRootDir(void) const
 	return (_rootDirectory.c_str());
 }
 
+char	Config::getNextBlockDelim(std::string str) const
+{
+	char			nextBlockDelim = '0';
+	std::size_t		nextPosDelim;											
+
+	std::cout << "Str for next delim [" << str << "]" << std::endl;
+	if ((nextPosDelim = str.find_first_of("{;") )!= std::string::npos)
+	{
+		nextBlockDelim = str[nextPosDelim];
+		nextBlockDelim = (nextPosDelim == ';') ? ';' : '}';
+	}
+	std::cout << "nextBlockDelim: ["<< nextBlockDelim << "]" <<std::endl;
+	return (nextBlockDelim);
+}
+
+
+
 std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(std::string &rawServerConf)
 {
 	m_s_vs											serverInfoMap;
-	std::vector<std::string>						serverInfoArray;
 	std::istringstream								istr(rawServerConf);
 	std::string										nextLine;
 	std::size_t										nextBlankToReplace;
 	std::size_t										replaceOffset;
-	int												missingMandatoryField = _configField.size(); // A recup pour les tableaux des autres classes
+	//int												missingMandatoryField = _configField.size(); // A recup pour les tableaux des autres classes
 	char											nextBlockDelim = '0';
-	std::size_t										nextPosDelim = 0;											
+	std::pair<string, std::vector<string> >			configLine;
 	//init serverInfoMap
 	for (std::map<std::string, int>::iterator it = _configField.begin(); it != _configField.end(); it++)
 		serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
 	//init serverInfoMap
-	if ((nextPosDelim = istr.str().find_first_of("{;") )!= string::npos)
-		nextBlockDelim = istr.str()[nextPosDelim];
-	std::cout << "nextBlockDelim: ["<< nextBlockDelim << "]" <<std::endl;
-	exit(1);
-	while (getline(istr, nextLine, ';'))
+	while ((nextBlockDelim = getNextBlockDelim(istr.str())) != '0' && getline(istr, nextLine, nextBlockDelim))
 	{
-		if(nextLine.find('{'))
-		replaceOffset = 0;
-		strtrim(nextLine, "\f\t\r\v\n ");
-		// On remplace tout les blank par un seul blanck
-		while (replaceOffset < nextLine.length()
-			&& (nextBlankToReplace = nextLine.find_first_of("\f\t\r\v ", replaceOffset)) != std::string::npos)
+		if (nextLine.find('}'))
 		{
-			nextLine.at(nextBlankToReplace) = ' ';
-			replaceOffset = nextBlankToReplace + 1;
+			std::cout << "nextLine inside {} : [" << nextLine << "]" <<std::endl;
+		}
+		else
+		{
+			replaceOffset = 0;
+			strtrim(nextLine, "\f\t\r\v\n ;");
+			// On remplace tout les blank par un seul blanck
 			while (replaceOffset < nextLine.length()
-				&& std::string("\f\t\r\v ").find_first_of(nextLine.at(replaceOffset)) != std::string::npos)
-				nextLine.erase(replaceOffset, 1);
-		}
-		// On remplace tout les blank par un seul blanck
-		serverInfoArray.push_back(nextLine);
-	}
-	for (std::vector<std::string>::iterator it = serverInfoArray.begin(); it != serverInfoArray.end(); it++)
-	{
-		if (*it == "{" || *it == "}")
-			continue ;
-		if (DEBUG)
-			std::cout << "ServerInfoArray : [" << *it << "]" << std::endl;
-		// Si plus d'un blank, ou qu'il n'est pas au milieu des 2 clefs, erreur
-		if ((it->find_first_of(' ') != it->find_last_of(' '))
-			|| it->find_first_of(' ') == std::string::npos)
-		{
-			std::cerr << "Too many or too few parameters for Server Info Array" << std:: endl;
-			break ;
-		}
-		//if (find(_configField.begin(), _configField.end(), it->substr(0, it->find_first_of(' '))) != _configField.end())
-		if (_configField.find(it->substr(0, it->find_first_of(' '))) != _configField.end())
-		{
-			if (DEBUG)
-				std::cout << "Found a mandatory Field : [" << *it << "]" << std::endl;
-			serverInfoMap[it->substr(0, it->find_first_of(' '))].push_back(it->substr(it->find_first_of(' ') + 1));
-			//TODO : checker qu'on a pas trop de field !!!!
-			--missingMandatoryField;
+					&& (nextBlankToReplace = nextLine.find_first_of("\f\t\r\v\n ", replaceOffset)) != std::string::npos)
+			{
+				nextLine.at(nextBlankToReplace) = ' ';
+				replaceOffset = nextBlankToReplace + 1;
+				while (replaceOffset < nextLine.length()
+						&& std::string("\f\t\r\v\n ").find_first_of(nextLine.at(replaceOffset)) != std::string::npos)
+					nextLine.erase(replaceOffset, 1);
+			}
+			// On remplace tout les blank par un seul blanck
+			configLine = parseConfigBlock(nextLine);
+			serverInfoMap.insert(parseConfigBlock(nextLine));
+			std::cout << "inserted a new Config key-value(s) for key [" << configLine.first << "]" <<std::endl;
 		}
 	}
-	if (missingMandatoryField != 0)
-	{
-		serverInfoArray.clear();
-		serverInfoMap.clear();
-		std::cerr << "Too " << (missingMandatoryField > 0 ? "few" : "many") << " mandatory Server Info key-values" << std::endl;
-	}
-	else if (DEBUG)
-		std::cout << "Valid ServerInfoArray !" << std::endl;
+	/*
+	   if (missingMandatoryField != 0)
+	   {
+	   serverInfoMap.clear();
+	   std::cerr << "Too " << (missingMandatoryField > 0 ? "few" : "many") << " mandatory Server Info key-values" << std::endl;
+	   }
+	   else if (DEBUG)
+	   std::cout << "Valid ServerInfoArray !" << std::endl;
+	 */
 	return (serverInfoMap);
+}
+
+std::pair<std::string, std::vector<std::string > >	Config::parseConfigBlock(std::string &nextLine)
+{
+	std::pair<string, std::vector<string> >		ret;
+	std::istringstream							iss(nextLine);
+	string										key;
+	string										value;
+
+	getline(iss, key, ' ');
+	if (_configField.find(key) != _configField.end())
+	{
+		if (DEBUG)
+			std::cout << "Found a mandatory Field : [" << key << "]" << std::endl;
+		ret.first = key;
+		while (getline(iss, value, ' '))
+			ret.second.push_back(value);
+	}
+	else
+	{
+		if (DEBUG)
+			std::cout << "No such Config Key " << key << std::endl;
+	}
+	return (ret);
 }
