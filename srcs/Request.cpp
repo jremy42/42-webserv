@@ -243,7 +243,6 @@ std::string	&strtrim(std::string &str, const std::string &charset)
 	return (str);
 }
 
-
 std::string Request::getMethod(void) const
 {
 	return (_requestLine.find("method")->second);
