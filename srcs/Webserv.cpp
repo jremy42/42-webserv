@@ -83,7 +83,7 @@ void Webserv::_loadFile(const char * fileName)
 	_rawConfig.push_back("");
 	while (std::getline(fs, nextLine))
 	{
-		if (DEBUG)
+		if (DEBUG_WEBSERV)
 		{
 			if (nextLine.empty() || nextLine.find_first_not_of("\f\t\n\r\v ") == std::string::npos)
 				std::cout << "[Empty Line]" << std::endl;
@@ -161,19 +161,17 @@ int		Webserv::parseRawConfig(void)
 				Config nextConfig(rawServerConf);
 				for (v_config::iterator it = _configList.begin(); it != _configList.end() ; it++)
 				{
-					std::cout << "nextConfig port : [" << nextConfig.getListenPort() << "]\n";
-					std::cout << "currentConfig port : [" << it->getListenPort() << "]\n";
-
 					if (nextConfig.getListenPort() == it->getListenPort()
 						&& (conflictServerName = _checkServerName(nextConfig.getServerName(), it->getServerName())) != "")
 					{
 
-						throw(std::runtime_error("same server name on port:" + nextConfig.getListenPortStr() + " with a server_name: " + conflictServerName + " config block ignored"));
+						throw (std::runtime_error("\e[33mConfig Block ignore : Same server name on port :"
+						+ nextConfig.getListenPortStr() + " with a server_name: " + conflictServerName + "\e[0m"));
 					}
 				}
 				//Constructeur de config a faire avec la map au lieu des 2 premiers fields!!!!
 				viableConfig |= 1;
-				std::cout << "push bask nextconfig" << std::endl;
+				std::cout << "\e[32mPushing back a new config in the ConfigList\e[0m" << std::endl;
 				_configList.push_back(nextConfig);
 			}
 			catch (const std::exception &e) 
@@ -181,7 +179,7 @@ int		Webserv::parseRawConfig(void)
 				 std::cerr  << e.what() << std::endl;
 			}
 		}
-		if (DEBUG)
+		if (DEBUG_WEBSERV)
 			std::cout << "No more server block. Going to next conf file" << std::endl;
 	}
 	if (viableConfig == 0)
@@ -226,7 +224,8 @@ std::string Webserv::_checkServerName(std::vector<string> nextServerName, std::v
 	std::vector<string>::iterator ite = nextServerName.end();
 	for (std::vector<string>::iterator it = nextServerName.begin(); it != ite; it++)
 	{
-		std::cout << "Check for server name :" << *it << std::endl;
+		if (DEBUG_WEBSERV)
+			std::cout << "Check for server name :" << *it << std::endl;
 		if (find(currentServerName.begin(), currentServerName.end(), *it) != currentServerName.end())
 			return (*it);
 	}

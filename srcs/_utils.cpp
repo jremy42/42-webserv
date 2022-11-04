@@ -40,13 +40,16 @@ std::string	normalizeKeyValStr(std::string &keyValStr, const std::string &separa
 std::ostream	&operator<<(std::ostream &o, const std::vector<std::string> &vec)
 {
 	for (unsigned long i = 0; i < vec.size(); i++)
-		std::cout << "[" << i << "]->[" << vec[i] << "]";
+	{
+		std::cout << (i != 0 ? ", " : "");
+		std::cout << "[" << i << "][" << vec[i] << "]";
+	}
 	return (o);
 }
 
 std::ostream	&operator<<(std::ostream &o, const std::pair<std::string, std::vector<std::string> > &pair)
 {
-	std::cout << "[" << pair.first << "]";
+	std::cout << "[" << pair.first << "] : ";
 	std::cout << pair.second;
 	return (o);
 }

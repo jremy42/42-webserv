@@ -14,7 +14,7 @@
 # include <sstream>
 # include "_utils.hpp"
 
-# define DEBUG_LOCATION 1
+# define DEBUG_LOCATION 0
 
 class Location
 {

@@ -12,11 +12,11 @@ std::map<std::string, int>	Location::_initConfigField()
 
 Location::Location(string rawLocation)
 {
- 	if (DEBUG_LOCATION)
- 		std::cout << "Location string constructor called with : ~>" << rawLocation << "<~" << std::endl;
+	if (DEBUG_LOCATION)
+		std::cout << "Location string constructor called with : ~>" << rawLocation << "<~" << std::endl;
 	_createLocationInfoMap(rawLocation);
- 	if (DEBUG_LOCATION)
- 		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
+	if (DEBUG_LOCATION)
+		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
 }
 
 Location::~Location(void)

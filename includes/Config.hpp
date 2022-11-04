@@ -18,6 +18,7 @@
 
 # define DEBUG_CONFIG 0
 
+enum {MANDATORY_ONE, OPTIONAL_ONE, OPTIONAL_MULTI};
 
 class Config
 {
@@ -25,6 +26,7 @@ class Config
 	public:
 		typedef std::string								string;
 		typedef std::map<string, std::vector<string> >	m_s_vs;
+		typedef std::pair<string, std::vector<string> >	p_s_vs;
 		typedef std::map<string, Location>				m_s_l;
 // var
 	private:
@@ -46,13 +48,15 @@ class Config
 		const char * getRootDir(void) const;
 
 	private:
-		std::map<std::string, std::vector<std::string> > 	_createServerInfoMap(std::string &rawServerConf);
-		std::pair<std::string, std::vector<std::string > >	parseConfigBlock(std::string &nextLine);
-		char												getNextBlockDelim(std::string str, int pos) const;
-		std::string											getNextLocationBlock(std::string &rawLocation);
-		
+		void		_initServerInfoMap(void);
+		void		_createServerInfoMap(std::string &rawServerConf);
+		void		_burnExternalBrackets(std::string &rawServerConfig);
+		p_s_vs		_parseConfigBlock(std::string &nextLine);
+		char		_getNextBlockDelim(std::string str, int pos) const;
+		string		_getNextLocationBlock(std::string &rawLocation);
+
 		static std::map<string, int>	_configField;
-		static std::map<string, int> _initConfigField(void);
+		static std::map<string, int>	_initConfigField(void);
 };
 
 

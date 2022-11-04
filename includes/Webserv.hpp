@@ -11,7 +11,7 @@
 # include "Server.hpp"
 # include "Config.hpp"
 
-# define DEBUG 1
+# define DEBUG_WEBSERV 0
 
 class Webserv
 {
