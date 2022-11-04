@@ -22,7 +22,9 @@ class Webserv
 	typedef std::vector<Config>	v_config;
 	typedef v_server::iterator	v_iterator;
 
+		Webserv();
 		Webserv(char **configArray); // open filenames, populates _rawConfig
+		Webserv(string fileName); // open filenames, populates _rawConfig
 		Webserv(const Webserv &src);
 		~Webserv(void);
 		Webserv &operator=(const Webserv &rhs);

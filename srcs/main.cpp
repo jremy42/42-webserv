@@ -6,19 +6,24 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/11/03 12:12:46 by jremy            ###   ########.fr       */
+/*   Updated: 2022/11/04 11:02:53 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
+
+
 int main(int ac, char **av)
 {
-	if (ac == 1)
-		return (std::cerr << "Webserv : Fatal Error : At least 1 config file is needed to start" << std::endl, 1);
+	Webserv myServ;
+	
 	try
 	{
-		Webserv myServ(av);
+		if (ac == 1)
+			myServ = Webserv("conf/default.config");
+		else
+			myServ = Webserv(av);
 		myServ.parseRawConfig();
 		myServ.createServerListFromRawConfig();
 		myServ.execServerLoop();
