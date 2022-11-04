@@ -29,15 +29,17 @@ class Location
 		Location(string rawLocation);
 		~Location(void);
 		Location &operator=(const Location &rhs);
-		std::string	normalizeKeyValStr(std::string &keyValStr, const std::string &separatorCharset, const char defaultSeparator);
 
 	private:
-		void	_createLocationInfoMap(std::string &rawServerConf);
-		std::pair<std::string, std::vector<std::string > >	parseLocationLine(std::string &nextLine);
 		m_s_vs	_locationInfoMap;
+
+		void												_createLocationInfoMap(std::string &rawServerConf);
+		std::pair<std::string, std::vector<std::string > >	parseLocationLine(std::string &nextLine);
+
 		static std::map<string, int>	_configField;
-		static std::map<string, int> _initConfigField(void);
+		static std::map<string, int>	_initConfigField(void);
 };
 
+std::string	normalizeKeyValStr(std::string &keyValStr, const std::string &separatorCharset, const char defaultSeparator);
 
 #endif
