@@ -126,6 +126,19 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 		//std::cout << "stream position: [" << istr.tellg() << "]\n";
 		if (nextBlockDelim == '}')
 		{
+			try
+			{
+				string key(getNextLocationBlock(nextLine));
+				Location newLocation(nextLine);
+				std::cout << "\e[33m key :[" << key << "]\n";
+				_location.insert(std::pair<string, Location>(key, newLocation));
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << e.what() << '\n';
+			}
+			
+
 			std::cout << "nextLine inside {} : [" << nextLine << "]" <<std::endl;
 		}
 		else
@@ -144,7 +157,7 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 			}
 			// On remplace tout les blank par un seul blanck
 			configLine = parseConfigBlock(nextLine);
-			std::cout << "\e[31m configLine :[" << configLine.first << "]" << "[" << configLine.second[0] << "]\e[0m\n"; 
+			std::cout << "\e[31m configLine :" << configLine << "\e[0m\n"; 
 			serverInfoMap[configLine.first] = configLine.second;
 		}
 		if (istr.tellg() < 0)
@@ -161,7 +174,7 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 	   else if (DEBUG)
 	   std::cout << "Valid ServerInfoArray !" << std::endl;
 	 */
-	std::cout << "inserted a new Config key-value(s) for key [" << serverInfoMap["server_name"][0] << "]" <<std::endl;
+	std::cout << "inserted a new Config maps " << serverInfoMap << "" <<std::endl;
 	return (serverInfoMap);
 }
 
@@ -192,6 +205,30 @@ std::pair<std::string, std::vector<std::string > >	Config::parseConfigBlock(std:
 	return (ret);
 }
 
+
+std::string	Config::getNextLocationBlock(std::string &rawLocation)
+{
+	std::string							rawLocationConf;
+	std::string							whiteSpaces("\f\t\n\r\v ");
+	std::size_t							startLocationWord;
+	std::size_t							openBracket;
+	std::string							key;
+	startLocationWord = rawLocation.find("location");
+	if (startLocationWord == std::string::npos)
+		throw(std::runtime_error("webserv: wrong location block"));
+	openBracket = rawLocation.find("{", startLocationWord);
+	if (openBracket == std::string::npos)
+		throw(std::runtime_error("webserv: wrong location block"));
+	key = rawLocation.substr(startLocationWord + 8, openBracket - (startLocationWord + 8));
+	key = strtrim(key, whiteSpaces);
+	if (key.size() == 0 || key.find_first_of(whiteSpaces) != std::string::npos)
+		throw(std::runtime_error("webserv: wrong location block"));
+	rawLocationConf = std::string(rawLocation.begin() + openBracket + 1,rawLocation.end());
+	std::cout << "\e[31m rawLocationConf: [" << rawLocationConf << "]\e[0m\n" ;
+	rawLocation = rawLocationConf;
+	return(key);
+}
+
 std::ostream	&operator<<(std::ostream &o, const std::vector<std::string> &vec)
 {
 	for (unsigned long i = 0; i < vec.size(); i++)
@@ -208,7 +245,7 @@ std::ostream	&operator<<(std::ostream &o, const std::pair<std::string, std::vect
 
 std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::vector<std::string> > &map)
 {
-	std::map<std::string, std::vector<std::string> >::iterator	it;
+	std::map<std::string, std::vector<std::string> >::const_iterator	it = map.begin();
 	for (; it != map.end(); it++)
 		std::cout << *it << std::endl;
 	return (o);

@@ -45,8 +45,7 @@ class Webserv
 		v_config		_configList;
 		v_string		_rawConfig;
 		char			**_configArray;
-
-
+		void			_loadFile(const char *fileName);
 };
 
 #endif

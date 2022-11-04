@@ -14,21 +14,33 @@
 # include <sstream>
 # include "Request.hpp"
 # include "Response.hpp"
+# include <iterator>
+# include "Location.hpp"
 
 # define DEBUG 1
 
+class Location;
 
 class Config
 {
+// typedef
 	public:
-		typedef std::string			string;
-		typedef std::map<string, std::vector<string> > m_s_vs;
+		typedef std::string								string;
+		typedef std::map<string, std::vector<string> >	m_s_vs;
+		typedef std::map<string, Location>				m_s_l;
+// var
+	private:
+		int		_listenPort;
+		string	_rootDirectory;
+		m_s_vs	_serverInfoMap;
+		m_s_l	_location;
+// functions
+	public:
 		Config(void);
 		Config(string rawServerConfig);
 		Config(const Config &src);
 		~Config(void);
 		Config &operator=(const Config &rhs);
-
 
 		const string	getListenPortStr(void) const;
 		int	getListenPort(void) const;
@@ -36,12 +48,11 @@ class Config
 		const char * getRootDir(void) const;
 
 	private:
-		int		_listenPort;
-		string	_rootDirectory;
-		std::map<std::string, std::vector<std::string> > _createServerInfoMap(std::string &rawServerConf);
-		m_s_vs	_serverInfoMap;
-		char	getNextBlockDelim(std::string str, int pos) const;
+		std::map<std::string, std::vector<std::string> > 	_createServerInfoMap(std::string &rawServerConf);
 		std::pair<std::string, std::vector<std::string > >	parseConfigBlock(std::string &nextLine);
+		char												getNextBlockDelim(std::string str, int pos) const;
+		std::string											getNextLocationBlock(std::string &rawLocation);
+		
 		static std::map<string, int>	_configField;
 		static std::map<string, int> _initConfigField(void);
 };

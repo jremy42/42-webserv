@@ -16,29 +16,7 @@ Webserv::Webserv(char **av) : _configArray(av)
 	++_configArray;
 	while (_configArray[i])
 	{
-		fs.open(_configArray[i], std::ifstream::in);
-		if (fs.good())
-			std::cout << "Successfully opened config file : '" << _configArray[i] << "'" << std::endl;
-		else
-		{
-			std::cerr << "Failure opening config file : '" << _configArray[i] << "' : " << strerror(errno) << std::endl;
-			fs.close();
-			break ;
-		}
-		_rawConfig.push_back("");
-		while (std::getline(fs, nextLine))
-		{
-			if (DEBUG)
-			{
-				if (nextLine.empty() || nextLine.find_first_not_of("\f\t\n\r\v ") == std::string::npos)
-					std::cout << "[Empty Line]" << std::endl;
-				else
-					std::cout << nextLine << std::endl;
-			}
-			if (!nextLine.empty() && nextLine.find_first_not_of("\f\t\n\r\v ") != std::string::npos)
-				_rawConfig.back() += (nextLine + "\n");
-		}
-		fs.close();
+		_loadFile(_configArray[i]);
 		i++;
 	}
 	std::cout << "Config list :" << std::endl;
@@ -54,11 +32,47 @@ Webserv::Webserv(char **av) : _configArray(av)
 
 Webserv::Webserv(string fileName)
 {
-	std::string		nextLine;
-	std::ifstream	fs;
+
 	int				viableConfig = 0;
 
-	fs.open(fileName.c_str(), std::ifstream::in);
+	_loadFile(fileName.c_str());
+	std::cout << "Config list :" << std::endl;
+	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+	{
+		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
+		viableConfig |= (*it != "");
+	}
+	if (viableConfig == 0)
+		throw NotEnoughValidConfigFilesException();
+	return ;
+}
+
+Webserv::Webserv(const Webserv &src)
+{
+	*this = src;
+}
+
+Webserv::~Webserv(void)
+{
+
+}
+
+
+Webserv &Webserv::operator=(const Webserv &rhs)
+{
+	this->_serverList = rhs._serverList;
+	this->_rawConfig = rhs._rawConfig;
+	this-> _configList = rhs._configList;
+	this->_configArray = rhs._configArray;
+	return (*this);
+}
+
+void Webserv::_loadFile(const char * fileName)
+{
+	std::string		nextLine;
+	std::ifstream	fs;
+
+	fs.open(fileName, std::ifstream::in);
 	if (fs.good())
 		std::cout << "Successfully opened config file : '" << fileName << "'" << std::endl;
 	else
@@ -81,37 +95,6 @@ Webserv::Webserv(string fileName)
 	}
 	fs.close();
 
-	std::cout << "Config list :" << std::endl;
-	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
-	{
-		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
-		viableConfig |= (*it != "");
-	}
-	if (viableConfig == 0)
-		throw NotEnoughValidConfigFilesException();
-	return ;
-}
-
-
-
-Webserv::Webserv(const Webserv &src)
-{
-	*this = src;
-}
-
-Webserv::~Webserv(void)
-{
-
-}
-
-
-Webserv &Webserv::operator=(const Webserv &rhs)
-{
-	this->_serverList = rhs._serverList;
-	this->_rawConfig = rhs._rawConfig;
-	this-> _configList = rhs._configList;
-	this->_configArray = rhs._configArray;
-	return (*this);
 }
 
 std::string::iterator	findMatchingBracket(std::string &str, std::size_t openBracketPos)
