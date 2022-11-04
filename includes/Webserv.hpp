@@ -23,7 +23,6 @@ class Webserv
 	typedef v_server::iterator	v_iterator;
 
 		Webserv();
-		Webserv(char **configArray); // open filenames, populates _rawConfig
 		Webserv(string fileName); // open filenames, populates _rawConfig
 		Webserv(const Webserv &src);
 		~Webserv(void);
@@ -44,8 +43,8 @@ class Webserv
 		v_server		_serverList;
 		v_config		_configList;
 		v_string		_rawConfig;
-		char			**_configArray;
 		void			_loadFile(const char *fileName);
+		string			_checkServerName(std::vector<string> nextServerName, std::vector<string> currentServerName);
 };
 
 #endif

@@ -23,21 +23,24 @@ Config::Config(std::string rawServerConfig)
 		rawServerConfig.erase(0,1);
 	rawServerConfig.erase(0,1);
 	rawServerConfig.erase(rawServerConfig.end() - 1);
-	std::cout << "rawServerConfig : >" << rawServerConfig << "<" << std::endl;
+	if (DEBUG_CONFIG)
+		std::cout << "rawServerConfig : >" << rawServerConfig << "<" << std::endl;
 	_serverInfoMap = _createServerInfoMap(rawServerConfig);
 
-	
-	std::cout << " map size serverInfoMap: [" << _serverInfoMap.size() <<"]" << std::endl;
-	 if (DEBUG)
+	if (DEBUG_CONFIG)
+		std::cout << " map size serverInfoMap: [" << _serverInfoMap.size() <<"]" << std::endl;
+	 if (DEBUG_CONFIG)
 		std::cout << "Found a viable 'server {}' conf : >" << rawServerConfig << "<" << std::endl;
 	if (_serverInfoMap.empty())
 		throw(std::runtime_error("webserv: empty conf, server block ignored"));
 	std::vector<string> test = _serverInfoMap["listen"];
-	std::cout << "test" << test.front() << std::endl;
-	//if (DEBUG)
+	
+	if (DEBUG_CONFIG)
+		std::cout << "test" << test.front() << std::endl;
+	//if (DEBUG_CONFIG)
 	//	std::cout << "Calling atoi on :" << _serverInfoMap["listen"][0] << std::endl;
 	_listenPort = atoi(_serverInfoMap["listen"][0].c_str());
-	if (DEBUG)
+	if (DEBUG_CONFIG)
 		std::cout << "Atoi value : " << _listenPort << std::endl;
 		// A integrer dans un fx de verif du port !
 	if (_listenPort < 1024)
@@ -66,6 +69,8 @@ Config	&Config::operator=(const Config &rhs)
 {
 	this->_listenPort = rhs._listenPort;
 	this->_rootDirectory = rhs._rootDirectory;
+	this->_serverInfoMap = rhs._serverInfoMap;
+	this->_location = rhs._location;
 
 	return (*this);
 }
@@ -75,9 +80,10 @@ const std::string		Config::getListenPortStr(void) const
 	return (_itoa(_listenPort));
 }
 
-const std::string Config::getServerName(void) const
+const std::vector<std::string> Config::getServerName(void) const
 {
-	return "toto";
+	std::cout << " return of getServerName:"<< _serverInfoMap.find("server_name")->second << std::endl;
+	return (_serverInfoMap.find("server_name")->second) ;
 }
 
 int		Config::getListenPort(void) const
@@ -130,7 +136,8 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 			{
 				string key(getNextLocationBlock(nextLine));
 				Location newLocation(nextLine);
-				std::cout << "\e[33m key :[" << key << "]\n";
+				if (DEBUG_CONFIG)
+					std::cout << "\e[33m key :[" << key << "]\n";
 				_location.insert(std::pair<string, Location>(key, newLocation));
 			}
 			catch(const std::exception& e)
@@ -138,8 +145,8 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 				std::cerr << e.what() << '\n';
 			}
 			
-
-			std::cout << "nextLine inside {} : [" << nextLine << "]" <<std::endl;
+			if (DEBUG_CONFIG)
+				std::cout << "nextLine inside {} : [" << nextLine << "]" <<std::endl;
 		}
 		else
 		{
@@ -157,7 +164,8 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 			}
 			// On remplace tout les blank par un seul blanck
 			configLine = parseConfigBlock(nextLine);
-			std::cout << "\e[31m configLine :" << configLine << "\e[0m\n"; 
+			if (DEBUG_CONFIG)
+				std::cout << "\e[31m configLine :" << configLine << "\e[0m\n"; 
 			serverInfoMap[configLine.first] = configLine.second;
 		}
 		if (istr.tellg() < 0)
@@ -171,7 +179,7 @@ std::map<std::string, std::vector<std::string> > Config::_createServerInfoMap(st
 	   serverInfoMap.clear();
 	   std::cerr << "Too " << (missingMandatoryField > 0 ? "few" : "many") << " mandatory Server Info key-values" << std::endl;
 	   }
-	   else if (DEBUG)
+	   else if (DEBUG_CONFIG)
 	   std::cout << "Valid ServerInfoArray !" << std::endl;
 	 */
 	std::cout << "inserted a new Config maps " << serverInfoMap << "" <<std::endl;
@@ -188,18 +196,19 @@ std::pair<std::string, std::vector<std::string > >	Config::parseConfigBlock(std:
 	getline(iss, key, ' ');
 	if (_configField.find(key) != _configField.end())
 	{
-		if (DEBUG)
+		if (DEBUG_CONFIG)
 			std::cout << "Found a mandatory Field : [" << key << "]" << std::endl;
 		ret.first = key;
 		while (getline(iss, value, ' '))
 		{
-			std::cout << "\e[33m add value:[" << value << "\e[0m\n";
+			if (DEBUG_CONFIG)
+				std::cout << "\e[33m add value:[" << value << "\e[0m\n";
 			ret.second.push_back(value);
 		}
 	}
 	else
 	{
-		if (DEBUG)
+		if (DEBUG_CONFIG)
 			std::cout << "No such Config Key " << key << std::endl;
 	}
 	return (ret);
@@ -224,7 +233,8 @@ std::string	Config::getNextLocationBlock(std::string &rawLocation)
 	if (key.size() == 0 || key.find_first_of(whiteSpaces) != std::string::npos)
 		throw(std::runtime_error("webserv: wrong location block"));
 	rawLocationConf = std::string(rawLocation.begin() + openBracket + 1,rawLocation.end());
-	std::cout << "\e[31m rawLocationConf: [" << rawLocationConf << "]\e[0m\n" ;
+	if (DEBUG_CONFIG)
+		std::cout << "\e[31m rawLocationConf: [" << rawLocationConf << "]\e[0m\n" ;
 	rawLocation = rawLocationConf;
 	return(key);
 }

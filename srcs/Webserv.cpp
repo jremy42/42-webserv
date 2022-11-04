@@ -6,32 +6,33 @@
 Webserv::Webserv()
 {};
 
-Webserv::Webserv(char **av) : _configArray(av)
-{
-	std::string		nextLine;
-	std::ifstream	fs;
-	int				viableConfig = 0;
-	int				i = 0;
+// Webserv::Webserv(char **av) : _configArray(av)
+// {
+// 	std::string		nextLine;
+// 	std::ifstream	fs;
+// 	int				viableConfig = 0;
+// 	int				i = 0;
 
-	++_configArray;
-	while (_configArray[i])
-	{
-		_loadFile(_configArray[i]);
-		i++;
-	}
-	std::cout << "Config list :" << std::endl;
-	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
-	{
-		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
-		viableConfig |= (*it != "");
-	}
-	if (viableConfig == 0)
-		throw NotEnoughValidConfigFilesException();
-	return ;
-}
+// 	++_configArray;
+// 	while (_configArray[i])
+// 	{
+// 		_loadFile(_configArray[i]);
+// 		i++;
+// 	}
+// 	std::cout << "Config list :" << std::endl;
+// 	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+// 	{
+// 		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
+// 		viableConfig |= (*it != "");
+// 	}
+// 	if (viableConfig == 0)
+// 		throw NotEnoughValidConfigFilesException();
+// 	return ;
+// }
 
 Webserv::Webserv(string fileName)
 {
+	//_configArray = NULL;
 
 	int				viableConfig = 0;
 
@@ -63,7 +64,6 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 	this->_serverList = rhs._serverList;
 	this->_rawConfig = rhs._rawConfig;
 	this-> _configList = rhs._configList;
-	this->_configArray = rhs._configArray;
 	return (*this);
 }
 
@@ -145,10 +145,10 @@ int		Webserv::parseRawConfig(void)
 {
 	int									viableConfig = 0;
 	std::vector<std::string>::iterator	it;
-	int									configArrayIndex = 0;
 	std::string							rawServerConf;
+	std::string 						conflictServerName;
 
-	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++,configArrayIndex++)
+	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++)
 	{
 		//rawServerConf = getNextServerBlock(*it);
 		while (!(rawServerConf = getNextServerBlock(*it)).empty())
@@ -159,26 +159,30 @@ int		Webserv::parseRawConfig(void)
 			// fonction wich verify if port or server name are the same.
 			try {
 				Config nextConfig(rawServerConf);
-				viableConfig |= 1;
 				for (v_config::iterator it = _configList.begin(); it != _configList.end() ; it++)
 				{
+					std::cout << "nextConfig port : [" << nextConfig.getListenPort() << "]\n";
+					std::cout << "currentConfig port : [" << it->getListenPort() << "]\n";
+
 					if (nextConfig.getListenPort() == it->getListenPort()
-						&& nextConfig.getServerName() == it->getServerName())
+						&& (conflictServerName = _checkServerName(nextConfig.getServerName(), it->getServerName())) != "")
 					{
 
-						throw(std::runtime_error("same server name on port: " + nextConfig.getListenPortStr()));
+						throw(std::runtime_error("same server name on port:" + nextConfig.getListenPortStr() + " with a server_name: " + conflictServerName + " config block ignored"));
 					}
 				}
 				//Constructeur de config a faire avec la map au lieu des 2 premiers fields!!!!
+				viableConfig |= 1;
+				std::cout << "push bask nextconfig" << std::endl;
 				_configList.push_back(nextConfig);
 			}
 			catch (const std::exception &e) 
 			{
-				 std::cerr << "[" << _configArray[configArrayIndex] << "]" <<e.what() << std::endl;
+				 std::cerr  << e.what() << std::endl;
 			}
+		}
 		if (DEBUG)
 			std::cout << "No more server block. Going to next conf file" << std::endl;
-		}
 	}
 	if (viableConfig == 0)
 		throw NotEnoughValidConfigFilesException();
@@ -215,6 +219,18 @@ int		Webserv::execServerLoop(void)
 		}
 	}
 	return (1);
+}
+
+std::string Webserv::_checkServerName(std::vector<string> nextServerName, std::vector<string> currentServerName)
+{
+	std::vector<string>::iterator ite = nextServerName.end();
+	for (std::vector<string>::iterator it = nextServerName.begin(); it != ite; it++)
+	{
+		std::cout << "Check for server name :" << *it << std::endl;
+		if (find(currentServerName.begin(), currentServerName.end(), *it) != currentServerName.end())
+			return (*it);
+	}
+	return "";
 }
 
 const char	*Webserv::NotEnoughValidConfigFilesException::what(void) const throw ()

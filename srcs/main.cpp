@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/11/04 11:02:53 by jremy            ###   ########.fr       */
+/*   Updated: 2022/11/04 15:59:49 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ int main(int ac, char **av)
 		if (ac == 1)
 			myServ = Webserv("conf/default.config");
 		else
-			myServ = Webserv(av);
+			myServ = Webserv(av[1]);
 		myServ.parseRawConfig();
 		myServ.createServerListFromRawConfig();
 		myServ.execServerLoop();

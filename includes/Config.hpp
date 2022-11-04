@@ -17,7 +17,7 @@
 # include <iterator>
 # include "Location.hpp"
 
-# define DEBUG 1
+# define DEBUG_CONFIG 0
 
 class Location;
 
@@ -44,7 +44,7 @@ class Config
 
 		const string	getListenPortStr(void) const;
 		int	getListenPort(void) const;
-		const string	getServerName(void) const;
+		const std::vector<string>	getServerName(void) const;
 		const char * getRootDir(void) const;
 
 	private:
