@@ -34,25 +34,6 @@ Location	&Location::operator=(const Location &rhs)
 	return (*this);
 }
 
-std::string	normalizeKeyValStr(std::string &keyValStr, const std::string &separatorCharset, const char defaultSeparator)
-{
-	std::size_t	nextSeparatorToReplace;
-	std::size_t	replaceOffset;
-
-	replaceOffset = 0;
-	strtrim(keyValStr, separatorCharset);
-	while (replaceOffset < keyValStr.length()
-			&& (nextSeparatorToReplace = keyValStr.find_first_of(separatorCharset, replaceOffset)) != std::string::npos)
-	{
-		keyValStr.at(nextSeparatorToReplace) = defaultSeparator;
-		replaceOffset = nextSeparatorToReplace + 1;
-		while (replaceOffset < keyValStr.length()
-				&& separatorCharset.find_first_of(keyValStr.at(replaceOffset)) != std::string::npos)
-			keyValStr.erase(replaceOffset, 1);
-	}
-	return (keyValStr);
-}
-
 std::pair<std::string, std::vector<std::string > >	Location::parseLocationLine(std::string &nextLine)
 {
 	std::pair<string, std::vector<string> >		ret;

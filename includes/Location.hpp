@@ -12,9 +12,7 @@
 # include <iostream>
 # include <string>
 # include <sstream>
-# include "Request.hpp"
-# include "Response.hpp"
-# include <iterator>
+# include "_utils.hpp"
 
 # define DEBUG_LOCATION 1
 
@@ -39,7 +37,5 @@ class Location
 		static std::map<string, int>	_configField;
 		static std::map<string, int>	_initConfigField(void);
 };
-
-std::string	normalizeKeyValStr(std::string &keyValStr, const std::string &separatorCharset, const char defaultSeparator);
 
 #endif

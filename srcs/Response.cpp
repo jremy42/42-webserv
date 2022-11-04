@@ -49,7 +49,7 @@ Response &Response::operator=(const Response &rhs)
 
 void Response::_createErrorMessageBody(void)
 {
-	string errorMessage(_itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second);
+	string errorMessage(itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second);
 	_bodyToSend = _errorBodyTemplate;
 	for (int i = 0; i < 2; i++)
 	{
@@ -110,7 +110,7 @@ void Response::_createHeader(void)
 	size_t pos = contentType.find_last_of(".");
 	if (pos != std::string::npos)
 		contentType = string(contentType.begin() + pos + 1, contentType.end());
-	_header = "content-length: " + _itoa(_body.size()) + "\n";
+	_header = "content-length: " + itoa(_body.size()) + "\n";
 	if (contentType == "jpg")
 		_header += "content-type: image/" + contentType + "\n";
 
@@ -140,7 +140,7 @@ int Response::createResponse(void)
 	if(_statusCode > 200)
 		_createErrorMessageBody();
 	_createHeader();
-	_lineStatus = string(_request->getProtocol() + " " + _itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second + "\r\n");
+	_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second + "\r\n");
 	_createFullResponse();
 	//std::cout << _lineStatus;
 	return 0;
@@ -219,12 +219,5 @@ void Response::reset(void)
 {
 	std::cout << "\x1b[31m Clean Response \x1b[0m" << std::endl;
 	//*this = Response(_clientFd);
-}
-
-std::string _itoa(int statusCode)
-{
-	std::stringstream out;
-	out << statusCode;
-	return out.str();
 }
 

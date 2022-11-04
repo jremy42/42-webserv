@@ -58,7 +58,6 @@ class Response
 
 };
  
-std::string _itoa(int statusCode);
 
 #endif
 

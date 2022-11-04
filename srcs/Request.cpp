@@ -225,24 +225,6 @@ std::string &Request::getStateStr(void) const
 	return( _stateStr[_state]);
 }
 
-std::string	&strtrim(std::string &str, const std::string &charset)
-{
-	std::size_t first 					= str.find_first_not_of(charset);
-	std::size_t last 					= str.find_last_not_of(charset);
-	std::string::iterator begin			= str.begin();
-	std::string::iterator end			= str.end();
-
-	if (first == std::string::npos)
-	{
-		str = "";
-		return (str);
-	}
-	begin += first;
-	end -= str.length() - last - 1;
-	str = std::string(begin, end);
-	return (str);
-}
-
 std::string Request::getMethod(void) const
 {
 	return (_requestLine.find("method")->second);

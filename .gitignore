@@ -38,3 +38,6 @@
 *.log
 *test*
 *.txt
+
+# Webserv binary
+webserv

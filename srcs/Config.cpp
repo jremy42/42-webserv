@@ -8,7 +8,7 @@ std::map<std::string, int>	Config::_initConfigField()
 
 	configField.insert(std::pair<std::string, int>("listen", 1));
 	configField.insert(std::pair<std::string, int>("root", 1));
-	configField.insert(std::pair<std::string, int>( "server_name", 0));
+	configField.insert(std::pair<std::string, int>("server_name", 0));
 	return (configField);
 }
 
@@ -44,9 +44,9 @@ Config::Config(std::string rawServerConfig)
 		std::cout << "Atoi value : " << _listenPort << std::endl;
 		// A integrer dans un fx de verif du port !
 	if (_listenPort < 1024)
-		throw(std::runtime_error("webserv: Wrong Port : " + _itoa(_listenPort) + ". Value must be above 1024"));
+		throw(std::runtime_error("webserv: Wrong Port : " + itoa(_listenPort) + ". Value must be above 1024"));
 	if (_listenPort > 65536)
-		throw(std::runtime_error("webserv: Wrong Port : " + _itoa(_listenPort) + ". Value must be below 65536"));
+		throw(std::runtime_error("webserv: Wrong Port : " + itoa(_listenPort) + ". Value must be below 65536"));
 	_rootDirectory = _serverInfoMap["root"][0];
 	// A integrer dans un fx de verif du port !
 	//Fonction de check du path a faire (ou pas ? on aura une 404 ?)
@@ -77,7 +77,7 @@ Config	&Config::operator=(const Config &rhs)
 
 const std::string		Config::getListenPortStr(void) const
 {
-	return (_itoa(_listenPort));
+	return (itoa(_listenPort));
 }
 
 const std::vector<std::string> Config::getServerName(void) const
@@ -239,24 +239,3 @@ std::string	Config::getNextLocationBlock(std::string &rawLocation)
 	return(key);
 }
 
-std::ostream	&operator<<(std::ostream &o, const std::vector<std::string> &vec)
-{
-	for (unsigned long i = 0; i < vec.size(); i++)
-		std::cout << "[" << i << "]->[" << vec[i] << "]";
-	return (o);
-}
-
-std::ostream	&operator<<(std::ostream &o, const std::pair<std::string, std::vector<std::string> > &pair)
-{
-	std::cout << "[" << pair.first << "]";
-	std::cout << pair.second;
-	return (o);
-}
-
-std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::vector<std::string> > &map)
-{
-	std::map<std::string, std::vector<std::string> >::const_iterator	it = map.begin();
-	for (; it != map.end(); it++)
-		std::cout << *it << std::endl;
-	return (o);
-}

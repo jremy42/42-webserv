@@ -13,13 +13,11 @@
 # include <string>
 # include <sstream>
 # include "Request.hpp"
-# include "Response.hpp"
-# include <iterator>
+# include "_utils.hpp"
 # include "Location.hpp"
 
 # define DEBUG_CONFIG 0
 
-class Location;
 
 class Config
 {
@@ -57,8 +55,5 @@ class Config
 		static std::map<string, int> _initConfigField(void);
 };
 
-std::ostream	&operator<<(std::ostream &o, const std::vector<std::string> &vec);
-std::ostream	&operator<<(std::ostream &o, const std::pair<std::string, std::vector<std::string> > &pair);
-std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::vector<std::string> > &map);
 
 #endif
