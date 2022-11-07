@@ -202,10 +202,6 @@ std::string	Config::_getNextLocationBlock(std::string &rawLocation)
 }
 
 
-m_s_vs &Config::getServerInfoMap(void) const
-{
-	
-}
 
 std::ostream	&operator<<(std::ostream &o, const Config config)
 {

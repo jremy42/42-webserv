@@ -47,7 +47,7 @@ Server::~Server(){
 Server::Server(const Server & src)
 {
 	if (this != &src)
-	{_evLst
+	{
 		*this = src;
 	}
 };

@@ -27,6 +27,7 @@ class Location
 		Location(string rawLocation);
 		~Location(void);
 		Location &operator=(const Location &rhs);
+		const m_s_vs	&getLocationInfoMap(void) const;
 
 	private:
 		m_s_vs	_locationInfoMap;
@@ -37,5 +38,7 @@ class Location
 		static std::map<string, int>	_configField;
 		static std::map<string, int>	_initConfigField(void);
 };
+
+std::ostream	&operator<<(std::ostream &o, const Location &Location);
 
 #endif
