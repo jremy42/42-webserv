@@ -20,8 +20,11 @@ enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};
 class Client
 {
 	public:
+		typedef std::vector<Config> v_config;
+
+	public:
 		Client();
-		Client(int clientFd, Config *config);
+		Client(int clientFd, v_config *config);
 		Client(const Client &src);
 		Client &operator=(const Client &rhs);
 		~Client(void);
@@ -40,7 +43,7 @@ class Client
 		int			_state;
 		int			_availableActions;
 		static std::string	_stateStr[4];
-		Config		*_config;
+		v_config			* _configList;
 		
 };
 

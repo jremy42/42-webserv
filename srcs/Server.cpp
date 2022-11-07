@@ -16,12 +16,15 @@ Server::Server(int port, v_config configList)
 		std::cerr << e.what() << std::endl;
 		throw(std::runtime_error("Server creation failure"));
 	}
+	std::cout << "______________________CREATING SERVER________________________________\n";
 	std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
 	std::cout << "Create server listen port :" << itoa(port) << std::endl;
 	std::cout << "------------configList------------------"<< std::endl;
 	v_config::iterator ite = configList.end();
 	for (v_config::iterator it = configList.begin(); it != ite; it++)
 		std::cout << *it << std::endl;
+	std::cout << "___________________________________________________________________\n";
+
 };
 
 

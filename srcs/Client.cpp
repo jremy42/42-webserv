@@ -8,15 +8,15 @@ Client::Client()
 	_request = NULL;
 	_response = NULL;
 	_state = S_INIT;
-	_config = NULL;
+	_configList = NULL;
 }
 
-Client::Client(int clientFd, Config* config)
+Client::Client(int clientFd, v_config* config)
 {
 	_clientFd = clientFd;
 	_request = NULL;
 	_response = NULL;\
-	_config = config;
+	_configList = config;
 	std::cout << "create client with fd :" << _clientFd << std::endl;
 	_state = S_INIT;
 }
@@ -40,7 +40,7 @@ Client &Client::operator=(const Client &src)
 		_availableActions = src._availableActions;
 		_request = src._request;
 		_response = src._response;
-		_config = src._config;
+		_configList = src._configList;
 
 	}
 	return *this;
@@ -76,8 +76,8 @@ int Client::executeAction()
 		actionReturnValue = _request->readClientRequest();
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR)
 		{
-			std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";
-			_response = new Response(_clientFd, _request,_config); // passer la bonne config
+			//std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";
+			_response = new Response(_clientFd, _request,_configList); // passer la bonne config
 			_state = S_RESWRITE;
 			_response->createResponse();
 		}

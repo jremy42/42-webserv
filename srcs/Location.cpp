@@ -68,3 +68,17 @@ void	Location::_createLocationInfoMap(std::string &rawServerConf)
 			_locationInfoMap[locationLine.first] = locationLine.second;
 	}
 }
+const Location::m_s_vs	&Location::getLocationInfoMap(void) const
+{
+	const m_s_vs	&LocRef = this->_locationInfoMap;
+	return (LocRef);
+
+}
+
+std::ostream	&operator<<(std::ostream &o, const Location &Location)
+{
+	std::cout << "-------------------Location Printer Start-------------------" << std::endl;
+	std::cout << Location.getLocationInfoMap();
+	std::cout << "--------------------Location Printer End--------------------" << std::endl;
+	return (o);
+}

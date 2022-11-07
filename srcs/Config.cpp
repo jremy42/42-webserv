@@ -202,15 +202,27 @@ std::string	Config::_getNextLocationBlock(std::string &rawLocation)
 }
 
 
-Config::m_s_vs Config::getServerInfoMap(void) const
+const Config::m_s_vs &Config::getServerInfoMap(void) const
 {
-	return(_serverInfoMap);
+	const m_s_vs &ret = _serverInfoMap;
+	return(ret);
 }
 
+const Config::m_s_l		&Config::getLocation(void) const
+{
+	const m_s_l &ret = _location;
+	return(ret);
+}
 std::ostream	&operator<<(std::ostream &o, const Config config)
 {
-	Config::m_s_vs const serverInfoMap = config.getServerInfoMap();
+	Config::m_s_vs const &serverInfoMap = config.getServerInfoMap();
+	Config::m_s_l const &location = config.getLocation();
+
 	std::cout << serverInfoMap << std::endl;
+	Config::m_s_l::const_iterator ite = location.end();
+
+	for (Config::m_s_l::const_iterator it = location.begin(); it != ite; it++)
+		std::cout << "key: [" << (*it).first << "]\n" << (*it).second << std::endl;
 		 
 	return (o);
 }
