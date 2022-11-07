@@ -6,7 +6,8 @@ std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept
 
 std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
-std::string	Request::_stateStr[5] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m"};
+std::string	Request::_stateStr[6] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m",
+"\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
 
 Request::Request(void)
 {
@@ -142,7 +143,8 @@ void Request::_handleRequestLine(void)
 	v_c_it ite = _rawRequest.end();
 	v_c_it it = _rawRequest.begin();
 
-	std::cout << "Handle Request Line" << std::endl;
+	if (DEBUG_REQUEST)
+		std::cout << "Handle Request Line" << std::endl;
 	for (; it != ite; it++)
 	{
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
@@ -164,7 +166,8 @@ void Request::_handleHeader(void)
 	v_c_it ite = _rawRequest.end();
 	v_c_it it = _rawRequest.begin();
 
-	std::cout << "Handle header" << std::endl;
+	if (DEBUG_REQUEST)
+		std::cout << "Handle header" << std::endl;
 	for (; it != ite; it++)
 	{
 		//std::cout << static_cast<int>(*it) << ":[" << *it << "]" << std::endl;
@@ -193,14 +196,18 @@ int Request::readClientRequest(void)
 	//char		*next_nl;
 	//char		*headerStart;
 
-	std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
+	if (DEBUG_REQUEST)
+		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
 	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
-	std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd <<
-	"]\x1b[0m" << std::endl << buf << std::endl
+	if (DEBUG_REQUEST)
+	{
+		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
+			<< "]\x1b[0m" << std::endl << buf << std::endl
 			<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+	}
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
 	if (_state == R_REQUESTLINE)
@@ -211,7 +218,9 @@ int Request::readClientRequest(void)
 		_state = R_END;
 	if (read_ret == 0)
 		_state = R_ZERO_READ;
-	std::cout << "Request State at end of readClientRequest :" <<  getStateStr() << std::endl;
+	if (DEBUG_REQUEST)
+		std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
+	<< "]" << std::endl;
 	return (_state);
 }
 
@@ -244,6 +253,11 @@ std::string Request::getProtocol(void) const
 int	Request::getStatusCode(void) const
 {
 	return _statusCode;
+}
+
+std::string	Request::getHost(void) const
+{
+	return (_header.find("Host")->second);
 }
 
 void Request::reset(void)

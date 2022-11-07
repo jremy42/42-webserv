@@ -87,7 +87,7 @@ int Server::acceptNewClient(void)
 	if (clientFd > 0)
 	{
 		_clientAddressPrint((struct sockaddr *)& claddr);
-		Client *newClient = new Client(clientFd, &_config);
+		Client *newClient = new Client(clientFd, &_configList);
 		_clientList.push_back(newClient);
 		_evLst.trackNewClient(clientFd, EPOLLIN | EPOLLOUT);
 		return 1;

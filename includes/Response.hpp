@@ -47,6 +47,7 @@ class Response
 		string							_bodyToSend; // tmp
 		const Request *					_request;
 		Config *						_config;
+
 		static std::map<int, string>	_errorMessage;
 		static string					_errorBodyTemplate;
 		static m_is 					_initErrorMessage(void);

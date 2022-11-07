@@ -17,6 +17,8 @@
 # define HEADER_FIELD 3
 # define REQUEST_LINE_FIELD 3
 
+# define DEBUG_REQUEST 0
+
 
 enum {R_REQUESTLINE, R_HEADER, R_BODY, R_END, R_ERROR, R_ZERO_READ};
 
@@ -43,6 +45,7 @@ class Request
 		string		getTarget(void) const;
 		int			getStatusCode(void) const;
 		void 		reset(void);
+		string		getHost(void) const;
 
 	private:
 
@@ -57,7 +60,7 @@ class Request
 		static string	_requestLineField[3];
 		static string	_headerField[3];
 		static string	_validRequest[3];
-		static string	_stateStr[5];
+		static string	_stateStr[6];
 
 		void	_handleRequestLine(void);
 		void	_handleHeader(void);

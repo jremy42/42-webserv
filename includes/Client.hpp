@@ -34,6 +34,7 @@ class Client
 		int		getClientFd(void) const;
 		int			getState(void) const;
 		std::string		&getStateStr(void) const;
+		Config		*getMatchingConfig(void) const;
 
 	private:
 
@@ -44,7 +45,6 @@ class Client
 		int			_availableActions;
 		static std::string	_stateStr[4];
 		v_config			* _configList;
-		
 };
 
 #endif

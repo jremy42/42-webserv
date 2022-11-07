@@ -23,7 +23,10 @@ Response::Response(int clientFd, Request *request, Config *config)
 	_request = request;
 	_config = config;
 	_statusCode = _request->getStatusCode();
-	std::cout << "\e[31m create response with request with target " << request->getTarget() << "\e[0m\n";
+	std::cout << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
+	std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
+	std::cout << *_config;
+	std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
 }
 
 Response::Response(const Response &src)
@@ -37,11 +40,15 @@ Response::~Response(void)
 
 Response &Response::operator=(const Response &rhs)
 {
-	_clientFd = rhs._clientFd;
 	_responseReady = rhs._responseReady;
+	_clientFd = rhs._clientFd;
 	_statusCode = rhs._statusCode;
+	_lineStatus = rhs._lineStatus;
 	_header = rhs._header;
 	_body = rhs._body;
+	_fullResponse = rhs._fullResponse;
+	_bodyToSend = rhs._bodyToSend;
+	_request = rhs._request;
 	_config = rhs._config;
 
 	return (*this);
@@ -195,7 +202,7 @@ int Response::writeClientResponse(void)
 	v_c::iterator ite = _fullResponse.end();
 	for (v_c::iterator it = _fullResponse.begin(); i < buff_size && it != ite; i++, it++)
 		buff[i] = *it;
-	std::cout << "About to write on fd [" << _clientFd << "]" << std::endl;
+	std::cout << "buff_size [" << buff_size << "]" << "About to write on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, 0);
 	if (ret == -1)
 		std::cerr << "Error in writeClientResponse" << std::endl;
@@ -209,7 +216,7 @@ int Response::writeClientResponse(void)
 		_fullResponse.erase(_fullResponse.begin(), _fullResponse.begin() + ret);
 		std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullResponse.size() << "]" <<std::endl;
 	}
-	delete buff;
+	delete [] buff;
 	if (_fullResponse.empty())
 		return (0);
 	return 1;

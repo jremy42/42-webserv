@@ -51,6 +51,28 @@ void	Client::setAvailableActions(int epollFlags)
 	_availableActions = epollFlags;
 }
 
+Config		*Client::getMatchingConfig(void) const
+{
+	v_config::iterator							it = _configList->begin(); 
+	v_config::iterator							ite = _configList->end(); 
+	std::vector<std::string>::const_iterator	match;
+	std::vector<std::string>					currentCheckedConfig;
+	
+	std::cout << "_request->getHost() : [" << _request->getHost() << "]" << std::endl;
+	for (; it != ite; it++)
+	{
+		currentCheckedConfig = it->getServerName();
+		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), _request->getHost());
+		if (match != currentCheckedConfig.end())
+		{
+			std::cout << "found a match for requested host/server_name" << std::endl;
+			std::cout << "Matched [" << *match << "]" << std::endl;
+			return (&(*it));
+		}
+	}
+	std::cout << "No host matching in config : Defaulting to first host/server_name" << std::endl;
+	return (&_configList->begin()[0]);
+}
 int Client::executeAction()
 {
 	int	actionReturnValue;
@@ -77,7 +99,7 @@ int Client::executeAction()
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR)
 		{
 			//std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";
-			_response = new Response(_clientFd, _request,_configList); // passer la bonne config
+			_response = new Response(_clientFd, _request, getMatchingConfig()); // passer la bonne config
 			_state = S_RESWRITE;
 			_response->createResponse();
 		}
@@ -91,13 +113,18 @@ int Client::executeAction()
 			_state = S_OVER;
 		actionMade++;
 	}
-	if(_state == S_OVER || _state == S_CLOSE_FD)
+	if(_state == S_OVER)
 	{
 		delete _request;
 		delete _response;
 		_state = S_INIT;
 	}
-	std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
+	else if(_state == S_CLOSE_FD)
+	{
+		delete _request;
+		_state = S_INIT;
+	}
+	//std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
 	return (actionMade);
 }
 
