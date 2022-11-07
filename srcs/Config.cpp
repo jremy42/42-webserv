@@ -89,6 +89,25 @@ const char* Config::getRootDir(void) const
 	return (_rootDirectory.c_str());
 }
 
+const std::vector<std::string> Config::getParamByLocation(string &requestTarget, string key) const
+{
+	std::vector<string> 				ret;
+	m_s_vs::const_iterator				tryfind;
+	m_s_l::const_iterator 				it = _location.begin();
+	m_s_l::const_iterator 				ite = _location.end();
+	ret = _serverInfoMap.find(key)->second;
+	for(;it != ite; it++)
+	{
+		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
+		{
+			tryfind = it->second.getLocationInfoMap().find(key);
+			if (tryfind != it->second.getLocationInfoMap().end())
+				ret = tryfind->second;
+		}
+	}
+	return ret;
+}
+
 char	Config::_getNextBlockDelim(std::string str, int pos) const
 {
 	char			nextBlockDelim = '0';

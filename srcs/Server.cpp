@@ -19,10 +19,16 @@ Server::Server(int port, v_config configList)
 	std::cout << "______________________CREATING SERVER________________________________\n";
 	std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
 	std::cout << "Create server listen port :" << itoa(port) << std::endl;
-	std::cout << "------------configList------------------"<< std::endl;
 	v_config::iterator ite = configList.end();
+	int i = 0;
 	for (v_config::iterator it = configList.begin(); it != ite; it++)
+	{
+		std::cout << "------------configList " << i << "------------------"<< std::endl;
 		std::cout << *it << std::endl;
+		std::cout << "---------------------------------------------------- " << std::endl;
+
+		i++;
+	}
 	std::cout << "___________________________________________________________________\n";
 
 };

@@ -46,6 +46,7 @@ class Config
 		int	getListenPort(void) const;
 		const std::vector<string>	getServerName(void) const;
 		const char * getRootDir(void) const;
+		const std::vector<string> getParamByLocation(string &requestTarget, string field) const;
 		const m_s_vs		&getServerInfoMap(void) const;
 		const m_s_l		&getLocation(void) const;
 		

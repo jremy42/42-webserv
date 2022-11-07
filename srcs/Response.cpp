@@ -85,8 +85,8 @@ void Response::_createBody(void)
 
 	if (target.at(target.length() - 1) == '/')
 		target = target + "index.html";
-	std::cout << "getrootDir:[" << _config->getRootDir() << "]\n";
-	std::string fileName(_config->getRootDir() + target);
+	std::cout << "getrootDir:[" << _config->getParamByLocation(target, "root").at(0) << "]\n";
+	std::string fileName(_config->getParamByLocation(target, "root").at(0) + target);
 	std::cout << "fileName: " << fileName << std::endl;
 	fs.open( fileName.c_str(), std::ifstream::in | std::ifstream::binary);
 
