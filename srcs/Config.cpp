@@ -202,16 +202,16 @@ std::string	Config::_getNextLocationBlock(std::string &rawLocation)
 }
 
 
-m_s_vs &Config::getServerInfoMap(void) const
+Config::m_s_vs Config::getServerInfoMap(void) const
 {
-	
+	return(_serverInfoMap);
 }
 
 std::ostream	&operator<<(std::ostream &o, const Config config)
 {
-	std::cout << "listen port:[" << config.getListenPort() << "]" << std::endl;
-	std::cout << "root:[" << config.getRootDir() << "]" << std::endl;
-	 
+	Config::m_s_vs const serverInfoMap = config.getServerInfoMap();
+	std::cout << serverInfoMap << std::endl;
+		 
 	return (o);
 }
 
