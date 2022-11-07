@@ -37,6 +37,8 @@ std::string	normalizeKeyValStr(std::string &keyValStr, const std::string &separa
 	return (keyValStr);
 }
 
+
+
 std::ostream	&operator<<(std::ostream &o, const std::vector<std::string> &vec)
 {
 	for (unsigned long i = 0; i < vec.size(); i++)

@@ -46,6 +46,8 @@ class Config
 		int	getListenPort(void) const;
 		const std::vector<string>	getServerName(void) const;
 		const char * getRootDir(void) const;
+		m_s_vs		&getServerInfoMap(void) const;
+
 
 	private:
 		void		_initServerInfoMap(void);
@@ -59,5 +61,6 @@ class Config
 		static std::map<string, int>	_initConfigField(void);
 };
 
+std::ostream	&operator<<(std::ostream &o, const Config config);
 
 #endif

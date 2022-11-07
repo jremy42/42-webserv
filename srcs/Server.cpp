@@ -1,61 +1,25 @@
 #include "Server.hpp"
 
-void 				Server::_createPassiveSocket(const char *service)
-{
-	struct addrinfo hints;
-	struct addrinfo *result;
-	struct addrinfo *result_it;
-	int optval;
-	int g_error;
 
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
-	hints.ai_family =AF_INET;
-	hints.ai_flags = AI_PASSIVE;
-	hints.ai_socktype = SOCK_STREAM;
-	if ((g_error = getaddrinfo(NULL, service, &hints, &result )) != 0)
-		throw(std::runtime_error(gai_strerror(g_error)));
-	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
+
+Server::Server(int port, v_config configList)
+{
+	_configList = configList;
+	_backlog = 1000;
+	try 
 	{
-		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
-		if (_serverFd == -1)
-			continue;
-		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
-		{
-				close(_serverFd);
-				freeaddrinfo(result);
+		_createPassiveSocket(itoa(port).c_str());
+		if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
 				throw(std::runtime_error(strerror(errno)));
-
-		}
-		if (bind(_serverFd, result_it->ai_addr, result_it->ai_addrlen) == 0)
-			break;
-		close(_serverFd);
-	}
-	if (!result_it)
-		throw(std::runtime_error("enable to create and bind listening socket"));
-	if (listen(_serverFd, _backlog) == -1)
+	} catch (const std::exception &e)
 	{
-		close(_serverFd);
-		freeaddrinfo(result);
-		throw(std::runtime_error(strerror(errno)));
+		std::cerr << e.what() << std::endl;
+		throw(std::runtime_error("Server creation failure"));
 	}
-	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
-	freeaddrinfo(result);
-}
+	std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
+	std::cout << "Create server listen port :" << itoa(port) << std::endl;
+};
 
-void Server::_clientAddressPrint(struct sockaddr *cliAddr)
-{
-	char host[NI_MAXHOST];
-	char service[NI_MAXSERV];
-	int r = getnameinfo( cliAddr, sizeof(_listenSockaddr), host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV); 
-	
-	if (r == 0)
- 		printf("(Host:[%s], service[%s])\n", host, service);
-	else
-		printf("getnameinfo failure :[%s]", gai_strerror(r));
-}
 
 Server::Server(const Config &config_source)
 {
@@ -83,7 +47,7 @@ Server::~Server(){
 Server::Server(const Server & src)
 {
 	if (this != &src)
-	{
+	{_evLst
 		*this = src;
 	}
 };
@@ -93,6 +57,7 @@ Server &Server::operator=(const Server &src)
 	if (this != &src)
 	{
 		_config = src._config;
+		_configList = src._configList;
         _evLst = src._evLst;
         _clientList = src._clientList;
 	}
@@ -154,4 +119,61 @@ int Server::execClientList(void) // mode naif activate
 		}
 	}
 	return 1;
+}
+
+void 				Server::_createPassiveSocket(const char *service)
+{
+	struct addrinfo hints;
+	struct addrinfo *result;
+	struct addrinfo *result_it;
+	int optval;
+	int g_error;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
+	hints.ai_family =AF_INET;
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_socktype = SOCK_STREAM;
+	if ((g_error = getaddrinfo(NULL, service, &hints, &result )) != 0)
+		throw(std::runtime_error(gai_strerror(g_error)));
+	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
+	{
+		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
+		if (_serverFd == -1)
+			continue;
+		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
+		{
+				close(_serverFd);
+				freeaddrinfo(result);
+				throw(std::runtime_error(strerror(errno)));
+
+		}
+		if (bind(_serverFd, result_it->ai_addr, result_it->ai_addrlen) == 0)
+			break;
+		close(_serverFd);
+	}
+	if (!result_it)
+		throw(std::runtime_error("enable to create and bind listening socket"));
+	if (listen(_serverFd, _backlog) == -1)
+	{
+		close(_serverFd);
+		freeaddrinfo(result);
+		throw(std::runtime_error(strerror(errno)));
+	}
+	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
+	freeaddrinfo(result);
+}
+
+void Server::_clientAddressPrint(struct sockaddr *cliAddr)
+{
+	char host[NI_MAXHOST];
+	char service[NI_MAXSERV];
+	int r = getnameinfo( cliAddr, sizeof(_listenSockaddr), host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV); 
+	
+	if (r == 0)
+ 		printf("(Host:[%s], service[%s])\n", host, service);
+	else
+		printf("getnameinfo failure :[%s]", gai_strerror(r));
 }

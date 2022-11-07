@@ -201,3 +201,17 @@ std::string	Config::_getNextLocationBlock(std::string &rawLocation)
 	return(key);
 }
 
+
+m_s_vs &Config::getServerInfoMap(void) const
+{
+	
+}
+
+std::ostream	&operator<<(std::ostream &o, const Config config)
+{
+	std::cout << "listen port:[" << config.getListenPort() << "]" << std::endl;
+	std::cout << "root:[" << config.getRootDir() << "]" << std::endl;
+	 
+	return (o);
+}
+

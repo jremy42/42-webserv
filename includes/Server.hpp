@@ -25,12 +25,15 @@ class Config;
 
 class Server
 {
-	typedef std::vector<Client*>	v_client;
-	typedef v_client::iterator	v_iterator;
-	typedef std::string			string;
+	public:
+		typedef std::vector<Client*>	v_client;
+		typedef v_client::iterator	v_iterator;
+		typedef std::string			string;
+		typedef std::vector<Config> v_config;
 
 	public:
 		Server(const Config &config_source);
+		Server(int port, v_config configList);
 		Server(const Server &src);
 		~Server(void);
 		Server &operator=(const Server &rhs);
@@ -40,12 +43,15 @@ class Server
 		// Boucler sur les 2 actions precedentes (fait dans la classe  webserv)
 
 	private:
-		Config			_config;
+		Config			_config; // switch to v_config;
+		v_config		_configList;
 		EventListener	_evLst;
 		v_client		_clientList;
 		int				_serverFd;
 		struct sockaddr_in	_listenSockaddr;
 		int					_backlog;
+
+	private:
 		void 				_createPassiveSocket(const char *service);
 		void 				_clientAddressPrint(struct sockaddr *cliAddr);
 

@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/11/04 16:46:07 by fle-blay         ###   ########.fr       */
+/*   Updated: 2022/11/07 11:22:49 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,8 @@ int main(int ac, char **av)
 		else
 			myServ = Webserv(av[1]);
 		myServ.parseRawConfig();
-		myServ.createServerListFromRawConfig();
+		//myServ.createServerListFromRawConfig();
+		myServ.createServerListByPortConfig();
 		myServ.execServerLoop();
 	}
 	catch (const std::exception &e)
