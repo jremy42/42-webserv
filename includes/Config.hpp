@@ -60,8 +60,8 @@ class Config
 		char		_getNextBlockDelim(std::string str, int pos) const;
 		string		_getNextLocationBlock(std::string &rawLocation);
 
-		static std::map<string, int>	_configField;
-		static std::map<string, int>	_initConfigField(void);
+		static std::map<string, string[3]> 	_configField;
+		static std::map<string, string[3]>	_initConfigField(void);
 };
 
 std::ostream	&operator<<(std::ostream &o, const Config config);

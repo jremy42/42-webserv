@@ -1,12 +1,14 @@
 #include "Config.hpp"
 
-std::map<std::string, int>	Config::_configField = _initConfigField();
+std::map<std::string, std::string[3]>	Config::_configField = _initConfigField();
 
-std::map<std::string, int>	Config::_initConfigField()
+std::map<std::string, std::string[3]>	Config::_initConfigField()
 {
-	std::map<string, int> configField;
+	std::map<string, std::string[3]> configField;
 
-	configField.insert(std::pair<std::string, int>("listen", MANDATORY_ONE));
+	std::string val[3] = {"default" ,"max" ,"min"};
+	configField.insert(std::pair<std::string, std::string[3]>("listen", val));
+	configField.find("listen")->second = val;
 	configField.insert(std::pair<std::string, int>("root", MANDATORY_ONE));
 	configField.insert(std::pair<std::string, int>("server_name", OPTIONAL_MULTI));
 	return (configField);
