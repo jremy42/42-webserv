@@ -1,16 +1,21 @@
 #include "Config.hpp"
 
-std::map<std::string, std::string[3]>	Config::_configField = _initConfigField();
+std::map<std::string, std::pair<int, int> >	Config::_configField = _initConfigField();
 
-std::map<std::string, std::string[3]>	Config::_initConfigField()
+std::map<std::string, std::pair<int, int> > Config::_initConfigField()
 {
-	std::map<string, std::string[3]> configField;
+	std::map<string, std::pair<int, int> > configField;
 
-	std::string val[3] = {"default" ,"max" ,"min"};
-	configField.insert(std::pair<std::string, std::string[3]>("listen", val));
-	configField.find("listen")->second = val;
-	configField.insert(std::pair<std::string, int>("root", MANDATORY_ONE));
-	configField.insert(std::pair<std::string, int>("server_name", OPTIONAL_MULTI));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("root", std::pair<int, int>(1,1)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("allowed_method", std::pair<int, int>(0,0)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("client_max_body_size", std::pair<int, int>(1,1)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("autoindex", std::pair<int, int>(0,0)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("index", std::pair<int, int>(0, 0)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("upload", std::pair<int, int>(0,0)));
+	
+	configField.insert(std::pair<std::string, std::pair<int, int> >("listen", std::pair<int, int>(1,1)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("server_name", std::pair<int, int>(1,__INT_MAX__)));
+	
 	return (configField);
 }
 
@@ -126,8 +131,14 @@ char	Config::_getNextBlockDelim(std::string str, int pos) const
 
 void	Config::_initServerInfoMap(void)
 {
-	for (std::map<std::string, int>::iterator it = _configField.begin(); it != _configField.end(); it++)
+	for (std::map<std::string, std::pair<int, int> >::iterator it = _configField.begin(); it != _configField.end(); it++)
 		_serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
+	_serverInfoMap.find("listen")->second.push_back("80");
+	_serverInfoMap.find("root")->second.push_back("./www");
+	_serverInfoMap.find("client_max_body_size")->second.push_back("8m");
+	_serverInfoMap.find("allowed_method")->second.push_back("GET");
+	_serverInfoMap.find("autoindex")->second.push_back("off");
+	_serverInfoMap.find("index")->second.push_back("index.html");
 }
 
 
@@ -179,20 +190,31 @@ std::pair<std::string, std::vector<std::string > >	Config::_parseConfigBlock(std
 	string										value;
 
 	getline(iss, key, ' ');
-	if (_configField.find(key) != _configField.end())
+	if (_configField.find(key) != _configField.end() )
 	{
+		if (_configField.find(key)->second.first == 0)
+			throw(std::runtime_error("Webserv: Config: only configurable in location [" + key + "]"));
 		if (DEBUG_CONFIG)
-			std::cout << "Found a valid Field : [" << key << "]" << std::endl;
+			std::cout << "Config: Found a valid Field : [" << key << "]" << std::endl;
 		ret.first = key;
 		while (getline(iss, value, ' '))
 		{
 			if (DEBUG_CONFIG)
-				std::cout << "Added value: [" << value << "]" << std::endl;
+				std::cout << "Config: Added value: [" << value << "]" << std::endl;
 			ret.second.push_back(value);
 		}
+		if (ret.second.size() < (size_t)_configField.find(key)->second.first
+		|| ret.second.size() > (size_t)_configField.find(key)->second.second)
+		{
+			if (DEBUG_CONFIG)
+				std::cout << "Config: Wrong number of config field values : [" << key << "]" << std::endl;
+			throw(std::runtime_error("Webserv: Config: Wrong number of config field values : [" + key + "]"));
+
+		}
 	}
-	else if (DEBUG_CONFIG)
-			std::cout << "No such Config Key: [" << key << "]" << std::endl;
+	else if(!key.empty())
+		throw(std::runtime_error("Webserv: Config: not handled in webserver [" + key + "]"));
+	
 	return (ret);
 }
 

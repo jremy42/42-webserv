@@ -14,6 +14,7 @@ Response::m_is Response::_initErrorMessage()
 }
 
 std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>";
+std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>";
 
 Response::Response(){};
 
@@ -27,6 +28,8 @@ Response::Response(int clientFd, Request *request, Config *config)
 	std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
 	std::cout << *_config;
 	std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
+	//_createAutoIndex();
+	//exit(0);
 }
 
 Response::Response(const Response &src)
@@ -228,3 +231,63 @@ void Response::reset(void)
 	//*this = Response(_clientFd);
 }
 
+
+int Response::_createAutoIndex(void)
+{
+	char path[MAX_PATH] = "./";
+	struct dirent	*curr_dir;
+	DIR				*dp;
+	std::map<string, unsigned int> dir;
+	std::vector<string> insertLigne;
+	string				finalBody;
+
+	finalBody = _autoIndexBodyTemplate;
+	for (int i = 0; i < 2; i++)
+	{
+		size_t pos = finalBody.find("/title_placeholder");
+		finalBody.erase(pos, strlen("/title_placeholder"));
+		finalBody.insert(pos, path);
+	}
+	if (!getcwd(path, PATH_MAX))
+		return (1);
+	dp = opendir(path);
+	if (!dp)
+		return (1);
+	curr_dir = readdir(dp);
+	while(curr_dir)
+	{
+		string toInsert = curr_dir->d_name;
+		if (curr_dir->d_type == DT_DIR)
+			toInsert += "/";
+		dir.insert(std::pair<string, unsigned int> (toInsert, curr_dir->d_type));
+		curr_dir = readdir(dp);
+	}
+
+	for (std::map<string, unsigned int>::reverse_iterator it = dir.rbegin(); it != dir.rend(); it++)
+	{
+		if (it->second != DT_DIR)
+		{
+			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << std::endl;
+			size_t pos = finalBody.find("<pre>\n");
+			pos += string("<pre>\n").size();
+			finalBody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n");
+		}
+	}
+	for (std::map<string, unsigned int>::reverse_iterator it = dir.rbegin(); it != dir.rend(); it++)
+	{
+		if (it->second == DT_DIR)
+		{
+			struct stat buf;
+     		stat(path, &buf);
+			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << std::endl;
+			size_t pos = finalBody.find("<pre>\n");
+			pos += string("<pre>\n").size();
+			finalBody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n \t");
+		}
+	}
+
+	std::cout << finalBody << std::endl;
+	if (closedir(dp) < 0)
+		return (0);
+	return (1);
+}

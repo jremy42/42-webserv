@@ -14,7 +14,14 @@
 # include <fstream>
 # include <algorithm>
 # include "Config.hpp"
+# include <dirent.h>
+# include <linux/limits.h>
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <time.h>       /* time_t, struct tm, time, localtime, strftime */
 
+
+# define MAX_PATH 4092
 class Config;
 
 class Response
@@ -50,12 +57,14 @@ class Response
 
 		static std::map<int, string>	_errorMessage;
 		static string					_errorBodyTemplate;
+		static string					_autoIndexBodyTemplate;
+
 		static m_is 					_initErrorMessage(void);
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);
 		void							_createHeader(void);
 		void							_createFullResponse(void);
-
+		int								_createAutoIndex(void);
 
 };
  

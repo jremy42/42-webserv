@@ -28,6 +28,7 @@ class Config
 		typedef std::map<string, std::vector<string> >	m_s_vs;
 		typedef std::pair<string, std::vector<string> >	p_s_vs;
 		typedef std::map<string, Location>				m_s_l;
+		typedef std::pair<int, int>						p_ii;
 // var
 	private:
 		int		_listenPort;
@@ -60,8 +61,8 @@ class Config
 		char		_getNextBlockDelim(std::string str, int pos) const;
 		string		_getNextLocationBlock(std::string &rawLocation);
 
-		static std::map<string, string[3]> 	_configField;
-		static std::map<string, string[3]>	_initConfigField(void);
+		static std::map<std::string, std::pair<int, int> >	_configField;
+		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);
 };
 
 std::ostream	&operator<<(std::ostream &o, const Config config);

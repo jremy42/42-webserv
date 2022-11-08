@@ -1,12 +1,22 @@
 # include "Location.hpp"
 
-std::map<std::string, int>	Location::_configField = _initConfigField();
+std::map<std::string, std::pair<int, int> >	Location::_configField = _initConfigField();
 
-std::map<std::string, int>	Location::_initConfigField()
+std::map<std::string, std::pair<int, int> > Location::_initConfigField()
 {
-	std::map<string, int> configField;
+	std::map<string, std::pair<int, int> > configField;
 
-	configField.insert(std::pair<std::string, int>("root", 0));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("root", std::pair<int, int>(1,1)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("allowed_method", std::pair<int, int>(1,3)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("client_max_body_size", std::pair<int, int>(1,1)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("autoindex", std::pair<int, int>(1,1)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("index", std::pair<int, int>(1,__INT_MAX__)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("upload", std::pair<int, int>(1,1)));
+
+	configField.insert(std::pair<std::string, std::pair<int, int> >("cgi", std::pair<int, int>(2,2)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("rewrite", std::pair<int, int>(2,2)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("error_page", std::pair<int, int>(2,2)));
+
 	return (configField);
 }
 
@@ -42,12 +52,28 @@ std::pair<std::string, std::vector<std::string > >	Location::parseLocationLine(s
 	string										value;
 
 	getline(iss, key, ' ');
-	if (_configField.find(key) != _configField.end())
+	if (_configField.find(key) != _configField.end() )
 	{
+		if (DEBUG_LOCATION)
+			std::cout << "Location : Found a valid Field : [" << key << "]" << std::endl;
 		ret.first = key;
 		while (getline(iss, value, ' '))
+		{
+			if (DEBUG_LOCATION)
+				std::cout << "Location Added value: [" << value << "]" << std::endl;
 			ret.second.push_back(value);
+		}
+		if (ret.second.size() < (size_t)_configField.find(key)->second.first
+		|| ret.second.size() > (size_t)_configField.find(key)->second.second)
+		{
+			if (DEBUG_LOCATION)
+				std::cout << " Location : Wrong number of config field values : [" << key << "]" << std::endl;
+			throw(std::runtime_error("Webserv: Config: Location: Wrong number of config field values : [" + key + "]"));
+
+		}
 	}
+	else if(!key.empty())
+		throw(std::runtime_error("Webserv: Config: Location: not handled in webserver [" + key + "]"));
 	return (ret);
 }
 
@@ -58,7 +84,7 @@ void	Location::_createLocationInfoMap(std::string &rawServerConf)
 	std::pair<string, std::vector<string> >			locationLine;
 
 
-	for (std::map<std::string, int>::iterator it = _configField.begin(); it != _configField.end(); it++)
+	for (std::map<std::string, std::pair<int, int> >::iterator it = _configField.begin(); it != _configField.end(); it++)
 		_locationInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
 	while (getline(istr, nextLine, ';'))
 	{

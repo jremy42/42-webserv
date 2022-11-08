@@ -179,6 +179,52 @@ void 				Server::_createPassiveSocket(const char *service)
 	freeaddrinfo(result);
 }
 
+void 				Server::_createPassiveSocketWithHost(const char *service)
+{
+	//char *host = "127.0.0.1";
+	struct addrinfo hints;
+	struct addrinfo *result;
+	struct addrinfo *result_it;
+	int optval;
+	int g_error;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
+	hints.ai_family =AF_INET;
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_socktype = SOCK_STREAM;
+	if ((g_error = getaddrinfo(NULL, service, &hints, &result )) != 0)
+		throw(std::runtime_error(gai_strerror(g_error)));
+	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
+	{
+		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
+		if (_serverFd == -1)
+			continue;
+		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
+		{
+				close(_serverFd);
+				freeaddrinfo(result);
+				throw(std::runtime_error(strerror(errno)));
+
+		}
+		if (bind(_serverFd, result_it->ai_addr, result_it->ai_addrlen) == 0)
+			break;
+		close(_serverFd);
+	}
+	if (!result_it)
+		throw(std::runtime_error("enable to create and bind listening socket"));
+	if (listen(_serverFd, _backlog) == -1)
+	{
+		close(_serverFd);
+		freeaddrinfo(result);
+		throw(std::runtime_error(strerror(errno)));
+	}
+	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
+	freeaddrinfo(result);
+}
+
 void Server::_clientAddressPrint(struct sockaddr *cliAddr)
 {
 	char host[NI_MAXHOST];

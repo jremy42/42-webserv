@@ -53,6 +53,7 @@ class Server
 
 	private:
 		void 				_createPassiveSocket(const char *service);
+		void 				_createPassiveSocketWithHost(const char *service);
 		void 				_clientAddressPrint(struct sockaddr *cliAddr);
 
 };
