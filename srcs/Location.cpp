@@ -27,6 +27,8 @@ Location::Location(string rawLocation)
 	_createLocationInfoMap(rawLocation);
 	_parseAllowedMethods();
 	_parseAutoindex();
+	_parseErrorPage();
+	_parseMaxBodySize();
 	if (DEBUG_LOCATION)
 		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
 }
@@ -100,6 +102,29 @@ const Location::m_s_vs	&Location::getLocationInfoMap(void) const
 {
 	const m_s_vs	&LocRef = this->_locationInfoMap;
 	return (LocRef);
+
+}
+
+void Location::_parseErrorPage(void)
+{
+	string errorNum = _locationInfoMap.find("error_page")->second[0];
+	int errorCode  = atoi(errorNum.c_str());
+	if (errorNum.find_first_not_of("1234567890") != std::string::npos || (errorCode < 400 || errorCode > 511))
+		throw(std::runtime_error("webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
+}
+
+void Location::_parseMaxBodySize(void)
+{
+	string field = _locationInfoMap.find("client_max_body_size")->second[0];
+
+	if (field.find_first_of('m') == field.length() - 1
+		&& field.substr(0, field.length() - 1).find_first_not_of("0123456789") == std::string::npos)
+	{
+		if (atoi(field.c_str()) > 32 || atoi(field.c_str()) < 1)
+			throw(std::runtime_error("webserv: config : not valid field , Max Body size must be with in 0 & 32 [" + field+ "]"));
+	}
+	else
+		throw(std::runtime_error("webserv: config : not valid field in max_body_size: [" + field+ "]"));
 
 }
 
