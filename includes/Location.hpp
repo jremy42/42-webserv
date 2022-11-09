@@ -34,6 +34,8 @@ class Location
 
 		void												_createLocationInfoMap(std::string &rawServerConf);
 		std::pair<std::string, std::vector<std::string > >	parseLocationLine(std::string &nextLine);
+		void												_parseAllowedMethods(void);
+		void												_parseAutoindex(void);
 
 		static std::map<std::string, std::pair<int, int> >	_configField;
 		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);;

@@ -25,6 +25,8 @@ Location::Location(string rawLocation)
 	if (DEBUG_LOCATION)
 		std::cout << "Location string constructor called with : ~>" << rawLocation << "<~" << std::endl;
 	_createLocationInfoMap(rawLocation);
+	_parseAllowedMethods();
+	_parseAutoindex();
 	if (DEBUG_LOCATION)
 		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
 }
@@ -107,4 +109,32 @@ std::ostream	&operator<<(std::ostream &o, const Location &Location)
 	std::cout << Location.getLocationInfoMap();
 	std::cout << "--------------------Location Printer End--------------------" << std::endl;
 	return (o);
+}
+
+void Location::_parseAllowedMethods(void)
+{
+	std::vector<string>::iterator	it = _locationInfoMap["allowed_method"].begin();
+	std::vector<string>::iterator	ite = _locationInfoMap["allowed_method"].end();
+	std::vector<string>				allowed_method;
+	std::vector<string>::iterator	it_allowed = allowed_method.begin();
+	std::vector<string>::iterator	ite_allowed = allowed_method.end();
+
+	allowed_method.push_back("GET");
+	allowed_method.push_back("POST");
+	allowed_method.push_back("DELETE");
+	it_allowed = allowed_method.begin();
+	ite_allowed = allowed_method.end();
+	for (; it != ite; it++)
+	{
+		if (find(it_allowed, ite_allowed, *it) == allowed_method.end())
+			throw(std::runtime_error("webserv: config : not valid method : [" + *it +  "]"));
+	}
+}
+
+void Location::_parseAutoindex(void)
+{
+	string	autoIndexValue = _locationInfoMap["autoindex"][0];
+
+	if (autoIndexValue.compare("on") && autoIndexValue.compare("off"))
+		throw(std::runtime_error("webserv: config : not valid autoindex value : [" + autoIndexValue +  "]"));
 }
