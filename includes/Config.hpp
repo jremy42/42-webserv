@@ -60,7 +60,7 @@ class Config
 		p_s_vs		_parseConfigBlock(std::string &nextLine);
 		char		_getNextBlockDelim(std::string str, int pos) const;
 		string		_getNextLocationBlock(std::string &rawLocation);
-
+		void		_parseListenHostPort(void);
 		static std::map<std::string, std::pair<int, int> >	_configField;
 		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);
 };

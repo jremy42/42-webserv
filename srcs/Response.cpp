@@ -36,7 +36,6 @@ Response::Response(const Response &src)
 {
 	*this = src;
 }
-
 Response::~Response(void)
 {
 }

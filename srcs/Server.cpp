@@ -2,13 +2,17 @@
 
 
 
-Server::Server(int port, v_config configList)
+Server::Server(v_config configList)
 {
 	_configList = configList;
 	_backlog = 1000;
+	_port = _configList[0].getListenPortStr();
 	try 
 	{
-		_createPassiveSocket(itoa(port).c_str());
+		if (_configList[0].getServerInfoMap().find("listen")->second[0] == "*")
+			_createPassiveSocket(_port.c_str());
+		else
+			_createPassiveSocketWithHost(_port.c_str(), _configList[0].getServerInfoMap().find("listen")->second[0].c_str());
 		if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
 				throw(std::runtime_error(strerror(errno)));
 	} catch (const std::exception &e)
@@ -18,7 +22,7 @@ Server::Server(int port, v_config configList)
 	}
 	std::cout << "______________________CREATING SERVER________________________________\n";
 	std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
-	std::cout << "Create server listen port :" << itoa(port) << std::endl;
+	std::cout << "Create server listen port :" << _port << std::endl;
 	v_config::iterator ite = configList.end();
 	int i = 0;
 	for (v_config::iterator it = configList.begin(); it != ite; it++)
@@ -33,24 +37,6 @@ Server::Server(int port, v_config configList)
 
 };
 
-
-Server::Server(const Config &config_source)
-{
-	_config = config_source;
-	_backlog = 1000;
-	try 
-	{
-		_createPassiveSocket(_config.getListenPortStr().c_str());
-		if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
-				throw(std::runtime_error(strerror(errno)));
-	} catch (const std::exception &e)
-	{
-		std::cerr << e.what() << std::endl;
-		throw(std::runtime_error("Server creation failure"));
-	}
-	printf("_serverFd = %d\n", _serverFd);
-	std::cout << "Create server listen port :" << _config.getListenPortStr() << std::endl;
-};
 
 Server::~Server(){
 
@@ -179,21 +165,23 @@ void 				Server::_createPassiveSocket(const char *service)
 	freeaddrinfo(result);
 }
 
-void 				Server::_createPassiveSocketWithHost(const char *service)
+void 				Server::_createPassiveSocketWithHost(const char *service, const char *host)
 {
 	//char *host = "127.0.0.1";
 	struct addrinfo hints;
 	struct addrinfo *result;
 	struct addrinfo *result_it;
+	struct sockaddr_in hintsHost;
 	int optval;
 	int g_error;
 
+	memset(&hintsHost, 0, sizeof(struct sockaddr_in));
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
+	hintsHost.sin_family = AF_INET;
+	inet_pton(AF_INET, host, &hintsHost.sin_addr);
+	hints.ai_addr = (struct sockaddr*)&host;
+	hints.ai_addrlen = sizeof(sockaddr_in);
 	hints.ai_family =AF_INET;
-	hints.ai_flags = AI_PASSIVE;
 	hints.ai_socktype = SOCK_STREAM;
 	if ((g_error = getaddrinfo(NULL, service, &hints, &result )) != 0)
 		throw(std::runtime_error(gai_strerror(g_error)));

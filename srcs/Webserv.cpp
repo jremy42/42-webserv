@@ -64,6 +64,8 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 	this->_serverList = rhs._serverList;
 	this->_rawConfig = rhs._rawConfig;
 	this-> _configList = rhs._configList;
+	this-> _portConfigList = rhs._portConfigList;
+
 	return (*this);
 }
 
@@ -182,7 +184,7 @@ int		Webserv::parseRawConfig(void)
 					std::cout << "port :[" << nextConfig.getListenPort() << "]" << std::endl;
 					_portConfigList.insert(std::pair<int, std::vector<Config> >(nextConfig.getListenPort(), tmp));
 				}
-				_configList.push_back(nextConfig);// a suppr
+				//_configList.push_back(nextConfig);// a suppr
 			}
 			catch (const std::exception &e) 
 			{
@@ -203,20 +205,7 @@ int		Webserv::createServerListByPortConfig(void)
 
 	for (it = _portConfigList.begin(); it != _portConfigList.end(); it++)
 	{
-		Server *newServer = new Server((*it).first, (*it).second);
-		_serverList.push_back(newServer);
-	}
-	return (1);
-}
-
-int		Webserv::createServerListFromRawConfig(void)
-{
-	v_config::iterator it;
-
-
-	for (it = _configList.begin(); it != _configList.end(); it++)
-	{
-		Server *newServer = new Server(*it);
+		Server *newServer = new Server((*it).second);
 		_serverList.push_back(newServer);
 	}
 	return (1);

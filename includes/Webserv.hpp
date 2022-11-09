@@ -16,12 +16,12 @@
 class Webserv
 {
 	public:
-	typedef std::string			string;
-	typedef	std::vector<string>	v_string; // Deviens un vector pour avoir un fichier par serveur supp
-	typedef std::vector<Server*>	v_server;
-	typedef std::vector<Config>	v_config;
-	typedef v_server::iterator	v_iterator;
-	typedef std::map<int, std::vector<Config> > m_i_vc;
+		typedef std::string			string;
+		typedef	std::vector<string>	v_string; // Deviens un vector pour avoir un fichier par serveur supp
+		typedef std::vector<Server*>	v_server;
+		typedef std::vector<Config>	v_config;
+		typedef v_server::iterator	v_iterator;
+		typedef std::map<int, std::vector<Config> > m_i_vc;
 
 		Webserv();
 		Webserv(string fileName); // open filenames, populates _rawConfig
@@ -31,7 +31,6 @@ class Webserv
 
 		std::string	getNextServerBlock(std::string &rawConfig);
 		int parseRawConfig(void);
-		int	createServerListFromRawConfig(void); // add les serveurs a serverlist au fur et a mesure a partir rawConfig
 		int	execServerLoop(void); // Boucle sur la liste de serveur avec les actions acceptNewClient et execClientList
 		int	createServerListByPortConfig(void);
 

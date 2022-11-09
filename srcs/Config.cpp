@@ -44,11 +44,13 @@ Config::Config(std::string rawServerConfig)
 				<< _serverInfoMap << "--------------------------------------------------------" << std::endl;
 	if (_serverInfoMap.empty())
 		throw(std::runtime_error("webserv: empty conf, server block ignored"));
+
+	_parseListenHostPort();
 	// WARNING -> valeurs a verfier avant de les recup
-	_listenPort = atoi(_serverInfoMap["listen"][0].c_str());
+	_listenPort = atoi(_serverInfoMap["listen"][1].c_str());
 	_rootDirectory = _serverInfoMap["root"][0];
 	//Check de la conf a faire ici dans un fx, en incluant le check ci dessous	
-	if (_listenPort < 1024)
+	if (_listenPort < 0)
 		throw(std::runtime_error("webserv: Wrong Port : " + itoa(_listenPort) + ". Value must be above 1024"));
 	if (_listenPort > 65536)
 		throw(std::runtime_error("webserv: Wrong Port : " + itoa(_listenPort) + ". Value must be below 65536"));
@@ -58,6 +60,7 @@ Config::Config(std::string rawServerConfig)
 
 Config::Config(const Config &src)
 {
+
 	*this = src;
 }
 
@@ -133,7 +136,7 @@ void	Config::_initServerInfoMap(void)
 {
 	for (std::map<std::string, std::pair<int, int> >::iterator it = _configField.begin(); it != _configField.end(); it++)
 		_serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
-	_serverInfoMap.find("listen")->second.push_back("80");
+	_serverInfoMap.find("listen")->second.push_back("*:80");
 	_serverInfoMap.find("root")->second.push_back("./www");
 	_serverInfoMap.find("client_max_body_size")->second.push_back("8m");
 	_serverInfoMap.find("allowed_method")->second.push_back("GET");
@@ -270,3 +273,39 @@ std::ostream	&operator<<(std::ostream &o, const Config config)
 	return (o);
 }
 
+void Config::_parseListenHostPort(void)
+{
+	string ret;
+	size_t pos;
+	size_t pos_end;
+
+	ret = _serverInfoMap["listen"][0];
+	pos = ret.find_first_of(':');
+	pos_end = ret.find_last_of(':');
+
+	if (pos != pos_end)
+		throw(std::runtime_error("webserv: config : not valid host:port [" + ret + "]"));
+	if (pos == std::string::npos)
+	{
+		if (ret.find_first_not_of("1234567890") != std::string::npos)
+		{
+			_serverInfoMap.find("listen")->second[0] = ret;
+			_serverInfoMap.find("listen")->second.push_back("80");
+		}
+		else 
+		{
+			_serverInfoMap.find("listen")->second[0] = "*";
+			_serverInfoMap.find("listen")->second.push_back(ret);
+		}
+	}
+	else{
+		string host;
+		string port;
+
+		pos = ret.find_first_of(':');
+		host = ret.substr(0, pos);
+		port = ret.substr(pos + 1);
+		_serverInfoMap.find("listen")->second[0] = host;
+		_serverInfoMap.find("listen")->second.push_back(port);
+	}
+}

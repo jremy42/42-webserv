@@ -32,8 +32,7 @@ class Server
 		typedef std::vector<Config> v_config;
 
 	public:
-		Server(const Config &config_source);
-		Server(int port, v_config configList);
+		Server(v_config configList);
 		Server(const Server &src);
 		~Server(void);
 		Server &operator=(const Server &rhs);
@@ -50,10 +49,11 @@ class Server
 		int				_serverFd;
 		struct sockaddr_in	_listenSockaddr;
 		int					_backlog;
+		string				_port;
 
 	private:
 		void 				_createPassiveSocket(const char *service);
-		void 				_createPassiveSocketWithHost(const char *service);
+		void 				_createPassiveSocketWithHost(const char *service,const char *host);
 		void 				_clientAddressPrint(struct sockaddr *cliAddr);
 
 };
