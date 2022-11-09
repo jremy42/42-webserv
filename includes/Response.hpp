@@ -68,6 +68,9 @@ class Response
 		void							_createFullResponse(void);
 		int								_createAutoIndex(void);
 
+
+		void							_wichIsBestEditor(void);
+
 };
  
 

@@ -313,7 +313,3 @@ void Config::_parseListenHostPort(void)
 	}
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 56822b2b588fb19c70a2614b5cb3c4e1a3c3079d
