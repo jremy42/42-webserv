@@ -92,8 +92,12 @@ void Webserv::_loadFile(const char * fileName)
 			else
 				std::cout << nextLine << std::endl;
 		}
-		if (!nextLine.empty() && nextLine.find_first_not_of("\f\t\n\r\v ") != std::string::npos)
+		if (!nextLine.empty()
+			&& !strtrim(nextLine, "\f\t\n\r\v ").empty() && nextLine[0] != '#')
+		{
+			nextLine = nextLine.substr(0, nextLine.find("#"));
 			_rawConfig.back() += (nextLine + "\n");
+		}
 	}
 	fs.close();
 

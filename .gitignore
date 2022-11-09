@@ -33,6 +33,8 @@
 
 # Vim
 *.vim
+*.swp
+tags
 
 # Debug files
 *.log
@@ -41,3 +43,4 @@
 
 # Webserv binary
 webserv
+
