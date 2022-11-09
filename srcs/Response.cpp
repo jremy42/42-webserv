@@ -115,6 +115,21 @@ void Response::_createBody(void)
 	fs.close();
 }
 
+void Response::_methodGET(void)
+{
+	//fonction -> send bon filename a open
+	// check redirection
+	//fonction -> check is dir
+	// if dir => check autoindex
+	//fonction => open ? check retour open -> send bon code d'error _statusCode
+	//creer body;
+}
+
+std::string Response::_wichIsaBestEditor(void)
+{
+	std::cout << "VSCODE" << std::endl;
+	return "VSCODE";
+}
 
 void Response::_createHeader(void)
 {
@@ -143,14 +158,14 @@ void Response::_createFullResponse(void)
 int Response::createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
-	//_statusCode = 404;
-	//std::cerr << "0\n";
+
 
 	if (_statusCode == 200)
 		_createBody();
-	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	if(_statusCode > 200)
 		_createErrorMessageBody();
+	
+	
 	_createHeader();
 	_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second + "\r\n");
 	_createFullResponse();

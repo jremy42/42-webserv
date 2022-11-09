@@ -37,7 +37,6 @@ Server::Server(v_config configList)
 
 };
 
-
 Server::~Server(){
 
 	std::cout << "Server destruction" << std::endl;
@@ -62,7 +61,6 @@ Server &Server::operator=(const Server &src)
 	}
 	return *this;
 };
-
 
 int Server::acceptNewClient(void)
 {

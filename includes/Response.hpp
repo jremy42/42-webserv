@@ -67,6 +67,8 @@ class Response
 		void							_createHeader(void);
 		void							_createFullResponse(void);
 		int								_createAutoIndex(void);
+		void							_methodGET(void);
+		std::string							_wichIsaBestEditor(void);
 
 
 		void							_wichIsBestEditor(void);
