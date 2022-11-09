@@ -70,3 +70,36 @@ std::string itoa(int statusCode)
 	out << statusCode;
 	return out.str();
 }
+
+
+std::string ltoa(long statusCode)
+{
+	std::stringstream out;
+	out << statusCode;
+	return out.str();
+}
+
+
+std::string getFileSize(std::string filename) {
+
+    FILE *fp = fopen(filename.c_str(), "r");
+
+    if (fp==NULL)
+        return NULL;
+
+    if (fseek(fp, 0, SEEK_END) < 0) {
+        fclose(fp);
+        return NULL;
+    }
+    long size = ftell(fp);
+    fclose(fp);
+    return ltoa(size);
+}
+
+
+int isDir(std::string fileName)
+{
+  	struct stat buf;
+    stat(fileName.c_str(), &buf);
+	return S_ISREG(buf.st_mode);
+}

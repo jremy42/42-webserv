@@ -84,15 +84,18 @@ void Response::_createBody(void)
 	std::ifstream fs;
 	char *buff;
 	int length;
-	std::string target (_request->getTarget());
-
+	std::string target (_config->getParamByLocation(target, "root").at(0) + _request->getTarget());
+	if (!isDir(target))
+	{
+		target += '/';
+		std::cout << "IS DIR" << std::endl;
+	}
 	if (target.at(target.length() - 1) == '/')
 		target = target + "index.html";
 	std::cout << "getrootDir:[" << _config->getParamByLocation(target, "root").at(0) << "]\n";
-	std::string fileName(_config->getParamByLocation(target, "root").at(0) + target);
+	std::string fileName(target);
 	std::cout << "fileName: " << fileName << std::endl;
 	fs.open( fileName.c_str(), std::ifstream::in | std::ifstream::binary);
-
 	if (fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
@@ -160,15 +163,8 @@ int Response::createResponse(void)
 // {
 // 	int		ret;
 // 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
-// 	char buff[WRITE_BUFFER_SIZE];
-// 	memset(buff, 0, WRITE_BUFFER_SIZE);
-// 	int i = 0;
-// 	v_c::iterator ite = _fullResponse.end();
-// 	for (v_c::iterator it = _fullResponse.begin(); i < WRITE_BUFFER_SIZE && it != ite; i++, it++)
-// 		buff[i] = *it;
-// 	std::cout << "About to write on fd [" << _clientFd << "]" << std::endl;
-// 	ret = send(_clientFd, buff, i, 0);
-// 	if (ret == -1)
+// 	char buff[WRITE_BUFFER_SIZE];Successfully opened body file 
+
 // 		std::cerr << "Error in writeClientResponse" << std::endl;
 // 	else
 // 	{
@@ -231,7 +227,6 @@ void Response::reset(void)
 	//*this = Response(_clientFd);
 }
 
-
 int Response::_createAutoIndex(void)
 {
 	char path[MAX_PATH] = "./";
@@ -257,9 +252,12 @@ int Response::_createAutoIndex(void)
 	while(curr_dir)
 	{
 		string toInsert = curr_dir->d_name;
-		if (curr_dir->d_type == DT_DIR)
-			toInsert += "/";
-		dir.insert(std::pair<string, unsigned int> (toInsert, curr_dir->d_type));
+		if (toInsert[0] != '.' || toInsert == "..")
+		{
+			if (curr_dir->d_type == DT_DIR)
+				toInsert += "/";
+			dir.insert(std::pair<string, unsigned int> (toInsert, curr_dir->d_type));
+		}
 		curr_dir = readdir(dp);
 	}
 
@@ -267,22 +265,25 @@ int Response::_createAutoIndex(void)
 	{
 		if (it->second != DT_DIR)
 		{
-			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << std::endl;
+			std::stringstream out;
+			struct stat buf;
+     		stat(path, &buf);
+			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << getFileSize(it->first) << std::endl;
+			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size()) << "<a href=\"" + it->first + "\">" + it->first + "</a>" << std::setw(40) <<  getFileSize(it->first) + " bytes" << std::endl;
 			size_t pos = finalBody.find("<pre>\n");
 			pos += string("<pre>\n").size();
-			finalBody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n");
+			finalBody.insert(pos, out.str());
 		}
 	}
 	for (std::map<string, unsigned int>::reverse_iterator it = dir.rbegin(); it != dir.rend(); it++)
 	{
 		if (it->second == DT_DIR)
 		{
-			struct stat buf;
-     		stat(path, &buf);
-			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << std::endl;
+			
+			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
 			size_t pos = finalBody.find("<pre>\n");
 			pos += string("<pre>\n").size();
-			finalBody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n \t");
+			finalBody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n");
 		}
 	}
 
