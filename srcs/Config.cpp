@@ -162,12 +162,15 @@ void	Config::_createServerInfoMap(std::string &rawServerConf)
 				string key(_getNextLocationBlock(nextLine));
 				Location newLocation(nextLine);
 				if (DEBUG_CONFIG)
-					std::cout << "\e[33mKey :[" << key << "]\e0m" << std::endl;
-				_location.insert(std::pair<string, Location>(key, newLocation));
+					std::cout << "\e[33mKey :[" << key << "]\e[0m" << std::endl;
+				if (_location.insert(std::pair<string, Location>(key, newLocation)).second == false)
+					throw(std::runtime_error("Webserv: Config: too many location with same key : [" + key + "] WARNING : location ignored" ));
 			}
 			catch(const std::exception& e)
 			{
-				std::cerr << e.what() << '\n';
+				std::cerr << e.what() << std::endl;
+				throw(std::runtime_error("Webserv: Config: FATAL ERROR Config ignored"));
+
 			}
 		}
 		else if (nextBlockDelim == ';')

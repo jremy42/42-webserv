@@ -189,6 +189,7 @@ int		Webserv::parseRawConfig(void)
 			catch (const std::exception &e) 
 			{
 				 std::cerr  << "\e[31m" << e.what() << "\e[0m" << std::endl;
+				 throw(std::runtime_error("Webserv: Config creation failure RTFM!!!!!😡 😡 😡 😡 😡 😡"));
 			}
 		}
 		if (DEBUG_WEBSERV)
