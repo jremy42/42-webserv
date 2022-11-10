@@ -59,23 +59,24 @@ class Response
 		const Request *					_request;
 		Config *						_config;
 
-		static std::map<int, string>	_errorMessage;
+		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
 		static string					_autoIndexBodyTemplate;
 
-		static m_is 					_initErrorMessage(void);
+		static m_is 					_initStatusCodeMessage(void);
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);
 		void							_createHeader(void);
 		void							_createFullResponse(void);
 
 //GET
-		int								_createAutoIndex(const string &pathToDir);
 		void							_methodGET(void);
+		int								_createAutoIndex(const string &pathToDir);
+		std::map<string, unsigned int>	_populateDirectoryMap(const char *path);
+		std::string						_generateHTMLBodyWithPath(void);
 		string							_selectActualTarget(string &actualTarget);
 		void							_createBodyFromFile(const string &actualTarget);
 
 };
 
 #endif
-
