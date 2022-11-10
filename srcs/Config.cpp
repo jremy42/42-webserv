@@ -101,21 +101,27 @@ const char* Config::getRootDir(void) const
 
 const std::vector<std::string> Config::getParamByLocation(string &requestTarget, string key) const
 {
-	std::vector<string> 				ret;
+	std::vector<string> 				defaultRet = _serverInfoMap.find(key)->second;
 	m_s_vs::const_iterator				tryfind;
 	m_s_l::const_iterator 				it = _location.begin();
 	m_s_l::const_iterator 				ite = _location.end();
-	ret = _serverInfoMap.find(key)->second;
+
 	for(;it != ite; it++)
 	{
 		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
 		{
 			tryfind = it->second.getLocationInfoMap().find(key);
 			if (tryfind != it->second.getLocationInfoMap().end())
-				ret = tryfind->second;
+			{
+				if (DEBUG_CONFIG)
+					std::cout << "getParamByLocation : Found a value for key [" << key << "]" << std::endl;
+				return (tryfind->second);
+			}
 		}
 	}
-	return ret;
+	if (DEBUG_CONFIG)
+		std::cout << "getParamByLocation : No value found for key [" << key << "]. Using Config Default value" << std::endl;
+	return (defaultRet);
 }
 
 char	Config::_getNextBlockDelim(std::string str, int pos) const

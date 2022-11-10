@@ -79,22 +79,65 @@ void Response::setRequest(const Request *request)
 
 void Response::_createBody(void)
 {
-	std::string nextLine;
-	std::ifstream fs;
-	char *buff;
-	int length;
-	std::string target (_config->getParamByLocation(target, "root").at(0) + _request->getTarget());
-	if (!isDir(target))
+	std::string		nextLine;
+	std::ifstream	fs;
+	char			*buff;
+	int				length;
+	std::string		requestedTarget	= _request->getTarget();
+	std::string		requestedTargetLocation	= _config->getParamByLocation(requestedTarget, "root").at(0);
+	std::string		actualTarget = requestedTargetLocation + requestedTarget;	
+
+	if (DEBUG_RESPONSE)
 	{
-		target += '/';
-		std::cout << "IS DIR" << std::endl;
+		std::cout << "requested Target : [" << requestedTarget << "]" << std::endl;
+		std::cout << "requested Target Location (according to root directives) : [" << requestedTargetLocation << "]" << std::endl;
+		std::cout << "actual Target : [" << actualTarget << "]" << std::endl;
+		if (!fileExist(actualTarget))
+			std::cout << "actual Target does not exists" << std::endl;
+		if (fileExist(actualTarget) && isDir(actualTarget))
+			std::cout << "actual Target exist and is a Directory" << std::endl;
+		else if (fileExist(actualTarget) && !isDir(actualTarget))
+			std::cout << "actual Target exist and is a regular file" << std::endl;
 	}
-	if (target.at(target.length() - 1) == '/')
-		target = target + "index.html";
-	std::cout << "getrootDir:[" << _config->getParamByLocation(target, "root").at(0) << "]\n";
-	std::string fileName(target);
-	std::cout << "fileName: " << fileName << std::endl;
-	fs.open( fileName.c_str(), std::ifstream::in | std::ifstream::binary);
+	if (fileExist(actualTarget) && isDir(actualTarget))
+	{
+		std::vector<string> indexTryFiles = _config->getParamByLocation(requestedTarget, "index");
+		if (DEBUG_RESPONSE)
+			std::cout << "Trying files in indexTryFiles :" << indexTryFiles << std::endl;
+		std::vector<string>::iterator it = indexTryFiles.begin();
+		for (;it != indexTryFiles.end(); it++)
+		{
+			std::string	testedIndexFile = actualTarget + "/" + *it;
+			if (DEBUG_RESPONSE)
+				std::cout << "Testing index file :" << testedIndexFile << std::endl;
+			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
+			{
+				actualTarget = testedIndexFile;
+				break;
+			}
+		}
+		if (it != indexTryFiles.end())
+		{
+			if (DEBUG_RESPONSE)
+				std::cout << "Found a suitable index file : [" << *it << "]" << std::endl;
+		}
+		else if (_config->getParamByLocation(requestedTarget, "autoindex").at(0) == "on")
+		{
+			if (DEBUG_RESPONSE)
+				std::cout << "No suitable index file but autoindex is on. Returning Listing of directory" << std::endl;
+			_createAutoIndex(actualTarget);
+			return ;
+			// AUTOINDEX TO BUILD
+		}
+		else
+		{
+			if (DEBUG_RESPONSE)
+				std::cout << "No suitable index file and autoindex is off" << std::endl;
+			_statusCode = 404;
+			return ;
+		}
+	}
+	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
@@ -117,18 +160,13 @@ void Response::_createBody(void)
 
 void Response::_methodGET(void)
 {
+	_createBody();
 	//fonction -> send bon filename a open
 	// check redirection
 	//fonction -> check is dir
 	// if dir => check autoindex
 	//fonction => open ? check retour open -> send bon code d'error _statusCode
 	//creer body;
-}
-
-std::string Response::_wichIsaBestEditor(void)
-{
-	std::cout << "VSCODE" << std::endl;
-	return "VSCODE";
 }
 
 void Response::_createHeader(void)
@@ -158,14 +196,12 @@ void Response::_createFullResponse(void)
 int Response::createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
-
-
-	if (_statusCode == 200)
-		_createBody();
 	if(_statusCode > 200)
 		_createErrorMessageBody();
-	
-	
+	else if (_request->getMethod() == "GET")
+	{
+		_methodGET();
+	}
 	_createHeader();
 	_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _errorMessage.find(_statusCode)->second + "\r\n");
 	_createFullResponse();
@@ -241,9 +277,9 @@ void Response::reset(void)
 	//*this = Response(_clientFd);
 }
 
-int Response::_createAutoIndex(void)
+int Response::_createAutoIndex(string &pathToDir)
 {
-	char path[MAX_PATH] = "./";
+	const char *path = pathToDir.c_str();
 	struct dirent	*curr_dir;
 	DIR				*dp;
 	std::map<string, unsigned int> dir;
@@ -257,8 +293,6 @@ int Response::_createAutoIndex(void)
 		finalBody.erase(pos, strlen("/title_placeholder"));
 		finalBody.insert(pos, path);
 	}
-	if (!getcwd(path, PATH_MAX))
-		return (1);
 	dp = opendir(path);
 	if (!dp)
 		return (1);
@@ -302,6 +336,7 @@ int Response::_createAutoIndex(void)
 	}
 
 	std::cout << finalBody << std::endl;
+	_body = v_c(finalBody.begin(), finalBody.end());
 	if (closedir(dp) < 0)
 		return (0);
 	return (1);

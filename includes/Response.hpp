@@ -24,6 +24,7 @@
 # include <iomanip>
 
 # define MAX_PATH 4092
+# define DEBUG_RESPONSE 1
 class Config;
 
 class Response
@@ -66,15 +67,11 @@ class Response
 		void							_createBody(void);
 		void							_createHeader(void);
 		void							_createFullResponse(void);
-		int								_createAutoIndex(void);
+		int								_createAutoIndex(string &pathToDir);
 		void							_methodGET(void);
 		std::string							_wichIsaBestEditor(void);
 
-
-		void							_wichIsBestEditor(void);
-
 };
- 
 
 #endif
 

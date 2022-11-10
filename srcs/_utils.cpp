@@ -80,26 +80,32 @@ std::string ltoa(long statusCode)
 }
 
 
-std::string getFileSize(std::string filename) {
+std::string getFileSize(std::string filename)
+{
 
     FILE *fp = fopen(filename.c_str(), "r");
 
-    if (fp==NULL)
-        return NULL;
-
-    if (fseek(fp, 0, SEEK_END) < 0) {
+    if (fp == NULL)
+        return ("ERROR FOPEN FILE DURING getFileSize function");
+    if (fseek(fp, 0, SEEK_END) < 0)
+	{
         fclose(fp);
-        return NULL;
+        return ("ERROR FSEEK DURING getFileSize function");
     }
     long size = ftell(fp);
     fclose(fp);
     return ltoa(size);
 }
 
-
 int isDir(std::string fileName)
 {
   	struct stat buf;
     stat(fileName.c_str(), &buf);
-	return S_ISREG(buf.st_mode);
+	return (!S_ISREG(buf.st_mode));
+}
+
+int fileExist(std::string fileName)
+{
+  	struct stat buf;
+    return (!stat(fileName.c_str(), &buf));
 }
