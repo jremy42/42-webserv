@@ -29,6 +29,7 @@ class Config;
 
 class Response
 {
+	public:
 	typedef std::string					string;
 	typedef std::map<string, string>	m_ss;
 	typedef std::vector<char>			v_c;
@@ -67,9 +68,12 @@ class Response
 		void							_createBody(void);
 		void							_createHeader(void);
 		void							_createFullResponse(void);
-		int								_createAutoIndex(string &pathToDir);
+
+//GET
+		int								_createAutoIndex(const string &pathToDir);
 		void							_methodGET(void);
-		std::string							_wichIsaBestEditor(void);
+		string							_selectActualTarget(string &actualTarget);
+		void							_createBodyFromFile(const string &actualTarget);
 
 };
 

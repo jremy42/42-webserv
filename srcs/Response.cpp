@@ -77,16 +77,12 @@ void Response::setRequest(const Request *request)
 	_statusCode = _request->getStatusCode();
 }
 
-void Response::_createBody(void)
+std::string	Response::_selectActualTarget(string &actualTarget)
 {
-	std::string		nextLine;
-	std::ifstream	fs;
-	char			*buff;
-	int				length;
 	std::string		requestedTarget	= _request->getTarget();
 	std::string		requestedTargetLocation	= _config->getParamByLocation(requestedTarget, "root").at(0);
-	std::string		actualTarget = requestedTargetLocation + requestedTarget;	
 
+	actualTarget = requestedTargetLocation + requestedTarget;	
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "requested Target : [" << requestedTarget << "]" << std::endl;
@@ -120,23 +116,43 @@ void Response::_createBody(void)
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "Found a suitable index file : [" << *it << "]" << std::endl;
+			return ("Index_file_ok");
 		}
 		else if (_config->getParamByLocation(requestedTarget, "autoindex").at(0) == "on")
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "No suitable index file but autoindex is on. Returning Listing of directory" << std::endl;
-			_createAutoIndex(actualTarget);
-			return ;
-			// AUTOINDEX TO BUILD
+			//if (actualTarget[actualTarget.size() - 1] != '/')
+				//actualTarget += "/";
+			return ("Do_listing");
 		}
 		else
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "No suitable index file and autoindex is off" << std::endl;
-			_statusCode = 404;
-			return ;
+			return ("Index_file_nok");
 		}
 	}
+	else if (fileExist(actualTarget))
+	{
+		if (DEBUG_RESPONSE)
+			std::cout << "Requested file is standard" << std::endl;
+		return ("File_ok");
+	}
+	else
+	{
+		if (DEBUG_RESPONSE)
+			std::cout << "No such file or directory" << std::endl;
+		return ("File_nok");
+	}
+}
+
+void Response::_createBodyFromFile(const string &actualTarget)
+{
+	std::ifstream	fs;
+	char			*buff;
+	int				length;
+
 	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
@@ -160,13 +176,14 @@ void Response::_createBody(void)
 
 void Response::_methodGET(void)
 {
-	_createBody();
-	//fonction -> send bon filename a open
-	// check redirection
-	//fonction -> check is dir
-	// if dir => check autoindex
-	//fonction => open ? check retour open -> send bon code d'error _statusCode
-	//creer body;
+	std::string	actualTarget;
+	std::string	selectActualTargetResult;
+	
+	selectActualTargetResult = _selectActualTarget(actualTarget);
+	if (selectActualTargetResult == "Do_listing")
+		_createAutoIndex(actualTarget);
+	else if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
+		_createBodyFromFile(actualTarget);
 }
 
 void Response::_createHeader(void)
@@ -277,7 +294,7 @@ void Response::reset(void)
 	//*this = Response(_clientFd);
 }
 
-int Response::_createAutoIndex(string &pathToDir)
+int Response::_createAutoIndex(const string &pathToDir)
 {
 	const char *path = pathToDir.c_str();
 	struct dirent	*curr_dir;
@@ -308,7 +325,6 @@ int Response::_createAutoIndex(string &pathToDir)
 		}
 		curr_dir = readdir(dp);
 	}
-
 	for (std::map<string, unsigned int>::reverse_iterator it = dir.rbegin(); it != dir.rend(); it++)
 	{
 		if (it->second != DT_DIR)
@@ -317,7 +333,7 @@ int Response::_createAutoIndex(string &pathToDir)
 			struct stat buf;
      		stat(path, &buf);
 			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << getFileSize(it->first) << std::endl;
-			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size()) << "<a href=\"" + it->first + "\">" + it->first + "</a>" << std::setw(40) <<  getFileSize(it->first) + " bytes" << std::endl;
+			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size()) << "<a href=\""  + it->first + "\">" + it->first + "</a>" << std::setw(40) <<  getFileSize(it->first) + " bytes" << std::endl;
 			size_t pos = finalBody.find("<pre>\n");
 			pos += string("<pre>\n").size();
 			finalBody.insert(pos, out.str());
@@ -341,3 +357,86 @@ int Response::_createAutoIndex(string &pathToDir)
 		return (0);
 	return (1);
 }
+
+//void Response::_createBody(void)
+//{
+//	//Selecting file
+//	std::string		requestedTarget	= _request->getTarget();
+//	std::string		requestedTargetLocation	= _config->getParamByLocation(requestedTarget, "root").at(0);
+//	std::string		actualTarget = requestedTargetLocation + requestedTarget;	
+//	//Selecting file
+//	//creating body
+//	std::ifstream	fs;
+//	char			*buff;
+//	int				length;
+//	//creating body
+//
+//	if (DEBUG_RESPONSE)
+//	{
+//		std::cout << "requested Target : [" << requestedTarget << "]" << std::endl;
+//		std::cout << "requested Target Location (according to root directives) : [" << requestedTargetLocation << "]" << std::endl;
+//		std::cout << "actual Target : [" << actualTarget << "]" << std::endl;
+//		if (!fileExist(actualTarget))
+//			std::cout << "actual Target does not exists" << std::endl;
+//		if (fileExist(actualTarget) && isDir(actualTarget))
+//			std::cout << "actual Target exist and is a Directory" << std::endl;
+//		else if (fileExist(actualTarget) && !isDir(actualTarget))
+//			std::cout << "actual Target exist and is a regular file" << std::endl;
+//	}
+//	if (fileExist(actualTarget) && isDir(actualTarget))
+//	{
+//		std::vector<string> indexTryFiles = _config->getParamByLocation(requestedTarget, "index");
+//		if (DEBUG_RESPONSE)
+//			std::cout << "Trying files in indexTryFiles :" << indexTryFiles << std::endl;
+//		std::vector<string>::iterator it = indexTryFiles.begin();
+//		for (;it != indexTryFiles.end(); it++)
+//		{
+//			std::string	testedIndexFile = actualTarget + "/" + *it;
+//			if (DEBUG_RESPONSE)
+//				std::cout << "Testing index file :" << testedIndexFile << std::endl;
+//			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
+//			{
+//				actualTarget = testedIndexFile;
+//				break;
+//			}
+//		}
+//		if (it != indexTryFiles.end())
+//		{
+//			if (DEBUG_RESPONSE)
+//				std::cout << "Found a suitable index file : [" << *it << "]" << std::endl;
+//		}
+//		else if (_config->getParamByLocation(requestedTarget, "autoindex").at(0) == "on")
+//		{
+//			if (DEBUG_RESPONSE)
+//				std::cout << "No suitable index file but autoindex is on. Returning Listing of directory" << std::endl;
+//			_createAutoIndex(actualTarget);
+//			return ;
+//		}
+//		else
+//		{
+//			if (DEBUG_RESPONSE)
+//				std::cout << "No suitable index file and autoindex is off" << std::endl;
+//			_statusCode = 404;
+//			return ;
+//		}
+//	}
+//	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
+//	if (fs.good())
+//		std::cout << "Successfully opened body file "<< std::endl;
+//	else
+//	{
+//		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
+//		_statusCode = 404;
+//		fs.close();
+//		return;
+//	}
+//	fs.seekg(0, fs.end);
+//	length = fs.tellg();
+//	fs.seekg(0, fs.beg);
+//	std::cout << "length: [" << length << "]\n";
+//	buff = new char[length];
+//	fs.read(buff, length);
+//	_body = v_c(buff, buff + length);
+//	delete buff;
+//	fs.close();
+//}
