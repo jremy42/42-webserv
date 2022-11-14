@@ -212,24 +212,34 @@ int		Webserv::createServerListByPortConfig(void)
 	{
 		Server *newServer = new Server((*it).second);
 		_serverList.push_back(newServer);
+		_evListener.trackNewFd(newServer->getServerFd(), EPOLLIN);
+		_fdServerList.insert(std::pair<int, Server*>(newServer->getServerFd(), newServer));
 	}
 	return (1);
 }
 
 int		Webserv::execServerLoop(void)
 {
-	v_server::iterator it;
+	std::map<int, int> _fdAvailable;
+	std::map<int, int>::iterator ite;
 
 	while (true)
 	{
-		for (it = _serverList.begin(); it != _serverList.end(); it++)
+		_fdAvailable = _evListener.fdAvailable();
+		ite = _fdAvailable.end();
+		for (std::map<int, int>::iterator it = _fdAvailable.begin(); it != ite; it++)
 		{
-			//std::cout << "accept new client" << std::endl;
-			(*it)->acceptNewClient();
-			//std::cout << "listen event" << std::endl;
-			(*it)->listenEvent();
-			//std::cout << "exec Client" << std::endl;
-			(*it)->execClientList();
+			if (_fdServerList.find(it->first) != _fdServerList.end())
+			{
+				std::cout << "Accept new Client\n";
+				int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
+				_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
+				_fdClientList.insert(std::pair<int, Server*>(newFd, _fdServerList.find(it->first)->second));
+			}
+			else if (_fdClientList.find(it->first) != _fdClientList.end())
+			{
+				_fdClientList.find(it->first)->second->execClientAction(it->first, it->second);
+			}
 		}
 	}
 	return (1);

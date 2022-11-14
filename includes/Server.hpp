@@ -20,14 +20,14 @@
 # include <stdexcept>
 # define DEBUG 1
 
-class client;
+class Client;
 class Config;
 
 class Server
 {
 	public:
-		typedef std::vector<Client*>	v_client;
-		typedef v_client::iterator	v_iterator;
+		typedef std::map<int ,Client*>	m_client;
+		typedef m_client::iterator	m_iterator;
 		typedef std::string			string;
 		typedef std::vector<Config> v_config;
 
@@ -37,16 +37,16 @@ class Server
 		~Server(void);
 		Server &operator=(const Server &rhs);
 		int	acceptNewClient(void); // si != -1 Fait un accept, ajoute le fd a la client list et ajoute au epoll_ctl le fd
-		int	execClientList(void); // Fait 1 epoll_wait et demande a 1 client de faire une seule action (read ou write)
-		int listenEvent(void);
+		int	execClientAction(int fd, int availableAction); // Fait 1 epoll_wait et demande a 1 client de faire une seule action (read ou write)
+		int getServerFd(void);
 		// Boucler sur les 2 actions precedentes (fait dans la classe  webserv)
 
 	private:
-		Config			_config; // switch to v_config;
-		v_config		_configList;
-		EventListener	_evLst;
-		v_client		_clientList;
-		int				_serverFd;
+		Config				_config; // switch to v_config;
+		v_config			_configList;
+		//EventListener		_evLst;
+		m_client			_clientListFd;
+		int					_serverFd;
 		struct sockaddr_in	_listenSockaddr;
 		int					_backlog;
 		string				_port;

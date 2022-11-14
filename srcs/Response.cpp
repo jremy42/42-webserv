@@ -324,7 +324,7 @@ int Response::_createAutoIndex(const string &pathToDir)
 			pos += string("<pre>\n").size();
 			HTMLbody.insert(pos, out.str());
 		}
-		else {
+		else {	
 			
 			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
 			size_t pos = HTMLbody.find("<pre>\n");

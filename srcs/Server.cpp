@@ -56,8 +56,12 @@ Server &Server::operator=(const Server &src)
 	{
 		_config = src._config;
 		_configList = src._configList;
-        _evLst = src._evLst;
-        _clientList = src._clientList;
+        //_evLst = src._evLst;
+        _clientListFd = src._clientListFd;
+		_listenSockaddr = src._listenSockaddr;
+		_serverFd = src._serverFd;
+		_backlog = src._backlog;
+		_port = src._port;
 	}
 	return *this;
 };
@@ -73,46 +77,30 @@ int Server::acceptNewClient(void)
 	if (clientFd == -1 && (errno != EAGAIN || errno != EWOULDBLOCK))
 		throw(std::runtime_error(strerror(errno)));
 	//printf("serverFd: [%d] | client fd : [%d]\n",_serverFd, clientFd);
-	usleep(100000);
+	
 	if (clientFd > 0)
 	{
 		_clientAddressPrint((struct sockaddr *)& claddr);
-		Client *newClient = new Client(clientFd, &_configList);
-		_clientList.push_back(newClient);
-		_evLst.trackNewClient(clientFd, EPOLLIN | EPOLLOUT);
-		return 1;
+		Client *newClient = new Client(clientFd, &_configList, this);
+		_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient));
+		return clientFd;
 	}
 	return 0;
 }
 
-int Server::listenEvent(void)
+int Server::execClientAction(int fd, int availableAction ) // mode naif activate 
 {
-	v_iterator ite = _clientList.end();
-
-	if(_evLst.clientAvailable() > 0)
+	Client* _currentCli = _clientListFd.find(fd)->second;
+	
+	_currentCli->setAvailableActions(availableAction);
+	if (_currentCli->executeAction())
 	{
-		for (v_iterator i = _clientList.begin(); i != ite; ++i)
-			(*i)->setAvailableActions(_evLst.getClientFlag((*i)->getClientFd()));
-	}
-	return (1);
-}
-
-int Server::execClientList(void) // mode naif activate 
-{
-	v_iterator ite = _clientList.end();
-	for (v_iterator _currentCli = _clientList.begin(); _currentCli != ite; _currentCli++)
-	{
-		if ((*_currentCli)->executeAction())
+		if (_currentCli->getState() == S_CLOSE_FD)
 		{
-			if ((*_currentCli)->getState() == S_CLOSE_FD)
-			{
-				std::cout << "Closing and removing Client with read return = 0" << std::endl;
-				close((*_currentCli)->getClientFd());
-				_clientList.erase(_currentCli);
-			}
-			if (_currentCli + 1 != ite)
-			rotate(_clientList.begin(), _currentCli + 1, ite);
-			break;
+			std::cout << "Closing and removing Client with read return = 0" << std::endl;
+			close(_currentCli->getClientFd());
+			_clientListFd.erase(_currentCli->getClientFd());
+			return 0;
 		}
 	}
 	return 1;
@@ -221,4 +209,10 @@ void Server::_clientAddressPrint(struct sockaddr *cliAddr)
  		printf("(Host:[%s], service[%s])\n", host, service);
 	else
 		printf("getnameinfo failure :[%s]", gai_strerror(r));
+}
+
+
+int Server::getServerFd(void)
+{
+	return _serverFd;
 }

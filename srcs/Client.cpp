@@ -11,7 +11,7 @@ Client::Client()
 	_configList = NULL;
 }
 
-Client::Client(int clientFd, v_config* config)
+Client::Client(int clientFd, v_config* config, Server *myServ)
 {
 	_clientFd = clientFd;
 	_request = NULL;
@@ -19,6 +19,8 @@ Client::Client(int clientFd, v_config* config)
 	_configList = config;
 	std::cout << "create client with fd :" << _clientFd << std::endl;
 	_state = S_INIT;
+	_myServ = myServ;
+
 }
 
 Client::~Client(){};
@@ -41,6 +43,7 @@ Client &Client::operator=(const Client &src)
 		_request = src._request;
 		_response = src._response;
 		_configList = src._configList;
+		_myServ = src._myServ;
 
 	}
 	return *this;
@@ -141,4 +144,9 @@ int Client::getState(void) const
 std::string &Client::getStateStr(void) const
 {
 	return(_stateStr[_state]);
+}
+
+Server *Client::getMyServer(void) const
+{
+	return(_myServ);
 }

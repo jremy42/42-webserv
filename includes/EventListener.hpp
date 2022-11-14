@@ -9,7 +9,9 @@
 # include <stdlib.h>
 # include <string.h>
 # include <cerrno>
-# define MAX_CLIENT 5
+# include <vector>
+# include <map>
+# define MAX_FD 100
 
 class EventListener
 {
@@ -17,16 +19,16 @@ class EventListener
 		EventListener();
 		~EventListener();
 		EventListener(const EventListener &src);
-		EventListener & operator=(const EventListener &src);
-		void trackNewClient(int cli_fd, int cli_option);
-		int clientAvailable();
+		EventListener &operator=(const EventListener &src);
+		void trackNewFd(int fd, int option);
+		std::map<int, int> fdAvailable();
 		int getClientFlag(int fd) const;
 		void printEvent(int time_sleep) const;
 
 	private:
-		struct epoll_event	_evlist[MAX_CLIENT];
+		struct epoll_event	_evlist[MAX_FD];
 		int					_epfd;
-		int					_cli_available;
+		int					_fd_available;
 };
 
 #endif
