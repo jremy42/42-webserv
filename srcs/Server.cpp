@@ -13,8 +13,8 @@ Server::Server(v_config configList)
 			_createPassiveSocket(_port.c_str());
 		else
 			_createPassiveSocketWithHost(_port.c_str(), _configList[0].getServerInfoMap().find("listen")->second[0].c_str());
-		if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
-				throw(std::runtime_error(strerror(errno)));
+		//if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
+		//		throw(std::runtime_error(strerror(errno)));
 	} catch (const std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;

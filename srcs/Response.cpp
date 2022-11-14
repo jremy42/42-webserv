@@ -189,6 +189,12 @@ void Response::_methodGET(void)
 	}
 }
 
+void Response::_methodPOST(void)
+{
+	
+}
+
+
 void Response::_createHeader(void)
 {
 	string contentType(_request->getTarget());
@@ -314,11 +320,10 @@ int Response::_createAutoIndex(const string &pathToDir)
 		if (it->second != DT_DIR)
 		{
 			std::stringstream out;
-			struct stat buf;
-     		stat(path, &buf);
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
-			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << getFileSize(it->first) << std::endl;
-			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size()) << "<a href=\"" + cleanTargetDir  + it->first + "\">" + it->first + "</a>" << std::setw(40) <<  getFileSize(it->first) + " bytes" << std::endl;
+			//std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << getFileSize(it->first) << std::endl;
+			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size()) << "<a href=\"" + cleanTargetDir
+			+ it->first + "\">" + it->first + "</a>" << std::setw(40) <<  getFileSize(it->first) + " bytes" << std::endl;
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();

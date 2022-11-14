@@ -76,7 +76,9 @@ class Response
 		std::string						_generateHTMLBodyWithPath(void);
 		string							_selectActualTarget(string &actualTarget);
 		void							_createBodyFromFile(const string &actualTarget);
-
+// POST
+		void							_methodPOST(void);
+		
 };
 
 #endif
