@@ -6,6 +6,7 @@ Response::m_is Response::_initStatusCodeMessage()
 {
 	m_is ret;
 	ret[200] = "OK";
+	ret[301] = "Moved Permanently";
 	ret[400] = "Bad Request";
 	ret[404] = "Not Found";
 	ret[405] = "Method Not Allowed";
@@ -195,6 +196,7 @@ void Response::_methodPOST(void)
 	std::string	selectActualTargetResult;
 	
 	selectActualTargetResult = _selectActualTarget(actualTarget);
+	
 
 	//access sur le fichier droit d'ecriture 
 	//if file existe append ?
@@ -203,13 +205,13 @@ void Response::_methodPOST(void)
 }
 
 
-void Response::_createHeader(void)
+void Response::_createHeaderBase(void)
 {
 	string contentType(_request->getTarget());
 	size_t pos = contentType.find_last_of(".");
 	if (pos != std::string::npos)
 		contentType = string(contentType.begin() + pos + 1, contentType.end());
-	_header = "content-length: " + itoa(_body.size()) + "\n";
+	_header += "content-length: " + itoa(_body.size()) + "\n";
 	if (contentType == "jpg")
 		_header += "content-type: image/" + contentType + "\n";
 	std::cout << _header << std::endl;
@@ -227,12 +229,29 @@ void Response::_checkAutorizationForMethod(void)
 {
 	string requestTarget = _request->getTarget();
 	std::vector<string> allowedMethod = _config->getParamByLocation(requestTarget, "allowed_method");
+
+	if (find(allowedMethod.begin(), allowedMethod.end(), _request->getMethod()) == allowedMethod.end())
+		_statusCode = 405;
+}
+
+void Response::_checkRedirect(void)
+{
+	string requestTarget = _request->getTarget();
+	if( _config->getParamByLocation(requestTarget, "return")[0] == "1")
+		return;
+	else
+	{
+		std::cout << "REDIRECT\n";
+		_statusCode = atoi(_config->getParamByLocation(requestTarget, "return")[0].c_str());
+		_header += "location: " + _config->getParamByLocation(requestTarget, "return")[1] + "\n";
+	}
 }
 
 int Response::createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
+	_checkRedirect();
 	_checkAutorizationForMethod();	
 	if(_statusCode > 200)
 		_createErrorMessageBody();
@@ -240,7 +259,7 @@ int Response::createResponse(void)
 	{
 		_methodGET();
 	}
-	_createHeader();
+	_createHeaderBase();
 	_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
 	_createFullResponse();
 	return 0;

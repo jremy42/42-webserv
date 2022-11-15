@@ -19,7 +19,10 @@
 # include "EventListener.hpp"
 # include <stdexcept>
 # include <algorithm>
-# define DEBUG 1
+# define DEBUG 0
+# define KEEP_ALIVE_MAX_REQUEST 1000
+# define KEEP_ALIVE_TIMEOUT 10 //secondes
+
 
 class Client;
 class Config;
@@ -56,7 +59,7 @@ class Server
 		void 				_createPassiveSocket(const char *service);
 		void 				_createPassiveSocketWithHost(const char *service,const char *host);
 		void 				_clientAddressPrint(struct sockaddr *cliAddr);
-		static void				_delete_second(std::pair<int, Client*> toDelete);
+		static void			_delete_second(std::pair<int, Client*> toDelete);
 };
 
 #endif

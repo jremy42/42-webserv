@@ -236,7 +236,7 @@ int		Webserv::execServerLoop(void)
 		{
 			if (_fdServerList.find(it->first) != _fdServerList.end())
 			{
-				std::cout << "Accept new Client\n";
+				std::cout << "\e[32mACCEPT NEW CLIENT\e[0m\n";
 				// verification du flag
 				int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
 				_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);

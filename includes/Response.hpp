@@ -24,7 +24,7 @@
 # include <iomanip>
 
 # define MAX_PATH 4092
-# define DEBUG_RESPONSE 1
+# define DEBUG_RESPONSE 0
 class Config;
 
 class Response
@@ -66,9 +66,10 @@ class Response
 		static m_is 					_initStatusCodeMessage(void);
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);
-		void							_createHeader(void);
+		void							_createHeaderBase(void);
 		void							_createFullResponse(void);
 		void							_checkAutorizationForMethod(void);
+		void							_checkRedirect(void);
 //GET
 		void							_methodGET(void);
 		int								_createAutoIndex(const string &pathToDir);

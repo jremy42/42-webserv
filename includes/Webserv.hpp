@@ -29,7 +29,7 @@ class Webserv
 		typedef std::map<int, Server*> m_i_serv;
 
 		Webserv();
-		Webserv(string fileName); // open filenames, populates _rawConfig
+		Webserv(string fileName); // open filenames, populates p_rawConfig
 		Webserv(const Webserv &src);
 		~Webserv(void);
 		Webserv &operator=(const Webserv &rhs);

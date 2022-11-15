@@ -14,7 +14,7 @@
 # include "Config.hpp"
 # include "Server.hpp"
 
-# define DEBUG 1
+# define DEBUG 0
 
 enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};
 class Server;

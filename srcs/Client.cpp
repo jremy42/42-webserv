@@ -81,15 +81,19 @@ int Client::executeAction()
 	int	actionReturnValue;
 	int	actionMade = 0;
 
-	// std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
-	// printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
-	// 	(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
-	// 	(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
-	// 	(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
-	// 	(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
-	// 	(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
-	if (_availableActions & EPOLLERR)
-		return S_CLOSE_FD;
+	usleep(50000);
+	std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
+	printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
+		(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
+		(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
+		(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
+		(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
+		(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
+	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP)
+	{
+		_state = S_CLOSE_FD;
+		return 1;
+	}
 	if ((_availableActions & EPOLLIN) && (_state == S_INIT))
 	{
 		_request = new Request(_clientFd);
@@ -125,7 +129,7 @@ int Client::executeAction()
 	else if(_state == S_CLOSE_FD)
 	{
 		delete _request;
-		_state = S_INIT;
+		_state = S_CLOSE_FD;
 	}
 	//std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
 	return (actionMade);

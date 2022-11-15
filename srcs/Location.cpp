@@ -14,16 +14,32 @@ std::map<std::string, std::pair<int, int> > Location::_initConfigField()
 	configField.insert(std::pair<std::string, std::pair<int, int> >("upload", std::pair<int, int>(1,1)));
 
 	configField.insert(std::pair<std::string, std::pair<int, int> >("cgi", std::pair<int, int>(2,2)));
-	configField.insert(std::pair<std::string, std::pair<int, int> >("rewrite", std::pair<int, int>(2,2)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("return", std::pair<int, int>(2,2)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("error_page", std::pair<int, int>(2,2)));
 
 	return (configField);
+}
+
+void	Location::_initLocationInfoMap(void)
+{
+	for (std::map<std::string, std::pair<int, int> >::iterator it = _configField.begin(); it != _configField.end(); it++)
+		_locationInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
+	_locationInfoMap.find("root")->second.push_back("./www");
+	_locationInfoMap.find("allowed_method")->second.push_back("GET");
+	_locationInfoMap.find("client_max_body_size")->second.push_back("12m");
+	_locationInfoMap.find("index")->second.push_back("index.html");
+	_locationInfoMap.find("return")->second.push_back("1");
+	_locationInfoMap.find("upload")->second.push_back("./www");	
+	_locationInfoMap.find("error_page")->second.push_back("999");
+	_locationInfoMap.find("autoindex")->second.push_back("off");	
+
 }
 
 Location::Location(string rawLocation)
 {
 	if (DEBUG_LOCATION)
 		std::cout << "Location string constructor called with : ~>" << rawLocation << "<~" << std::endl;
+	_initLocationInfoMap();
 	_createLocationInfoMap(rawLocation);
 	_parseAllowedMethods();
 	_parseAutoindex();
@@ -109,6 +125,8 @@ void Location::_parseErrorPage(void)
 {
 	string errorNum = _locationInfoMap.find("error_page")->second[0];
 	int errorCode  = atoi(errorNum.c_str());
+	if (errorCode == 999)
+		return ;
 	if (errorNum.find_first_not_of("1234567890") != std::string::npos || (errorCode < 400 || errorCode > 511))
 		throw(std::runtime_error("webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
 }

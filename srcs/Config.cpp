@@ -12,10 +12,11 @@ std::map<std::string, std::pair<int, int> > Config::_initConfigField()
 	configField.insert(std::pair<std::string, std::pair<int, int> >("autoindex", std::pair<int, int>(0,0)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("index", std::pair<int, int>(0, 0)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("upload", std::pair<int, int>(0,0)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("return", std::pair<int, int>(1,2)));
 	
 	configField.insert(std::pair<std::string, std::pair<int, int> >("listen", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("server_name", std::pair<int, int>(1,__INT_MAX__)));
-	
+
 	return (configField);
 }
 
@@ -103,8 +104,8 @@ const std::vector<std::string> Config::getParamByLocation(string &requestTarget,
 {
 	std::vector<string> 				defaultRet = _serverInfoMap.find(key)->second;
 	m_s_vs::const_iterator				tryfind;
-	m_s_l::const_iterator 				it = _location.begin();
-	m_s_l::const_iterator 				ite = _location.end();
+	m_s_l::const_reverse_iterator 				it = _location.rbegin();
+	m_s_l::const_reverse_iterator 				ite = _location.rend();
 
 	for(;it != ite; it++)
 	{
@@ -114,7 +115,8 @@ const std::vector<std::string> Config::getParamByLocation(string &requestTarget,
 			if (tryfind != it->second.getLocationInfoMap().end())
 			{
 				if (DEBUG_CONFIG)
-					std::cout << "getParamByLocation : Found a value for key [" << key << "]" << std::endl;
+					std::cout << "getParamByLocation : Found a value for key [" << key << "][" << tryfind->second << "] with location" 
+					<< it->first << std::endl;
 				return (tryfind->second);
 			}
 		}
@@ -148,6 +150,8 @@ void	Config::_initServerInfoMap(void)
 	_serverInfoMap.find("allowed_method")->second.push_back("GET");
 	_serverInfoMap.find("autoindex")->second.push_back("off");
 	_serverInfoMap.find("index")->second.push_back("index.html");
+	_serverInfoMap.find("return")->second.push_back("1");
+
 }
 
 
