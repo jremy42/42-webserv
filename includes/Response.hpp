@@ -68,7 +68,7 @@ class Response
 		void							_createBody(void);
 		void							_createHeader(void);
 		void							_createFullResponse(void);
-
+		void							_checkAutorizationForMethod(void);
 //GET
 		void							_methodGET(void);
 		int								_createAutoIndex(const string &pathToDir);

@@ -37,8 +37,15 @@ Server::Server(v_config configList)
 
 };
 
-Server::~Server(){
+void Server::_delete_second(std::pair<int, Client*> toDelete)
+{
+		delete toDelete.second;
+};
 
+Server::~Server()
+{
+	
+	for_each(_clientListFd.begin(), _clientListFd.end(), _delete_second );
 	std::cout << "Server destruction" << std::endl;
 };
 

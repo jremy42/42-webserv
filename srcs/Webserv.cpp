@@ -3,6 +3,8 @@
 #include <iterator>
 #include <algorithm>
 
+extern int	g_rv;
+
 Webserv::Webserv()
 {};
 
@@ -55,7 +57,10 @@ Webserv::Webserv(const Webserv &src)
 
 Webserv::~Webserv(void)
 {
+	m_i_serv::iterator ite = _fdServerList.end();
 
+	for (m_i_serv::iterator it = _fdServerList.begin(); it != ite; it++)
+		delete it->second;
 }
 
 
@@ -223,7 +228,7 @@ int		Webserv::execServerLoop(void)
 	std::map<int, int> _fdAvailable;
 	std::map<int, int>::iterator ite;
 
-	while (true)
+	while (g_rv)
 	{
 		_fdAvailable = _evListener.fdAvailable();
 		ite = _fdAvailable.end();
@@ -232,6 +237,7 @@ int		Webserv::execServerLoop(void)
 			if (_fdServerList.find(it->first) != _fdServerList.end())
 			{
 				std::cout << "Accept new Client\n";
+				// verification du flag
 				int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
 				_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
 				_fdClientList.insert(std::pair<int, Server*>(newFd, _fdServerList.find(it->first)->second));
@@ -242,6 +248,7 @@ int		Webserv::execServerLoop(void)
 			}
 		}
 	}
+
 	return (1);
 }
 

@@ -22,6 +22,7 @@ std::string		itoa(int statusCode);
 std::string		ltoa(long statusCode);
 std::string		getFileSize(std::string filename);
 int				isDir(std::string fileName);
-int fileExist(std::string fileName);
+int 			fileExist(std::string fileName);
+void		__signal(int signal);
 
 #endif

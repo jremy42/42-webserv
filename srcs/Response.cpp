@@ -191,7 +191,15 @@ void Response::_methodGET(void)
 
 void Response::_methodPOST(void)
 {
+	std::string	actualTarget;
+	std::string	selectActualTargetResult;
 	
+	selectActualTargetResult = _selectActualTarget(actualTarget);
+
+	//access sur le fichier droit d'ecriture 
+	//if file existe append ?
+	// else create file
+	// create response
 }
 
 
@@ -215,9 +223,17 @@ void Response::_createFullResponse(void)
 	_fullResponse.insert(_fullResponse.end(), _body.begin(), _body.end());
 }
 
+void Response::_checkAutorizationForMethod(void)
+{
+	string requestTarget = _request->getTarget();
+	std::vector<string> allowedMethod = _config->getParamByLocation(requestTarget, "allowed_method");
+}
+
 int Response::createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
+	//check methode
+	_checkAutorizationForMethod();	
 	if(_statusCode > 200)
 		_createErrorMessageBody();
 	else if (_request->getMethod() == "GET")
@@ -313,6 +329,8 @@ int Response::_createAutoIndex(const string &pathToDir)
 	std::map<string, unsigned int>	dirMap = _populateDirectoryMap(path);
 	string							HTMLbody = _generateHTMLBodyWithPath();
 	string							cleanTargetDir = _request->getTarget();
+	string cleanPathToDir = pathToDir + (pathToDir[pathToDir.size() - 1] != '/' ? "/" : "");
+
 
 	cleanTargetDir += cleanTargetDir[cleanTargetDir.size() - 1] != '/' ? "/" : "";
 	for (std::map<string, unsigned int>::reverse_iterator it = dirMap.rbegin(); it != dirMap.rend(); it++)
@@ -322,15 +340,19 @@ int Response::_createAutoIndex(const string &pathToDir)
 			std::stringstream out;
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			//std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << getFileSize(it->first) << std::endl;
-			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size()) << "<a href=\"" + cleanTargetDir
-			+ it->first + "\">" + it->first + "</a>" << std::setw(40) <<  getFileSize(it->first) + " bytes" << std::endl;
+			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size())
+				<< "<a href=\"" + cleanTargetDir + it->first + "\">" + it->first + "</a>"
+				<< std::setw(40) <<  getFileSize(cleanPathToDir + it->first) + " bytes" << std::endl;
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();
 			HTMLbody.insert(pos, out.str());
 		}
-		else {	
-			
+	}
+	for (std::map<string, unsigned int>::reverse_iterator it = dirMap.rbegin(); it != dirMap.rend(); it++)
+	{	
+		if (it->second == DT_DIR)
+		{	
 			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();

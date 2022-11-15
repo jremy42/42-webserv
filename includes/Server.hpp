@@ -18,6 +18,7 @@
 # include "Config.hpp"
 # include "EventListener.hpp"
 # include <stdexcept>
+# include <algorithm>
 # define DEBUG 1
 
 class Client;
@@ -55,7 +56,7 @@ class Server
 		void 				_createPassiveSocket(const char *service);
 		void 				_createPassiveSocketWithHost(const char *service,const char *host);
 		void 				_clientAddressPrint(struct sockaddr *cliAddr);
-
+		static void				_delete_second(std::pair<int, Client*> toDelete);
 };
 
 #endif

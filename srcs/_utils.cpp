@@ -1,5 +1,7 @@
 #include "_utils.hpp"
 
+extern int	g_rv;
+
 std::string	&strtrim(std::string &str, const std::string &charset)
 {
 	std::size_t first 					= str.find_first_not_of(charset);
@@ -82,7 +84,7 @@ std::string ltoa(long statusCode)
 
 std::string getFileSize(std::string filename)
 {
-
+	std::cout << "getFileSize FILENAME:" << filename << std::endl; 
     FILE *fp = fopen(filename.c_str(), "r");
 
     if (fp == NULL)
@@ -108,4 +110,12 @@ int fileExist(std::string fileName)
 {
   	struct stat buf;
     return (!stat(fileName.c_str(), &buf));
+}
+
+void	__signal(int signal)
+{
+	if (signal == 2)
+	{	
+		g_rv = 0;
+	}
 }
