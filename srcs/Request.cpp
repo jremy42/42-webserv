@@ -208,7 +208,7 @@ int Request::readClientRequest(int do_read)
 {
 	std::string	rawRequestLine;
 	char		buf[READ_BUFFER_SIZE];
-	int			read_ret;
+	int			read_ret = 0;
 	//char		*next_nl;
 	//char		*headerStart;
 
@@ -239,7 +239,7 @@ int Request::readClientRequest(int do_read)
 		_handleBody();
 	if (read_ret < READ_BUFFER_SIZE && _state == R_BODY)
 		_state = R_END;
-	if (read_ret == 0)
+	if (read_ret == 0 && do_read)
 		_state = R_ZERO_READ;
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()

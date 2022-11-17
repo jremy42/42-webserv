@@ -75,10 +75,7 @@ void Response::_createErrorMessageBody(void)
 		if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
 			_createBodyFromFile(actualTarget);
 		else
-		{
-			_statusCode = 404;
 			errorPage = "";
-		}
 	}
 	if (errorPage == "")
 	{

@@ -81,7 +81,7 @@ int Client::executeAction()
 	int	actionReturnValue;
 	int	actionMade = 0;
 
-	usleep(50000);
+	//usleep(50000);
 	/* std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
 	printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
 		(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
