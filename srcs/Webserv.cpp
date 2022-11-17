@@ -239,6 +239,7 @@ int		Webserv::execServerLoop(void)
 	{
 		_fdAvailable = _evListener.fdAvailable();
 		ite = _fdAvailable.end();
+		std::cout << _openFd << std::endl;
 		for (std::map<int, int>::iterator it = _fdAvailable.begin(); it != ite; it++)
 		{
 			if (_fdServerList.find(it->first) != _fdServerList.end() && _openFd < _maxFd - 10)
@@ -252,7 +253,8 @@ int		Webserv::execServerLoop(void)
 			}
 			else if (_fdClientList.find(it->first) != _fdClientList.end())
 			{
-				_fdClientList.find(it->first)->second->execClientAction(it->first, it->second);
+				if (!(_fdClientList.find(it->first)->second->execClientAction(it->first, it->second)))
+					_openFd--;
 			}
 		}
 	}
