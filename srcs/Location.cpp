@@ -8,7 +8,7 @@ std::map<std::string, std::pair<int, int> > Location::_initConfigField()
 
 	configField.insert(std::pair<std::string, std::pair<int, int> >("root", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("allowed_method", std::pair<int, int>(1,3)));
-	configField.insert(std::pair<std::string, std::pair<int, int> >("client_max_body_size", std::pair<int, int>(1,1)));
+	//configField.insert(std::pair<std::string, std::pair<int, int> >("client_max_body_size", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("autoindex", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("index", std::pair<int, int>(1,__INT_MAX__)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("upload", std::pair<int, int>(1,1)));

@@ -47,6 +47,7 @@ Config::Config(std::string rawServerConfig)
 		throw(std::runtime_error("webserv: empty conf, server block ignored"));
 
 	_parseListenHostPort();
+	_parseClientMaxBodySize();
 	// WARNING -> valeurs a verfier avant de les recup
 	_listenPort = atoi(_serverInfoMap["listen"][1].c_str());
 	_rootDirectory = _serverInfoMap["root"][0];
@@ -323,3 +324,45 @@ void Config::_parseListenHostPort(void)
 	}
 }
 
+void Config::_parseClientMaxBodySize(void)
+{
+	string	ret;
+	long	baseValue;
+	char	lastChar;	
+
+	ret = _serverInfoMap["client_max_body_size"][0];
+	lastChar = ret.at(ret.size() - 1);
+
+	if (DEBUG_CONFIG)
+		std::cout << "Entering _parseClientMaxBodySize wit ret : [" << ret << "] lastChar [" << lastChar << "]" << std::endl;
+	if (lastChar != 'm' && lastChar != 'k' && string("0123456789").find_first_of(lastChar) == std::string::npos)
+		throw(std::runtime_error("webserv: config : client_max_body_size : wrong unit [" + ret + "]"));
+	if (ret.substr(0, ret.size() - 1).find_first_not_of("0123456789") != std::string::npos)
+		throw(std::runtime_error("webserv: config : client_max_body_size wrong digit [" + ret + "]"));
+	if (string("0123456789").find_first_of(lastChar) != std::string::npos)
+	{
+		if (ret.find_first_not_of("0123456789") != std::string::npos)
+			throw(std::runtime_error("webserv: config : client_max_body_size : wrong digit [" + ret + "]"));
+		if (atol(ret.c_str()) > MAX_BODY_SIZE_HARD_LIMIT)
+			throw(std::runtime_error("webserv: config : client_max_body_size is too high [" + ret + "] > " + itoa(MAX_BODY_SIZE_HARD_LIMIT)));
+		if (atol(ret.c_str()) < MIN_BODY_SIZE_HARD_LIMIT)
+			throw(std::runtime_error("webserv: config : client_max_body_size is too low [" + ret + "] > " + itoa(MIN_BODY_SIZE_HARD_LIMIT)));
+		if (DEBUG_CONFIG)
+			std::cout << "\e[32mValid Max client body size : [" << ret << "]\e[0m" << std::endl;
+	}
+	else
+	{
+		baseValue = atol(ret.substr(0, ret.size() - 1).c_str()); 
+		if (lastChar == 'k')
+		{
+			_serverInfoMap["client_max_body_size"][0] = itoa(baseValue << 10);
+			_parseClientMaxBodySize();
+
+		}
+		else if (lastChar == 'm')
+		{
+			_serverInfoMap["client_max_body_size"][0] = itoa(baseValue << 20);
+			_parseClientMaxBodySize();
+		}
+	}
+}
