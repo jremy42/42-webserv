@@ -17,7 +17,9 @@
 # define HEADER_FIELD 3
 # define REQUEST_LINE_FIELD 3
 
-# define DEBUG_REQUEST 0
+# ifndef DEBUG_REQUEST
+#  define DEBUG_REQUEST 0
+# endif
 
 
 enum {R_REQUESTLINE, R_HEADER, R_BODY, R_END, R_ERROR, R_ZERO_READ};

@@ -16,7 +16,9 @@
 # include "_utils.hpp"
 # include "Location.hpp"
 
-# define DEBUG_CONFIG 1
+# ifndef DEBUG_CONFIG
+#  define DEBUG_CONFIG 1
+# endif
 # define MAX_BODY_SIZE_HARD_LIMIT 32
 
 enum {MANDATORY_ONE, OPTIONAL_ONE, OPTIONAL_MULTI};

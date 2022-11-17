@@ -13,6 +13,10 @@
 # include <map>
 # define MAX_FD 100
 
+# ifndef DEBUG_EVENTLISTENER
+#  define DEBUG_EVENTLISTENER 1
+# endif
+
 class EventListener
 {
 	public:

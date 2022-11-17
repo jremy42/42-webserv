@@ -19,7 +19,10 @@
 # include "EventListener.hpp"
 # include <stdexcept>
 # include <algorithm>
-# define DEBUG 0
+
+# ifndef DEBUG_SERVER
+#  define DEBUG_SERVER 0
+# endif
 # define KEEP_ALIVE_MAX_REQUEST 1000
 # define KEEP_ALIVE_TIMEOUT 10 //secondes
 

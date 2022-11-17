@@ -13,7 +13,10 @@
 # include "Config.hpp"
 # include "EventListener.hpp"
 
-# define DEBUG_WEBSERV 0
+# ifndef DEBUG_WEBSERV
+#  define DEBUG_WEBSERV 0
+# endif
+
 # define CLIENT 0
 # define SERVER 1
 

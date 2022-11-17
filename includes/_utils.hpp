@@ -10,6 +10,9 @@
 # include <sys/types.h>
 # include <sys/stat.h>
 
+# ifndef DEBUG_UTILS
+#  define DEBUG_UTILS 0
+# endif
 
 std::string		&strtrim(std::string &str, const std::string &charset);
 std::string		normalizeKeyValStr(std::string &keyValStr, const std::string &separatorCharset, const char defaultSeparator);

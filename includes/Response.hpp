@@ -24,7 +24,9 @@
 # include <iomanip>
 
 # define MAX_PATH 4092
-# define DEBUG_RESPONSE 0
+# ifndef DEBUG_RESPONSE
+#  define DEBUG_RESPONSE 0
+# endif
 class Config;
 
 class Response

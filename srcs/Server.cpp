@@ -1,7 +1,5 @@
 #include "Server.hpp"
 
-
-
 Server::Server(v_config configList)
 {
 	_configList = configList;
