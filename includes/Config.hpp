@@ -17,9 +17,10 @@
 # include "Location.hpp"
 
 # ifndef DEBUG_CONFIG
-#  define DEBUG_CONFIG 0
+#  define DEBUG_CONFIG 1
 # endif
-# define MAX_BODY_SIZE_HARD_LIMIT 32
+# define MAX_BODY_SIZE_HARD_LIMIT 32 * 1024 * 1024
+# define MIN_BODY_SIZE_HARD_LIMIT 32
 
 enum {MANDATORY_ONE, OPTIONAL_ONE, OPTIONAL_MULTI};
 
@@ -66,6 +67,7 @@ class Config
 		char		_getNextBlockDelim(std::string str, int pos) const;
 		string		_getNextLocationBlock(std::string &rawLocation);
 		void		_parseListenHostPort(void);
+		void		_parseClientMaxBodySize(void);
 		static std::map<std::string, std::pair<int, int> >	_configField;
 		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);
 };
