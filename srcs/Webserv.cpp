@@ -37,7 +37,11 @@ Webserv::Webserv(string fileName)
 	//_configArray = NULL;
 
 	int				viableConfig = 0;
-
+	_openFd = 0;
+	_maxFd = _getMaxFd();
+	if (_maxFd < 10)
+		throw(std::runtime_error("Webserv: not open enough file descriptor for run webserv" ));
+	std::cout << "fd max " << _maxFd << std::endl;
 	_loadFile(fileName.c_str());
 	std::cout << "Config list :" << std::endl;
 	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
@@ -47,6 +51,7 @@ Webserv::Webserv(string fileName)
 	}
 	if (viableConfig == 0)
 		throw NotEnoughValidConfigFilesException();
+
 	return ;
 }
 
@@ -70,6 +75,8 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 	this->_rawConfig = rhs._rawConfig;
 	this-> _configList = rhs._configList;
 	this-> _portConfigList = rhs._portConfigList;
+	this->_openFd = rhs._openFd;
+	this->_maxFd = rhs._maxFd;
 
 	return (*this);
 }
@@ -105,7 +112,6 @@ void Webserv::_loadFile(const char * fileName)
 		}
 	}
 	fs.close();
-
 }
 
 std::string::iterator	findMatchingBracket(std::string &str, std::size_t openBracketPos)
@@ -213,12 +219,13 @@ int		Webserv::createServerListByPortConfig(void)
 {
 	m_i_vc::iterator it;
 
-	for (it = _portConfigList.begin(); it != _portConfigList.end(); it++)
+	for (it = _portConfigList.begin(); it != _portConfigList.end() && _openFd < _maxFd ; it++)
 	{
 		Server *newServer = new Server((*it).second);
 		_serverList.push_back(newServer);
 		_evListener.trackNewFd(newServer->getServerFd(), EPOLLIN);
 		_fdServerList.insert(std::pair<int, Server*>(newServer->getServerFd(), newServer));
+		_openFd++;
 	}
 	return (1);
 }
@@ -234,12 +241,13 @@ int		Webserv::execServerLoop(void)
 		ite = _fdAvailable.end();
 		for (std::map<int, int>::iterator it = _fdAvailable.begin(); it != ite; it++)
 		{
-			if (_fdServerList.find(it->first) != _fdServerList.end())
+			if (_fdServerList.find(it->first) != _fdServerList.end() && _openFd < _maxFd - 10)
 			{
 				std::cout << "\e[32mACCEPT NEW CLIENT\e[0m\n";
 				// verification du flag
 				int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
 				_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
+				_openFd++;
 				_fdClientList.insert(std::pair<int, Server*>(newFd, _fdServerList.find(it->first)->second));
 			}
 			else if (_fdClientList.find(it->first) != _fdClientList.end())
@@ -250,6 +258,14 @@ int		Webserv::execServerLoop(void)
 	}
 
 	return (1);
+}
+
+
+unsigned long	Webserv::_getMaxFd()
+{
+	struct rlimit rlim;
+	getrlimit(RLIMIT_NOFILE, &rlim);
+	return(rlim.rlim_cur);
 }
 
 std::string Webserv::_checkServerName(std::vector<string> nextServerName, std::vector<string> currentServerName)

@@ -66,6 +66,14 @@ std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::vecto
 	return (o);
 }
 
+std::ostream	&operator<<(std::ostream &o, const std::map<int, std::string> &map)
+{
+	std::map<int, std::string>::const_iterator	it = map.begin();
+	for (; it != map.end(); it++)
+		std::cout << "key [" << it->first << "] value:[" << it->second << "]" << std::endl;
+	return (o);
+}
+
 std::string itoa(int statusCode)
 {
 	std::stringstream out;

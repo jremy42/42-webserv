@@ -30,7 +30,7 @@ void	Location::_initLocationInfoMap(void)
 	_locationInfoMap.find("index")->second.push_back("index.html");
 	_locationInfoMap.find("return")->second.push_back("1");
 	_locationInfoMap.find("upload")->second.push_back("./www");	
-	_locationInfoMap.find("error_page")->second.push_back("999");
+	//_locationInfoMap.find("error_page")->second.push_back("999");
 	_locationInfoMap.find("autoindex")->second.push_back("off");	
 
 }
@@ -43,10 +43,11 @@ Location::Location(string rawLocation)
 	_createLocationInfoMap(rawLocation);
 	_parseAllowedMethods();
 	_parseAutoindex();
-	_parseErrorPage();
 	_parseMaxBodySize();
 	if (DEBUG_LOCATION)
+	{
 		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
+	}
 }
 
 Location::~Location(void)
@@ -61,6 +62,7 @@ Location::Location(const Location &src)
 Location	&Location::operator=(const Location &rhs)
 {
 	this->_locationInfoMap = rhs._locationInfoMap;
+	this->_errorPage = rhs._errorPage;
 	return (*this);
 }
 
@@ -111,9 +113,20 @@ void	Location::_createLocationInfoMap(std::string &rawServerConf)
 		normalizeKeyValStr(nextLine, "\f\t\n\r\v ;", ' ');
 		locationLine = parseLocationLine(nextLine);
 		if (!locationLine.first.empty())
-			_locationInfoMap[locationLine.first] = locationLine.second;
+		{
+			if (locationLine.first == "error_page")
+			{
+				_parseErrorPage(locationLine.second[0]);
+				std::cout << "insert error page with value" << locationLine << std::endl;
+				_errorPage.insert(std::pair<int, string>(atoi(locationLine.second[0].c_str()), locationLine.second[1]));
+				std::cout << _errorPage << std::endl;
+			}
+			else
+				_locationInfoMap[locationLine.first] = locationLine.second;
+		}
 	}
 }
+
 const Location::m_s_vs	&Location::getLocationInfoMap(void) const
 {
 	const m_s_vs	&LocRef = this->_locationInfoMap;
@@ -121,12 +134,16 @@ const Location::m_s_vs	&Location::getLocationInfoMap(void) const
 
 }
 
-void Location::_parseErrorPage(void)
+const Location::m_is	&Location::getErrorPage(void) const
 {
-	string errorNum = _locationInfoMap.find("error_page")->second[0];
+	const m_is	&errorRef = this->_errorPage;
+	return (errorRef);
+
+}
+
+void Location::_parseErrorPage(string errorNum)
+{
 	int errorCode  = atoi(errorNum.c_str());
-	if (errorCode == 999)
-		return ;
 	if (errorNum.find_first_not_of("1234567890") != std::string::npos || (errorCode < 400 || errorCode > 511))
 		throw(std::runtime_error("webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
 }
@@ -150,6 +167,9 @@ std::ostream	&operator<<(std::ostream &o, const Location &Location)
 {
 	std::cout << "-------------------Location Printer Start-------------------" << std::endl;
 	std::cout << Location.getLocationInfoMap();
+	std::cout << "####################Location ErrorPage Start################" << std::endl;
+	std::cout << Location.getErrorPage();
+	std::cout << "####################Location ErrorPage end################" << std::endl;
 	std::cout << "--------------------Location Printer End--------------------" << std::endl;
 	return (o);
 }

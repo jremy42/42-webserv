@@ -77,7 +77,7 @@ class Response
 		int								_createAutoIndex(const string &pathToDir);
 		std::map<string, unsigned int>	_populateDirectoryMap(const char *path);
 		std::string						_generateHTMLBodyWithPath(void);
-		string							_selectActualTarget(string &actualTarget);
+		string							_selectActualTarget(string &actualTarget, string requestTarget);
 		void							_createBodyFromFile(const string &actualTarget);
 // POST
 		void							_methodPOST(void);
