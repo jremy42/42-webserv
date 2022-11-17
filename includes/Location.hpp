@@ -43,7 +43,7 @@ class Location
 		void												_parseAllowedMethods(void);
 		void												_parseAutoindex(void);
 		void 												_parseErrorPage(string errorNum);
-		void 												_parseMaxBodySize(void);
+	//	void 												_parseMaxBodySize(void);
 		void												_initLocationInfoMap(void);
 
 		static std::map<std::string, std::pair<int, int> >	_configField;

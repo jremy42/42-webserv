@@ -56,8 +56,8 @@ void	Client::setAvailableActions(int epollFlags)
 
 Config		*Client::getMatchingConfig(void) const
 {
-	v_config::iterator							it = _configList->begin(); 
-	v_config::iterator							ite = _configList->end(); 
+	v_config::iterator							it = _configList->begin();
+	v_config::iterator							ite = _configList->end();
 	std::vector<std::string>::const_iterator	match;
 	std::vector<std::string>					currentCheckedConfig;
 	
@@ -102,7 +102,19 @@ int Client::executeAction()
 	if ((_availableActions & EPOLLIN) && _state == S_REQREAD)
 	{
 		_state = S_REQREAD;
-		actionReturnValue = _request->readClientRequest();
+		actionReturnValue = _request->readClientRequest(1);
+		if (actionReturnValue == R_GET_MAX_BODY_SIZE)
+		{
+			//A faire uniquement quand reqline & header a ete lu pour connaitre host/server_name 
+			std::string	target = _request->getTarget();
+			int clientMaxBodySize = atoi(getMatchingConfig()->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
+			_request->setClientMaxBodySize(clientMaxBodySize);
+			if (DEBUG_CLIENT)
+				std::cout << "Setting Client Max Body Size to : [" << clientMaxBodySize << "]" << std::endl;
+			//A faire uniquement quand reqline & header a ete lu pour connaitre host/server_name
+			_request->setState(R_BODY);
+			actionReturnValue = _request->readClientRequest(0);
+		}
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR)
 		{
 			//std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";

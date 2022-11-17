@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/11/15 13:22:22 by jremy            ###   ########.fr       */
+/*   Updated: 2022/11/17 13:10:04 by fle-blay         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 # include <signal.h>
 # include "_utils.hpp"
 int	g_rv;
-
 
 /*
 int main(int ac, char **av)
