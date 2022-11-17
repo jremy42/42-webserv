@@ -43,8 +43,6 @@ Location::Location(string rawLocation)
 	_createLocationInfoMap(rawLocation);
 	_parseAllowedMethods();
 	_parseAutoindex();
-	_parseErrorPage();
-	//_parseMaxBodySize();
 	if (DEBUG_LOCATION)
 	{
 		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
