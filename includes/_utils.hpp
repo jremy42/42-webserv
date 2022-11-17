@@ -20,6 +20,7 @@ std::string		normalizeKeyValStr(std::string &keyValStr, const std::string &separ
 std::ostream	&operator<<(std::ostream &o, const std::vector<std::string> &vec);
 std::ostream	&operator<<(std::ostream &o, const std::pair<std::string, std::vector<std::string> > &pair);
 std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::vector<std::string> > &map);
+std::ostream	&operator<<(std::ostream &o, const std::map<int, std::string> &map);
 
 std::string		itoa(int statusCode);
 std::string		ltoa(long statusCode);

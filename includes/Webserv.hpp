@@ -7,7 +7,8 @@
 # include <stdlib.h>
 # include <fstream>
 # include <algorithm>
-
+# include <sys/time.h>
+# include <sys/resource.h>
 # include "Server.hpp"
 # include "Client.hpp"
 # include "Config.hpp"
@@ -49,15 +50,18 @@ class Webserv
 		};
 
 	private:
-		v_server		_serverList;
-		v_config		_configList;
-		v_string		_rawConfig;
-		m_i_vc			_portConfigList;
-		m_i_serv			_fdServerList;
-		m_i_serv			_fdClientList;
-		EventListener	_evListener;
-		void			_loadFile(const char *fileName);
-		string			_checkServerName(std::vector<string> nextServerName, std::vector<string> currentServerName);
+		unsigned long			_openFd;
+		unsigned long			_maxFd;
+		v_server				_serverList;
+		v_config				_configList;
+		v_string				_rawConfig;
+		m_i_vc					_portConfigList;
+		m_i_serv				_fdServerList;
+		m_i_serv				_fdClientList;
+		EventListener			_evListener;
+		void					_loadFile(const char *fileName);
+		string					_checkServerName(std::vector<string> nextServerName, std::vector<string> currentServerName);
+		unsigned long			_getMaxFd();
 };
 
 #endif

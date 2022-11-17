@@ -54,6 +54,10 @@ class Config
 		const std::vector<string> getParamByLocation(string &requestTarget, string field) const;
 		const m_s_vs		&getServerInfoMap(void) const;
 		const m_s_l		&getLocation(void) const;
+		std::string getErrorPageByLocation(string &requestTarget, int errorCode) const;
+		std::string getMatchingLocation(string &requestTarget) const;
+
+
 
 	private:
 		void		_initServerInfoMap(void);

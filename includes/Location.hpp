@@ -15,7 +15,7 @@
 # include "_utils.hpp"
 
 # ifndef DEBUG_LOCATION
-#  define DEBUG_LOCATION 0
+#  define DEBUG_LOCATION 1
 # endif
 
 class Location
@@ -23,6 +23,7 @@ class Location
 	public:
 		typedef std::string			string;
 		typedef std::map<string, std::vector<string> > m_s_vs;
+		typedef std::map<int, string> m_is;
 
 		Location(void);
 		Location(const Location &src);
@@ -30,16 +31,19 @@ class Location
 		~Location(void);
 		Location &operator=(const Location &rhs);
 		const m_s_vs	&getLocationInfoMap(void) const;
+		const m_is		&getErrorPage(void) const;
+
 
 	private:
 		m_s_vs	_locationInfoMap;
+		m_is	_errorPage;
 
 		void												_createLocationInfoMap(std::string &rawServerConf);
 		std::pair<std::string, std::vector<std::string > >	parseLocationLine(std::string &nextLine);
 		void												_parseAllowedMethods(void);
 		void												_parseAutoindex(void);
-		void 												_parseErrorPage(void);
-		//void 												_parseMaxBodySize(void);
+		void 												_parseErrorPage(string errorNum);
+	//	void 												_parseMaxBodySize(void);
 		void												_initLocationInfoMap(void);
 
 		static std::map<std::string, std::pair<int, int> >	_configField;

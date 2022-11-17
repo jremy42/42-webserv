@@ -127,6 +127,47 @@ const std::vector<std::string> Config::getParamByLocation(string &requestTarget,
 	return (defaultRet);
 }
 
+std::string Config::getErrorPageByLocation(string &requestTarget, int errorCode) const
+{
+
+	std::map<int, string>::const_iterator				tryfind;
+	m_s_l::const_reverse_iterator 				it = _location.rbegin();
+	m_s_l::const_reverse_iterator 				ite = _location.rend();
+
+	for(;it != ite; it++)
+	{
+		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
+		{
+			tryfind = it->second.getErrorPage().find(errorCode);
+			if (tryfind != it->second.getErrorPage().end())
+			{
+				if (DEBUG_CONFIG)
+					std::cout << "getErrorPageByLocation : Found a value for errorCode [" << errorCode << "][" << tryfind->second << "] with location" 
+					<< it->first << std::endl;
+				return (tryfind->second);
+			}
+		}
+	}
+	if (DEBUG_CONFIG)
+		std::cout << "getErrorPageByLocation : : No value found for errorCode [" << errorCode << "]. Using Config Default value" << std::endl;
+	return ("");
+}
+
+std::string Config::getMatchingLocation(string &requestTarget) const
+{
+	m_s_l::const_reverse_iterator 				it = _location.rbegin();
+	m_s_l::const_reverse_iterator 				ite = _location.rend();
+
+	for(;it != ite; it++)
+	{
+		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
+			return it->first;
+	}
+	if (DEBUG_CONFIG)
+		std::cout << "getMatchingLocation : : No value found [" << requestTarget << "]. Using Config Default value" << std::endl;
+	return ("");
+}
+
 char	Config::_getNextBlockDelim(std::string str, int pos) const
 {
 	char			nextBlockDelim = '0';

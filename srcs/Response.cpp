@@ -58,16 +58,41 @@ Response &Response::operator=(const Response &rhs)
 
 void Response::_createErrorMessageBody(void)
 {
+	std::string	actualTarget;
+	std::string	selectActualTargetResult;	
 	string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
-	_bodyToSend = _errorBodyTemplate;
-	for (int i = 0; i < 2; i++)
+	string requestTarget = _request->getTarget();
+	string	errorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
+	string	matchingLocation = _config->getMatchingLocation(requestTarget);
+
+	std::cout << ">>>>>>>errorPage found [" << errorPage << "]" << std::endl;
+	
+	if (errorPage != "")
 	{
-		size_t pos = _bodyToSend.find("Error_placeholder");
-		_bodyToSend.erase(pos, strlen("Error_placeholder"));
-		_bodyToSend.insert(pos, errorMessage);
+	
+		selectActualTargetResult = _selectActualTarget(actualTarget, matchingLocation + errorPage);
+		std::cout << ">>>>> selectActualTargetResult: [" << selectActualTargetResult << "]" << std::endl; 
+		if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
+			_createBodyFromFile(actualTarget);
+		else
+		{
+			_statusCode = 404;
+			errorPage = "";
+		}
 	}
-	_body = v_c(_bodyToSend.begin(), _bodyToSend.end());
-	std::cout << _bodyToSend;
+	if (errorPage == "")
+	{
+		_bodyToSend = _errorBodyTemplate;
+		for (int i = 0; i < 2; i++)
+		{
+			size_t pos = _bodyToSend.find("Error_placeholder");
+			_bodyToSend.erase(pos, strlen("Error_placeholder"));
+			_bodyToSend.insert(pos, errorMessage);
+		}
+		_body = v_c(_bodyToSend.begin(), _bodyToSend.end());
+	}
+	if (DEBUG_RESPONSE)
+		std::cout << _bodyToSend;
 }
 
 void Response::setRequest(const Request *request)
@@ -77,9 +102,9 @@ void Response::setRequest(const Request *request)
 	_statusCode = _request->getStatusCode();
 }
 
-std::string	Response::_selectActualTarget(string &actualTarget)
+std::string	Response::_selectActualTarget(string &actualTarget, string requestedTarget)
 {
-	std::string		requestedTarget	= _request->getTarget();
+	//std::string		requestedTarget	= _request->getTarget();
 	std::string		requestedTargetLocation	= _config->getParamByLocation(requestedTarget, "root").at(0);
 
 	actualTarget = requestedTargetLocation + requestedTarget;	
@@ -151,6 +176,7 @@ void Response::_createBodyFromFile(const string &actualTarget)
 	char			*buff;
 	int				length;
 
+	std::cout << "open " << actualTarget << std::endl;
 	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
@@ -178,7 +204,7 @@ void Response::_methodGET(void)
 	std::string	actualTarget;
 	std::string	selectActualTargetResult;
 	
-	selectActualTargetResult = _selectActualTarget(actualTarget);
+	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
 	if (selectActualTargetResult == "Do_listing")
 		_createAutoIndex(actualTarget);
 	else if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
@@ -195,7 +221,7 @@ void Response::_methodPOST(void)
 	std::string	actualTarget;
 	std::string	selectActualTargetResult;
 	
-	selectActualTargetResult = _selectActualTarget(actualTarget);
+	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
 	
 
 	//access sur le fichier droit d'ecriture 
