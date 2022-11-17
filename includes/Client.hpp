@@ -15,7 +15,7 @@
 # include "Server.hpp"
 
 # ifndef DEBUG_CLIENT
-#  define DEBUG_CLIENT 0
+#  define DEBUG_CLIENT 1
 # endif
 
 enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};

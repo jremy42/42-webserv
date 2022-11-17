@@ -6,7 +6,7 @@ std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept
 
 std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
-std::string	Request::_stateStr[6] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m",
+std::string	Request::_stateStr[7] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_GET_MAX_BODY_SIZE\x1b[0m",
 "\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
 
 Request::Request(void)
@@ -39,6 +39,7 @@ Request	&Request::operator=(const Request &rhs)
 	_clientFd = rhs._clientFd;
 	_header = rhs._header;
 	_body = rhs._body;
+	_clientMaxBodySize = rhs._clientMaxBodySize;
 	return (*this);
 }
 
@@ -136,7 +137,6 @@ int	Request::parseHeader(string rawHeader)
 	return (0);
 }
 
-
 void Request::_handleRequestLine(void)
 {
 	v_c_it ite = _rawRequest.end();
@@ -144,6 +144,8 @@ void Request::_handleRequestLine(void)
 
 	if (DEBUG_REQUEST)
 		std::cout << "Handle Request Line" << std::endl;
+	if (_rawRequest.size() > MAX_REQUESTLINE_SIZE)
+		throw(std::runtime_error("webserv: request : Request Line is too long"));
 	for (; it != ite; it++)
 	{
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
@@ -167,6 +169,8 @@ void Request::_handleHeader(void)
 
 	if (DEBUG_REQUEST)
 		std::cout << "Handle header" << std::endl;
+	if (_rawRequest.size() > MAX_HEADER_SIZE)
+		throw(std::runtime_error("webserv: request : Header is too long"));
 	for (; it != ite; it++)
 	{
 		//std::cout << static_cast<int>(*it) << ":[" << *it << "]" << std::endl;
@@ -181,13 +185,26 @@ void Request::_handleHeader(void)
 			if (_state == R_ERROR)
 				return;
 			_rawRequest.erase(_rawRequest.begin(), it + 2);
-			_state = R_BODY;
+			_state = R_GET_MAX_BODY_SIZE;
 			return ;
 		}
 	}
-};
+}
 
-int Request::readClientRequest(void)
+void Request::_handleBody(void)
+{
+	v_c_it ite = _rawRequest.end();
+	v_c_it it = _rawRequest.begin();
+
+	if (DEBUG_REQUEST)
+		std::cout << "Handle body" << std::endl;
+	if (_rawRequest.size() > 42)
+		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
+	_body.insert(_body.end(), it, ite);
+	_rawRequest.clear();
+}
+
+int Request::readClientRequest(int do_read)
 {
 	std::string	rawRequestLine;
 	char		buf[READ_BUFFER_SIZE];
@@ -197,29 +214,36 @@ int Request::readClientRequest(void)
 
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
-	memset(buf, 0, sizeof(buf));
-	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
-	if (read_ret == -1)
-		throw (std::runtime_error(strerror(errno)));
-	if (DEBUG_REQUEST)
+	if (do_read)
 	{
-		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
-			<< "]\x1b[0m" << std::endl << buf << std::endl
-			<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+		memset(buf, 0, sizeof(buf));
+		read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
+		if (read_ret == -1)
+			throw (std::runtime_error(strerror(errno)));
+		if (DEBUG_REQUEST)
+		{
+			std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
+				<< "]\x1b[0m" << std::endl << buf << std::endl
+				<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+		}
+		for (int i = 0; i < read_ret; i++)
+			_rawRequest.push_back(buf[i]);
 	}
-	for (int i = 0; i < read_ret; i++)
-		_rawRequest.push_back(buf[i]);
 	if (_state == R_REQUESTLINE)
 		_handleRequestLine();
 	if (_state == R_HEADER)
 		_handleHeader();
+	if (_state == R_GET_MAX_BODY_SIZE)
+		return(_state);
+	if (_state == R_BODY)
+		_handleBody();
 	if (read_ret < READ_BUFFER_SIZE && _state == R_BODY)
 		_state = R_END;
 	if (read_ret == 0)
 		_state = R_ZERO_READ;
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
-	<< "]" << std::endl;
+			<< "]" << std::endl;
 	return (_state);
 }
 
@@ -261,6 +285,15 @@ std::string	Request::getHost(void) const
 
 void Request::reset(void)
 {
-	
 	*this = Request(_clientFd);
+}
+
+void	Request::setClientMaxBodySize(int clientMaxBodySize)
+{
+	_clientMaxBodySize = clientMaxBodySize;
+}
+
+void	Request::setState(int state)
+{
+	_state = state;
 }

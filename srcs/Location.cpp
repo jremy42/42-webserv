@@ -26,7 +26,7 @@ void	Location::_initLocationInfoMap(void)
 		_locationInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
 	_locationInfoMap.find("root")->second.push_back("./www");
 	_locationInfoMap.find("allowed_method")->second.push_back("GET");
-	_locationInfoMap.find("client_max_body_size")->second.push_back("12m");
+	//_locationInfoMap.find("client_max_body_size")->second.push_back("12m");
 	_locationInfoMap.find("index")->second.push_back("index.html");
 	_locationInfoMap.find("return")->second.push_back("1");
 	_locationInfoMap.find("upload")->second.push_back("./www");	
@@ -44,7 +44,7 @@ Location::Location(string rawLocation)
 	_parseAllowedMethods();
 	_parseAutoindex();
 	_parseErrorPage();
-	_parseMaxBodySize();
+	//_parseMaxBodySize();
 	if (DEBUG_LOCATION)
 		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
 }
@@ -131,6 +131,7 @@ void Location::_parseErrorPage(void)
 		throw(std::runtime_error("webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
 }
 
+/*
 void Location::_parseMaxBodySize(void)
 {
 	string field = _locationInfoMap.find("client_max_body_size")->second[0];
@@ -145,6 +146,7 @@ void Location::_parseMaxBodySize(void)
 		throw(std::runtime_error("webserv: config : not valid field in max_body_size: [" + field+ "]"));
 
 }
+*/
 
 std::ostream	&operator<<(std::ostream &o, const Location &Location)
 {

@@ -23,7 +23,6 @@ class Location
 	public:
 		typedef std::string			string;
 		typedef std::map<string, std::vector<string> > m_s_vs;
-		typedef std:
 
 		Location(void);
 		Location(const Location &src);
@@ -40,7 +39,7 @@ class Location
 		void												_parseAllowedMethods(void);
 		void												_parseAutoindex(void);
 		void 												_parseErrorPage(void);
-		void 												_parseMaxBodySize(void);
+		//void 												_parseMaxBodySize(void);
 		void												_initLocationInfoMap(void);
 
 		static std::map<std::string, std::pair<int, int> >	_configField;
