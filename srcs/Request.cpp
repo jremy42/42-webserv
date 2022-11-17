@@ -56,14 +56,13 @@ int Request::checkRequestLine(void)
 	}
 	if (_requestLine.find("request_target")->second == "")
 	{
-		_statusCode = 405;
+		_statusCode = 400;
 		return -1;
 	}
 
-	if (_requestLine.find("http_version")->second != "HTTP/1.1" 
-	&& _requestLine.find("http_version")->second != "HTTP/1.0")
+	if (_requestLine.find("http_version")->second != "HTTP/1.1")
 	{
-		_statusCode = 405;
+		_statusCode = 400;
 		return -1;
 	}
 	return 0;
