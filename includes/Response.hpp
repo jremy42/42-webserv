@@ -25,7 +25,7 @@
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
-#  define DEBUG_RESPONSE 0
+#  define DEBUG_RESPONSE 1
 # endif
 class Config;
 
@@ -39,7 +39,7 @@ class Response
 
 	public:
 		Response(void);
-		Response(int clientFd, Request *request, Config *config);
+		Response(int clientFd, Request *request, Config *config, int statusCode);
 		Response(const Response &src);
 		Response &operator=(const Response &rhs);
 		~Response(void);

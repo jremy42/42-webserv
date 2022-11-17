@@ -127,3 +127,12 @@ void	__signal(int signal)
 		g_rv = 0;
 	}
 }
+
+unsigned long	ft_get_time(void)
+{
+	struct timeval	now;
+
+	gettimeofday(&now, NULL);
+	std::cout << "TIME [" << now.tv_sec * 1000 + now.tv_usec / 1000 <<  "]" << std::endl;
+	return (now.tv_sec * 1000 + now.tv_usec / 1000);
+}
