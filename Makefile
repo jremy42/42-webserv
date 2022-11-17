@@ -1,6 +1,6 @@
 NAME		:=	webserv
 SRC_DIR     :=	srcs/
-SRCS		:=	Client.cpp Config.cpp Epoll.cpp EventListener.cpp main.cpp Server.cpp Webserv.cpp\
+SRCS		:=	Client.cpp Config.cpp EventListener.cpp main.cpp Server.cpp Webserv.cpp\
 				Request.cpp Response.cpp Location.cpp _utils.cpp
 SRCS        := $(SRCS:%=$(SRC_DIR)/%)
 BUILD_DIR	:= .build
