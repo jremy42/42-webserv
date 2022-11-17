@@ -15,7 +15,7 @@
 # include "_utils.hpp"
 
 # ifndef DEBUG_LOCATION
-#  define DEBUG_LOCATION 1
+#  define DEBUG_LOCATION 0
 # endif
 
 class Location
