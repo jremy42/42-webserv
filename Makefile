@@ -10,6 +10,8 @@ DEPS        := $(subst .o,.d,$(OBJS))
 
 CC          := clang++
 CPPFLAGS    := -Wall -Wextra -Werror -std=c++98 -MMD -MP -I includes -g3
+DEBUGFLAGS	:= -D DEBUG_CLIENT=1 -D DEBUG_CONFIG=1
+
 RM          := rm -rf
 MAKE        := $(MAKE) --jobs --no-print-directory
 DIR_DUP		= mkdir -p $(@D)

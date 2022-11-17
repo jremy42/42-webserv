@@ -14,7 +14,7 @@
 # define MAX_FD 100
 
 # ifndef DEBUG_EVENTLISTENER
-#  define DEBUG_EVENTLISTENER 1
+#  define DEBUG_EVENTLISTENER 0
 # endif
 
 class EventListener
