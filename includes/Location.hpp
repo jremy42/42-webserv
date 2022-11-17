@@ -23,6 +23,7 @@ class Location
 	public:
 		typedef std::string			string;
 		typedef std::map<string, std::vector<string> > m_s_vs;
+		typedef std:
 
 		Location(void);
 		Location(const Location &src);
