@@ -9,6 +9,8 @@ Client::Client()
 	_response = NULL;
 	_state = S_INIT;
 	_configList = NULL;
+	_timeoutRequest = 0;
+	_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 }
 
 Client::Client(int clientFd, v_config* config, Server *myServ)
@@ -20,7 +22,8 @@ Client::Client(int clientFd, v_config* config, Server *myServ)
 	std::cout << "create client with fd :" << _clientFd << std::endl;
 	_state = S_INIT;
 	_myServ = myServ;
-
+	_timeoutRequest = 0;
+	_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 }
 
 Client::~Client(){};
@@ -44,6 +47,8 @@ Client &Client::operator=(const Client &src)
 		_response = src._response;
 		_configList = src._configList;
 		_myServ = src._myServ;
+		_timeoutRequest = src._timeoutRequest;
+		_timeoutClient = src._timeoutClient;
 
 	}
 	return *this;
@@ -81,23 +86,24 @@ int Client::executeAction()
 	int	actionReturnValue;
 	int	actionMade = 0;
 
-	//usleep(50000);
-	/* std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
+	usleep(50000);
+	std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
 	printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
-		(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
-		(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
-		(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
-		(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
-		(_availableActions & EPOLLHUP) ? "EPOLLHUP " : ""); */
-	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP)
+			(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
+			(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
+			(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
+			(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
+			(_availableActions & EPOLLHUP) ? "EPOLLHUP " : ""); 
+	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP || ft_get_time() > _timeoutClient)
 	{
 		_state = S_CLOSE_FD;
 		return 1;
 	}
 	if ((_availableActions & EPOLLIN) && (_state == S_INIT))
 	{
-		_request = new Request(_clientFd);
-		_state = S_REQREAD;
+			_timeoutRequest = ft_get_time() + TIMEOUT_REQUEST;
+			_request = new Request(_clientFd);
+			_state = S_REQREAD;
 	}
 	if ((_availableActions & EPOLLIN) && _state == S_REQREAD)
 	{
@@ -115,10 +121,14 @@ int Client::executeAction()
 			_request->setState(R_BODY);
 			actionReturnValue = _request->readClientRequest(0);
 		}
-		if (actionReturnValue == R_END || actionReturnValue == R_ERROR)
+		std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
+		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)
 		{
 			//std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";
-			_response = new Response(_clientFd, _request, getMatchingConfig()); // passer la bonne config
+			if (ft_get_time() > _timeoutRequest)
+				_response = new Response(_clientFd, _request, getMatchingConfig(), 408); // passer la bonne config
+			else
+				_response = new Response(_clientFd, _request, getMatchingConfig(), _request->getStatusCode()); // passer la bonne config
 			_state = S_RESWRITE;
 			_response->createResponse();
 		}
@@ -126,10 +136,13 @@ int Client::executeAction()
 			_state = S_CLOSE_FD;
 		actionMade++;
 	}
-	else if((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
+	else if ((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
 		if (_response->writeClientResponse() == 0)
+		{
+			_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 			_state = S_OVER;
+		}
 		actionMade++;
 	}
 	if(_state == S_OVER)

@@ -15,8 +15,11 @@
 # include "Server.hpp"
 
 # ifndef DEBUG_CLIENT
-#  define DEBUG_CLIENT 0
+#  define DEBUG_CLIENT 1
 # endif
+
+# define TIMEOUT_REQUEST 5000
+# define TIMEOUT_CLIENT 10000
 
 enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};
 class Server;
@@ -51,6 +54,8 @@ class Client
 		static std::string	_stateStr[4];
 		v_config*			_configList;
 		Server*				_myServ;
+		unsigned long		_timeoutRequest;
+		unsigned long		_timeoutClient;
 };
 
 #endif

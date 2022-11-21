@@ -259,17 +259,23 @@ std::string &Request::getStateStr(void) const
 
 std::string Request::getMethod(void) const
 {
+	if(_requestLine.find("method") == _requestLine.end())
+		return ("GET");
 	return (_requestLine.find("method")->second);
 }
 
 std::string Request::getTarget(void) const
 {
+	if (_requestLine.find("request_target") == _requestLine.end())
+		return ("/");
 	return (_requestLine.find("request_target")->second);
 }
 
 
 std::string Request::getProtocol(void) const
 {
+	if(_requestLine.find("http_version") == _requestLine.end())
+		return ("HTTP/1.1");
 	return (_requestLine.find("http_version")->second);
 }
 
@@ -280,6 +286,8 @@ int	Request::getStatusCode(void) const
 
 std::string	Request::getHost(void) const
 {
+	if (_header.find("Host") == _header.end())
+		return ("");
 	return (_header.find("Host")->second);
 }
 

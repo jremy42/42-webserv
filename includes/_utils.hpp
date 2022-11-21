@@ -10,6 +10,9 @@
 # include <sys/types.h>
 # include <sys/stat.h>
 
+#include <sys/time.h>
+#include <stddef.h>
+
 # ifndef DEBUG_UTILS
 #  define DEBUG_UTILS 0
 # endif
@@ -28,5 +31,6 @@ std::string		getFileSize(std::string filename);
 int				isDir(std::string fileName);
 int 			fileExist(std::string fileName);
 void		__signal(int signal);
+unsigned long	ft_get_time(void);
 
 #endif

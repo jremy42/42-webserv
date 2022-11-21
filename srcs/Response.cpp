@@ -10,6 +10,7 @@ Response::m_is Response::_initStatusCodeMessage()
 	ret[400] = "Bad Request";
 	ret[404] = "Not Found";
 	ret[405] = "Method Not Allowed";
+	ret[408] = "Request Timeout";
 
 	return ret;
 }
@@ -19,12 +20,12 @@ std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /tit
 
 Response::Response(){};
 
-Response::Response(int clientFd, Request *request, Config *config)
+Response::Response(int clientFd, Request *request, Config *config, int statusCode)
 {
 	_clientFd = clientFd;
 	_request = request;
 	_config = config;
-	_statusCode = _request->getStatusCode();
+	_statusCode = statusCode;
 	std::cout << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
 	std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
 	std::cout << *_config;
