@@ -197,16 +197,37 @@ void Response::_createBodyFromFile(const string &actualTarget)
 	fs.close();
 }
 
+std::string	Response::_getExtensionFromTarget(string actualTarget)
+{
+	std::size_t	posDot;
+	std::size_t	posEnd;
+
+	posDot = actualTarget.find_last_of(".");
+	std::string endPart = actualTarget.substr(posDot);
+	posEnd = endPart.find_first_of("/?");
+	posEnd = posEnd != std::string::npos ? posEnd : endPart.size();
+	std::string extension = endPart.substr(0, posEnd + 1);
+	std::cout << "Extension : [" << extension << "]" << std::endl;
+	return (extension);
+}
+
 void Response::_methodGET(void)
 {
 	std::string	actualTarget;
 	std::string	selectActualTargetResult;
 	
 	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
+	std::cout << "Actual target : [" << actualTarget << "]" << std::endl;
 	if (selectActualTargetResult == "Do_listing")
 		_createAutoIndex(actualTarget);
 	else if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
-		_createBodyFromFile(actualTarget);
+	{
+		std::string rawTarget = _request->getTarget();
+		if (_config->getCgiByLocation(rawTarget, _getExtensionFromTarget(actualTarget)) != "")
+			std::cout << "\e[33mCGI\e[0m" << std::endl;
+		else
+			_createBodyFromFile(actualTarget);
+	}
 	else
 	{
 		_statusCode = 404;

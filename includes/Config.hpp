@@ -17,7 +17,7 @@
 # include "Location.hpp"
 
 # ifndef DEBUG_CONFIG
-#  define DEBUG_CONFIG 0
+#  define DEBUG_CONFIG 1
 # endif
 # define MAX_BODY_SIZE_HARD_LIMIT 32 * 1024 * 1024
 # define MIN_BODY_SIZE_HARD_LIMIT 512
@@ -55,6 +55,7 @@ class Config
 		const m_s_vs		&getServerInfoMap(void) const;
 		const m_s_l		&getLocation(void) const;
 		std::string getErrorPageByLocation(string &requestTarget, int errorCode) const;
+		std::string getCgiByLocation(string &requestTarget, string extension) const;
 		std::string getMatchingLocation(string &requestTarget) const;
 
 

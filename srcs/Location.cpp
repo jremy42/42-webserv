@@ -62,6 +62,7 @@ Location	&Location::operator=(const Location &rhs)
 {
 	this->_locationInfoMap = rhs._locationInfoMap;
 	this->_errorPage = rhs._errorPage;
+	this->_cgi = rhs._cgi;
 	return (*this);
 }
 
@@ -120,6 +121,13 @@ void	Location::_createLocationInfoMap(std::string &rawServerConf)
 				_errorPage.insert(std::pair<int, string>(atoi(locationLine.second[0].c_str()), locationLine.second[1]));
 				std::cout << _errorPage << std::endl;
 			}
+			else if (locationLine.first == "cgi")
+			{
+				_parseCgi(locationLine.second[0], locationLine.second[1]);
+				std::cout << "insert cgi executable with value" << locationLine << std::endl;
+				_cgi.insert(std::pair<string, string>(locationLine.second[0], locationLine.second[1]));
+				std::cout << _cgi << std::endl;
+			}
 			else
 				_locationInfoMap[locationLine.first] = locationLine.second;
 		}
@@ -140,6 +148,12 @@ const Location::m_is	&Location::getErrorPage(void) const
 
 }
 
+const Location::m_ss	&Location::getCgi(void) const
+{
+	const m_ss	&cgiRef = this->_cgi;
+	return (cgiRef);
+}
+
 void Location::_parseErrorPage(string errorNum)
 {
 	int errorCode  = atoi(errorNum.c_str());
@@ -147,22 +161,16 @@ void Location::_parseErrorPage(string errorNum)
 		throw(std::runtime_error("webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
 }
 
-/*
-void Location::_parseMaxBodySize(void)
+void Location::_parseCgi(string extension, string executable)
 {
-	string field = _locationInfoMap.find("client_max_body_size")->second[0];
-
-	if (field.find_first_of('m') == field.length() - 1
-		&& field.substr(0, field.length() - 1).find_first_not_of("0123456789") == std::string::npos)
-	{
-		if (atoi(field.c_str()) > 32 || atoi(field.c_str()) < 1)
-			throw(std::runtime_error("webserv: config : not valid field , Max Body size must be with in 0 & 32 [" + field+ "]"));
-	}
-	else
-		throw(std::runtime_error("webserv: config : not valid field in max_body_size: [" + field+ "]"));
-
+	if (extension.length() < 2 || extension.at(0) != '.' || extension != ".php")
+		throw(std::runtime_error("webserv: config : not valid extension in cgi, must be valid extension name like [.php] : [" + extension + "]"));
+	if (access(executable.c_str(), F_OK))
+		throw(std::runtime_error("webserv: config : cgi : executable : no such file [" + executable + "]"));
+	if (access(executable.c_str(), X_OK))
+		throw(std::runtime_error("webserv: config : cgi : executable : no execution right [" + executable + "]"));
 }
-*/
+
 
 std::ostream	&operator<<(std::ostream &o, const Location &Location)
 {
@@ -171,6 +179,9 @@ std::ostream	&operator<<(std::ostream &o, const Location &Location)
 	std::cout << "####################Location ErrorPage Start################" << std::endl;
 	std::cout << Location.getErrorPage();
 	std::cout << "####################Location ErrorPage end################" << std::endl;
+	std::cout << "####################Location CGI Start################" << std::endl;
+	std::cout << Location.getCgi();
+	std::cout << "####################Location CGI end################" << std::endl;
 	std::cout << "--------------------Location Printer End--------------------" << std::endl;
 	return (o);
 }

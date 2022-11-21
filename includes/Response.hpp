@@ -72,6 +72,7 @@ class Response
 		void							_createFullResponse(void);
 		void							_checkAutorizationForMethod(void);
 		void							_checkRedirect(void);
+		string							_getExtensionFromTarget(string actualTarget);
 //GET
 		void							_methodGET(void);
 		int								_createAutoIndex(const string &pathToDir);
