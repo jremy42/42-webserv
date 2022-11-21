@@ -41,10 +41,10 @@ int main(int argc, char *argv[])
 	}
 	freeaddrinfo(result);
 	send(cfd, request.c_str(), request.size(), 0);
-	while(1)
-	{
-		sleep(1);
-		std::cout << send(cfd,"1", 1, 0) << std::endl;
-	}
+	while(1);
+//	{
+//		sleep(1);
+//		std::cout << send(cfd,"1", 1, 0) << std::endl;
+//	}
 	exit(EXIT_SUCCESS);
 }  

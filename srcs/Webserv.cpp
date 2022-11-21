@@ -158,7 +158,8 @@ std::string	Webserv::getNextServerBlock(std::string &rawConfig)
 }
 
 
-int		Webserv::parseRawConfig(void)
+int		Webserv::parseRawConfig(void)Temps d’attente d’une réponse d’un serveur à un serveur intermédiaire écoulé.
+
 {
 	int									viableConfig = 0;
 	std::vector<std::string>::iterator	it;
