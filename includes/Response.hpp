@@ -22,6 +22,7 @@
 # include "_utils.hpp"
 # include <iostream>
 # include <iomanip>
+# include <sys/wait.h>
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
@@ -82,7 +83,9 @@ class Response
 		void							_createBodyFromFile(const string &actualTarget);
 // POST
 		void							_methodPOST(void);
-		
+// CGI
+		void	_handleCGI(string actualTarget, string cgiExecutable);
+		void	_extractHeaderFromCgiBody(void);
 };
 
 #endif

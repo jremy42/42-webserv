@@ -50,6 +50,7 @@ class Request
 		int			getStatusCode(void) const;
 		void 		reset(void);
 		string		getHost(void) const;
+		std::vector<char>	getBody(void) const;
 		void		setClientMaxBodySize(int clientMaxBodySize);
 		void		setState(int state);
 

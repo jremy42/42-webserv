@@ -184,7 +184,7 @@ void Request::_handleHeader(void)
 				_state = R_ERROR;
 			if (_state == R_ERROR)
 				return;
-			_rawRequest.erase(_rawRequest.begin(), it + 2);
+			_rawRequest.erase(_rawRequest.begin(), it + 4);
 			_state = R_GET_MAX_BODY_SIZE;
 			return ;
 		}
@@ -289,6 +289,11 @@ std::string	Request::getHost(void) const
 	if (_header.find("Host") == _header.end())
 		return ("");
 	return (_header.find("Host")->second);
+}
+
+std::vector<char>	Request::getBody(void) const
+{
+	return _body;
 }
 
 void Request::reset(void)
