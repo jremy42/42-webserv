@@ -31,6 +31,7 @@ class Webserv
 		typedef v_server::iterator	v_iterator;
 		typedef std::map<int, std::vector<Config> > m_i_vc;
 		typedef std::map<int, Server*> m_i_serv;
+		typedef std::map< std::pair<int, int>, std::vector<Config> > m_piu_vc;
 
 		Webserv();
 		Webserv(string fileName); // open filenames, populates p_rawConfig
@@ -55,7 +56,7 @@ class Webserv
 		v_server				_serverList;
 		v_config				_configList;
 		v_string				_rawConfig;
-		m_i_vc					_portConfigList;
+		m_piu_vc				_portIpConfigList;
 		m_i_serv				_fdServerList;
 		m_i_serv				_fdClientList;
 		EventListener			_evListener;

@@ -26,6 +26,7 @@ Response::Response(int clientFd, Request *request, Config *config, int statusCod
 	_request = request;
 	_config = config;
 	_statusCode = statusCode;
+	_state = R_INIT;
 	std::cout << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
 	std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
 	std::cout << *_config;
@@ -53,6 +54,7 @@ Response &Response::operator=(const Response &rhs)
 	_bodyToSend = rhs._bodyToSend;
 	_request = rhs._request;
 	_config = rhs._config;
+	_state = rhs._state;
 
 	return (*this);
 }
@@ -154,7 +156,7 @@ std::string	Response::_selectActualTarget(string &actualTarget, string requested
 			return ("Do_listing");
 		}
 		else
-		{
+	{
 			if (DEBUG_RESPONSE)
 				std::cout << "No suitable index file and autoindex is off" << std::endl;
 			return ("Index_file_nok");
@@ -253,26 +255,15 @@ void Response::_methodPOST(void)
 	// create response
 }
 
-void Response::_handleCGI(string actualTarget, string cgiExecutable)
+void Response::_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid)
 {
-	pid_t	pid;
-	int		pipefdParentToChild[2];
-	int		pipefdChildToParent[2];
 	int		status;
 	int		ret;
 	int		readRet;
 	char	readBuf[512];
 	v_c		requestBody = _request->getBody();
 
-	if (pipe(pipefdParentToChild))
-		throw(std::runtime_error("Pipe error" ));
-	if (pipe(pipefdChildToParent))
-		throw(std::runtime_error("Pipe error" ));
-	if ((pid = fork()) == -1)
-		throw(std::runtime_error("Fork error" ));
-	if (pid != 0)
-	{
-		if (close(pipefdParentToChild[0]))
+	if (close(pipefdParentToChild[0]))
 			throw(std::runtime_error("Close error" ));
 		if (requestBody.size() != 0)
 		{
@@ -303,6 +294,26 @@ void Response::_handleCGI(string actualTarget, string cgiExecutable)
 		if (close(pipefdChildToParent[0]))
 			throw(std::runtime_error("Close error" ));
 		_extractHeaderFromCgiBody();
+
+}
+
+void Response::_handleCGI(string actualTarget, string cgiExecutable)
+{
+	pid_t	pid;
+	int		pipefdParentToChild[2];
+	int		pipefdChildToParent[2];
+
+
+
+	if (pipe(pipefdParentToChild))
+		throw(std::runtime_error("Pipe error" ));
+	if (pipe(pipefdChildToParent))
+		throw(std::runtime_error("Pipe error" ));
+	if ((pid = fork()) == -1)
+		throw(std::runtime_error("Fork error" ));
+	if (pid != 0)
+	{
+		
 	}
 	else
 	{
@@ -393,7 +404,7 @@ int Response::createResponse(void)
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
 	_checkRedirect();
-	_checkAutorizationForMethod();	
+	_checkAutorizationForMethod();
 	if(_statusCode > 200)
 		_createErrorMessageBody();
 	else if (_request->getMethod() == "GET")

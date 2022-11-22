@@ -50,6 +50,7 @@ Config::Config(std::string rawServerConfig)
 	_parseClientMaxBodySize();
 	// WARNING -> valeurs a verfier avant de les recup
 	_listenPort = atoi(_serverInfoMap["listen"][1].c_str());
+	_host = getipbyhost(_serverInfoMap["listen"][0].c_str(), _serverInfoMap["listen"][1].c_str());
 	_rootDirectory = _serverInfoMap["root"][0];
 	//Check de la conf a faire ici dans un fx, en incluant le check ci dessous	
 	if (_listenPort < 0)
@@ -77,6 +78,7 @@ Config	&Config::operator=(const Config &rhs)
 	this->_rootDirectory = rhs._rootDirectory;
 	this->_serverInfoMap = rhs._serverInfoMap;
 	this->_location = rhs._location;
+	this->_host = rhs._host;
 
 	return (*this);
 }
@@ -94,6 +96,11 @@ const std::vector<std::string> Config::getServerName(void) const
 int		Config::getListenPort(void) const
 {
 	return (_listenPort);
+}
+
+int		Config::getHost(void) const
+{
+	return (_host);
 }
 
 const char* Config::getRootDir(void) const

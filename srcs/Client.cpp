@@ -61,6 +61,7 @@ void	Client::setAvailableActions(int epollFlags)
 
 Config		*Client::getMatchingConfig(void) const
 {
+	// p-e 
 	v_config::iterator							it = _configList->begin();
 	v_config::iterator							ite = _configList->end();
 	std::vector<std::string>::const_iterator	match;
@@ -130,7 +131,6 @@ int Client::executeAction()
 			else
 				_response = new Response(_clientFd, _request, getMatchingConfig(), _request->getStatusCode()); // passer la bonne config
 			_state = S_RESWRITE;
-			_response->createResponse();
 		}
 		if (actionReturnValue == R_ZERO_READ)
 			_state = S_CLOSE_FD;
@@ -138,6 +138,7 @@ int Client::executeAction()
 	}
 	else if ((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
+		_response->createResponse();
 		if (_response->writeClientResponse() == 0)
 		{
 			_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;

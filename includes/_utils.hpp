@@ -13,6 +13,10 @@
 #include <sys/time.h>
 #include <stddef.h>
 
+# include <arpa/inet.h>
+# include <netdb.h>
+# include <string.h>
+
 # ifndef DEBUG_UTILS
 #  define DEBUG_UTILS 0
 # endif
@@ -33,5 +37,6 @@ int				isDir(std::string fileName);
 int 			fileExist(std::string fileName);
 void		__signal(int signal);
 unsigned long	ft_get_time(void);
+int			getipbyhost(const char *host, const char *service);
 
 #endif
