@@ -76,6 +76,8 @@ int Server::acceptNewClient(void)
 	int clientFd;
 	socklen_t addrlen;
 	struct sockaddr_in claddr;
+	socklen_t serverIpAddrlen;
+	struct sockaddr_in requestedServerIp;
 
 	addrlen = sizeof(struct sockaddr_in);
 	clientFd = accept(_serverFd, (struct sockaddr *)& claddr, &addrlen);
@@ -85,6 +87,11 @@ int Server::acceptNewClient(void)
 	
 	if (clientFd > 0)
 	{
+		serverIpAddrlen = sizeof(struct sockaddr_in);
+		getsockname(clientFd, (struct sockaddr *)&requestedServerIp, &serverIpAddrlen);
+		char buf[INET_ADDRSTRLEN + 1];
+		memset(buf, 0, sizeof(buf));
+		std:: cout << "\e[35mRequested Server IP : [" << inet_ntop(AF_INET, &requestedServerIp.sin_addr, buf, sizeof(buf)) << "]\e[0m" << std::endl;
 		_clientAddressPrint((struct sockaddr *)& claddr);
 		Client *newClient = new Client(clientFd, &_configList, this);
 		_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient));
@@ -208,7 +215,7 @@ void Server::_clientAddressPrint(struct sockaddr *cliAddr)
 {
 	char host[NI_MAXHOST];
 	char service[NI_MAXSERV];
-	int r = getnameinfo( cliAddr, sizeof(_listenSockaddr), host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV); 
+	int r = getnameinfo(cliAddr, sizeof(_listenSockaddr), host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV); 
 	
 	if (r == 0)
  		printf("(Host:[%s], service[%s])\n", host, service);
