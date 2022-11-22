@@ -197,16 +197,41 @@ void Response::_createBodyFromFile(const string &actualTarget)
 	fs.close();
 }
 
+std::string	Response::_getExtensionFromTarget(string actualTarget)
+{
+	std::size_t	posDot;
+	std::size_t	posEnd;
+
+	posDot = actualTarget.find_last_of(".");
+	std::string endPart = actualTarget.substr(posDot);
+	posEnd = endPart.find_first_of("/?");
+	posEnd = posEnd != std::string::npos ? posEnd : endPart.size();
+	std::string extension = endPart.substr(0, posEnd + 1);
+	std::cout << "Extension : [" << extension << "]" << std::endl;
+	return (extension);
+}
+
 void Response::_methodGET(void)
 {
 	std::string	actualTarget;
 	std::string	selectActualTargetResult;
+	std::string	cgiExecutable;
 	
 	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
+	std::cout << "Actual target : [" << actualTarget << "]" << std::endl;
 	if (selectActualTargetResult == "Do_listing")
 		_createAutoIndex(actualTarget);
 	else if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
-		_createBodyFromFile(actualTarget);
+	{
+		std::string rawTarget = _request->getTarget();
+		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(actualTarget))) != "")
+		{
+			std::cout << "\e[33mCGI\e[0m" << std::endl;
+			_handleCGI(actualTarget, cgiExecutable);
+		}
+		else
+			_createBodyFromFile(actualTarget);
+	}
 	else
 	{
 		_statusCode = 404;
@@ -228,6 +253,98 @@ void Response::_methodPOST(void)
 	// create response
 }
 
+void Response::_handleCGI(string actualTarget, string cgiExecutable)
+{
+	pid_t	pid;
+	int		pipefdParentToChild[2];
+	int		pipefdChildToParent[2];
+	int		status;
+	int		ret;
+	int		readRet;
+	char	readBuf[512];
+	v_c		requestBody = _request->getBody();
+
+	if (pipe(pipefdParentToChild))
+		throw(std::runtime_error("Pipe error" ));
+	if (pipe(pipefdChildToParent))
+		throw(std::runtime_error("Pipe error" ));
+	if ((pid = fork()) == -1)
+		throw(std::runtime_error("Fork error" ));
+	if (pid != 0)
+	{
+		if (close(pipefdParentToChild[0]))
+			throw(std::runtime_error("Close error" ));
+		if (requestBody.size() != 0)
+		{
+			std::cerr << "Parent sending body : [" << requestBody.size() << "]" << std::endl;
+			char *buff = new char[requestBody.size()];
+			int i = 0;
+			v_c::iterator ite = requestBody.end();
+			for (v_c::iterator it = requestBody.begin(); it != ite; i++, it++)
+				buff[i] = *it;
+			write(pipefdParentToChild[1], buff, i);
+		}
+		if (close(pipefdParentToChild[1]))
+			throw(std::runtime_error("Close error" ));
+		if (close(pipefdChildToParent[1]))
+			throw(std::runtime_error("Close error" ));
+		memset(readBuf, 0, 512);
+		while ((readRet = read(pipefdChildToParent[0], readBuf, 511)) > 0)
+		{
+			//std::cerr << "\e[34mreadBuf [" << readBuf << "]\e[0m" << std::endl;
+			_body.insert(_body.end(), readBuf, readBuf + readRet);
+		}
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status) > 0)
+			ret = (WEXITSTATUS(status));
+		if (WIFSIGNALED(status) > 0)
+			ret = (WTERMSIG(status) + 128);
+		std::cerr << "ret : [" << ret << "]" << std::endl;
+		if (close(pipefdChildToParent[0]))
+			throw(std::runtime_error("Close error" ));
+		_extractHeaderFromCgiBody();
+	}
+	else
+	{
+		if (close(pipefdParentToChild[1]))
+			throw(std::runtime_error("Close error" ));
+		if (close(pipefdChildToParent[0]))
+			throw(std::runtime_error("Close error" ));
+		if (dup2(pipefdParentToChild[0], STDIN_FILENO) == -1)
+			throw(std::runtime_error(std::string("Child DUP2 error 0") + strerror(errno)));
+		if (close(pipefdParentToChild[0]))
+			throw(std::runtime_error(std::string("Child Close error 0") + strerror(errno)));
+		if (dup2(pipefdChildToParent[1], STDOUT_FILENO) == -1)
+			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
+		if (close(pipefdChildToParent[1]))
+			throw(std::runtime_error(std::string("Child Close error 1") + strerror(errno)));
+		char *arg[3];
+		arg[0] = const_cast<char *>(cgiExecutable.c_str());
+		arg[1] = const_cast<char *>(actualTarget.c_str());
+		arg[2] = NULL;
+		std::cerr << "actual Target : [" << actualTarget << "] CGI-executable : [" << cgiExecutable << "]" << std::endl;
+		execve(cgiExecutable.c_str(), arg, NULL);
+		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
+	}
+}
+void	Response::_extractHeaderFromCgiBody()
+{
+	v_c::iterator	it = _body.begin();
+	v_c::iterator	ite = _body.end();
+
+	for (; it != ite; it++)
+	{
+		if (*it == '\r'
+			&& it + 1 != ite && *(it + 1) == '\n'
+			&& it + 2 != ite && *(it + 2) == '\r'
+			&& it + 3 != ite && *(it + 3) == '\n')
+		{
+			string rawHeader(_body.begin(), it);
+			_body.erase(_body.begin(), it + 4);
+			_header += rawHeader + "\n";
+		}
+	}
+}
 
 void Response::_createHeaderBase(void)
 {
