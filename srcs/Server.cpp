@@ -72,6 +72,21 @@ Server &Server::operator=(const Server &src)
 	return *this;
 };
 
+Server::v_config	Server::_matchingConfigListByHost(int host)
+{
+	v_config ret;
+	v_config::iterator it = _configList.begin();
+	for (; it != _configList.end(); it++)
+	{
+		if (it->getHost() == host)
+		{
+			std::cout << " add new config by host" << std::endl;
+			ret.push_back(*it);
+		}
+	}
+	return ret;
+}
+
 int Server::acceptNewClient(void)
 {
 	int clientFd;
@@ -94,7 +109,8 @@ int Server::acceptNewClient(void)
 		memset(buf, 0, sizeof(buf));
 		std:: cout << "\e[35mRequested Server IP : [" << inet_ntop(AF_INET, &requestedServerIp.sin_addr, buf, sizeof(buf)) << "]\e[0m" << std::endl;
 		_clientAddressPrint((struct sockaddr *)& claddr);
-		Client *newClient = new Client(clientFd, &_configList, this);
+		v_config _configListByHost = _matchingConfigListByHost((int)requestedServerIp.sin_addr.s_addr);
+		Client *newClient = new Client(clientFd, &_configListByHost, this);
 		_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient));
 		return clientFd;
 	}

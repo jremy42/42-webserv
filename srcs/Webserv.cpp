@@ -216,10 +216,36 @@ int		Webserv::parseRawConfig(void)
 	return (1);
 }
 
+void	Webserv::_adjustWildCardPort()
+{
+	m_piu_vc::iterator it;
+	int 				searchPort;
+	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end(); it++)
+	{
+		if (it->first.second == 0)
+		{
+			searchPort = it->first.first;
+			m_piu_vc::iterator it2;
+			for (it2 = _portIpConfigList.begin(); it2 != _portIpConfigList.end(); it2++)
+			{
+				if (it2->first.first == searchPort && it != it2)
+				{
+					v_config tmpVconfig = it2->second;
+					for (v_config::iterator confIt = tmpVconfig.begin(); confIt != tmpVconfig.end(); confIt++)
+						it->second.push_back(*confIt);
+					_portIpConfigList.erase(it2);
+				}
+			}
+		}
+	}
+
+}
+
 int		Webserv::createServerListByPortConfig(void)
 {
 	m_piu_vc::iterator it;
 
+	_adjustWildCardPort();
 	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end() && _openFd < _maxFd ; it++)
 	{
 		Server *newServer = new Server((*it).second);
