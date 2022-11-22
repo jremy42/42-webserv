@@ -59,8 +59,7 @@ class Server
 		string				_port;
 
 	private:
-		void 				_createPassiveSocket(const char *service);
-		void 				_createPassiveSocketWithHost(const char *service,const char *host);
+		void 				_createPassiveSocket(const char *service, const char *host);
 		void 				_clientAddressPrint(struct sockaddr *cliAddr);
 		static void			_delete_second(std::pair<int, Client*> toDelete);
 };

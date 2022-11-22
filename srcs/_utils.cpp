@@ -144,3 +144,22 @@ unsigned long	ft_get_time(void)
 	std::cout << "TIME [" << now.tv_sec * 1000 + now.tv_usec / 1000 <<  "]" << std::endl;
 	return (now.tv_sec * 1000 + now.tv_usec / 1000);
 }
+
+int			getipbyhost(const char *host, const char *service)
+{
+	struct addrinfo hints;
+	struct addrinfo *result;
+	int	g_error;
+	in_addr_t ret;
+
+	std::cout << "get ip by host [" << host << "][" << service << "]" << std::endl;
+	memset(&hints, 0, sizeof(struct addrinfo));
+
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	if ((g_error = getaddrinfo(host, service, &hints, &result )) != 0)
+		throw(std::runtime_error(gai_strerror(g_error)));
+	ret = ((struct sockaddr_in*)(result->ai_addr))->sin_addr.s_addr;
+	freeaddrinfo(result);
+	return ret;
+}

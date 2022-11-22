@@ -5,19 +5,20 @@ Server::Server(v_config configList)
 	_configList = configList;
 	_backlog = 1000;
 	_port = _configList[0].getListenPortStr();
+
 	try 
 	{
 		if (_configList[0].getServerInfoMap().find("listen")->second[0] == "*")
-			_createPassiveSocket(_port.c_str());
+			_createPassiveSocket(_port.c_str(), NULL);
 		else
-			_createPassiveSocketWithHost(_port.c_str(), _configList[0].getServerInfoMap().find("listen")->second[0].c_str());
-		//if (fcntl(_serverFd, F_SETFL, O_NONBLOCK) == -1)
-		//		throw(std::runtime_error(strerror(errno)));
+			_createPassiveSocket(_port.c_str(), _configList[0].getServerInfoMap().find("listen")->second[0].c_str());
+
 	} catch (const std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
 		throw(std::runtime_error("Server creation failure"));
 	}
+
 	std::cout << "______________________CREATING SERVER________________________________\n";
 	std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
 	std::cout << "Create server listen port :" << _port << std::endl;
@@ -27,7 +28,7 @@ Server::Server(v_config configList)
 	{
 		std::cout << "------------configList " << i << "------------------"<< std::endl;
 		std::cout << *it << std::endl;
-		std::cout << "---------------------------------------------------- " << std::endl;
+		std::cout << "--------------------------------z-------------------- " << std::endl;
 
 		i++;
 	}
@@ -95,23 +96,23 @@ int Server::acceptNewClient(void)
 
 int Server::execClientAction(int fd, int availableAction ) // mode naif activate 
 {
-	Client* _currentCli = _clientListFd.find(fd)->second;
-	
-	_currentCli->setAvailableActions(availableAction);
-	if (_currentCli->executeAction())
+	Client* currentCli = _clientListFd.find(fd)->second;
+	currentCli->setAvailableActions(availableAction);
+	if (currentCli->executeAction())
 	{
-		if (_currentCli->getState() == S_CLOSE_FD)
+		if (currentCli->getState() == S_CLOSE_FD)
 		{
 			std::cout << "Closing and removing Client with read return = 0" << std::endl;
-			close(_currentCli->getClientFd());
-			_clientListFd.erase(_currentCli->getClientFd());
+			close(currentCli->getClientFd());
+			_clientListFd.erase(currentCli->getClientFd());
 			return 0;
 		}
 	}
 	return 1;
 }
 
-void 				Server::_createPassiveSocket(const char *service)
+
+void 				Server::_createPassiveSocket(const char *service, const char *host)
 {
 	struct addrinfo hints;
 	struct addrinfo *result;
@@ -119,20 +120,28 @@ void 				Server::_createPassiveSocket(const char *service)
 	int optval;
 	int g_error;
 
+	std::cout << "createPassiveSocketWithHost [" << host << "]" << std::endl;
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
+
 	hints.ai_family =AF_INET;
-	hints.ai_flags = AI_PASSIVE;
 	hints.ai_socktype = SOCK_STREAM;
-	if ((g_error = getaddrinfo(NULL, service, &hints, &result )) != 0)
+	if ((g_error = getaddrinfo(host, service, &hints, &result )) != 0)
 		throw(std::runtime_error(gai_strerror(g_error)));
+	std::cout << "##########################################" << std::endl;
+	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
+	{
+		char buff[INET_ADDRSTRLEN];
+		memset(buff, 0, INET_ADDRSTRLEN);
+		inet_ntop(AF_INET, &((struct sockaddr_in*)(result_it->ai_addr))->sin_addr, buff, INET_ADDRSTRLEN);
+		std::cout << "inet_ntop["<< buff<< "]" << std::endl;
+	}
+	std::cout << "##########################################" << std::endl;
 	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
 	{
 		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
 		if (_serverFd == -1)
 			continue;
+		std::cout << "SOCKET OK" << std::endl;
 		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
 		{
 				close(_serverFd);
@@ -140,8 +149,16 @@ void 				Server::_createPassiveSocket(const char *service)
 				throw(std::runtime_error(strerror(errno)));
 
 		}
+		unsigned int uaddr = ((struct sockaddr_in*)(result_it->ai_addr))->sin_addr.s_addr;
+		std::cout << "bind:" << uaddr << std::endl;
+		std::cout << "fd:" << _serverFd << std::endl;
+		char buff[INET_ADDRSTRLEN];
+		memset(buff, 0, INET_ADDRSTRLEN);
+		inet_ntop(AF_INET, &((struct sockaddr_in*)(result_it->ai_addr))->sin_addr, buff, INET_ADDRSTRLEN);
+		std::cout << "inet_ntop["<< buff<< "]" << std::endl;
 		if (bind(_serverFd, result_it->ai_addr, result_it->ai_addrlen) == 0)
 			break;
+		std::cout << std::string("Bind error ") + strerror(errno) << std::endl;
 		close(_serverFd);
 	}
 	if (!result_it)
@@ -152,54 +169,7 @@ void 				Server::_createPassiveSocket(const char *service)
 		freeaddrinfo(result);
 		throw(std::runtime_error(strerror(errno)));
 	}
-	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
-	freeaddrinfo(result);
-}
-
-void 				Server::_createPassiveSocketWithHost(const char *service, const char *host)
-{
-	//char *host = "127.0.0.1";
-	struct addrinfo hints;
-	struct addrinfo *result;
-	struct addrinfo *result_it;
-	struct sockaddr_in hintsHost;
-	int optval;
-	int g_error;
-
-	memset(&hintsHost, 0, sizeof(struct sockaddr_in));
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hintsHost.sin_family = AF_INET;
-	inet_pton(AF_INET, host, &hintsHost.sin_addr);
-	hints.ai_addr = (struct sockaddr*)&host;
-	hints.ai_addrlen = sizeof(sockaddr_in);
-	hints.ai_family =AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	if ((g_error = getaddrinfo(NULL, service, &hints, &result )) != 0)
-		throw(std::runtime_error(gai_strerror(g_error)));
-	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
-	{
-		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
-		if (_serverFd == -1)
-			continue;
-		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
-		{
-				close(_serverFd);
-				freeaddrinfo(result);
-				throw(std::runtime_error(strerror(errno)));
-
-		}
-		if (bind(_serverFd, result_it->ai_addr, result_it->ai_addrlen) == 0)
-			break;
-		close(_serverFd);
-	}
-	if (!result_it)
-		throw(std::runtime_error("enable to create and bind listening socket"));
-	if (listen(_serverFd, _backlog) == -1)
-	{
-		close(_serverFd);
-		freeaddrinfo(result);
-		throw(std::runtime_error(strerror(errno)));
-	}
+	std::cout << " listen socket address with host [" << _listenSockaddr.sin_addr.s_addr << "]"<< std::endl;
 	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
 	freeaddrinfo(result);
 }

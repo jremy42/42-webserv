@@ -28,6 +28,7 @@
 # ifndef DEBUG_RESPONSE
 #  define DEBUG_RESPONSE 1
 # endif
+enum {R_INIT, R_WRITE, R_OVER};
 class Config;
 
 class Response
@@ -54,6 +55,7 @@ class Response
 		int								_responseReady; // CGI donc temps de process possible ?
 		int								_clientFd;
 		int								_statusCode;
+		int								_state;
 		string							_lineStatus;
 		string							_header;
 		v_c								_body;
@@ -86,6 +88,8 @@ class Response
 // CGI
 		void	_handleCGI(string actualTarget, string cgiExecutable);
 		void	_extractHeaderFromCgiBody(void);
+		void 												_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid);
+
 };
 
 #endif

@@ -74,7 +74,7 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 	this->_serverList = rhs._serverList;
 	this->_rawConfig = rhs._rawConfig;
 	this-> _configList = rhs._configList;
-	this-> _portConfigList = rhs._portConfigList;
+	this-> _portIpConfigList = rhs._portIpConfigList;
 	this->_openFd = rhs._openFd;
 	this->_maxFd = rhs._maxFd;
 
@@ -189,15 +189,16 @@ int		Webserv::parseRawConfig(void)
 				//Constructeur de config a faire avec la map au lieu des 2 premiers fields!!!!
 				viableConfig |= 1;
 				//std::cout << "\e[32mPushing back a new config in the ConfigList\e[0m" << std::endl;
-				if(_portConfigList.find(nextConfig.getListenPort()) != _portConfigList.end())
-					_portConfigList.find(nextConfig.getListenPort())->second.push_back(nextConfig);
+				
+				if(_portIpConfigList.find(std::pair<int, int >(nextConfig.getListenPort(), nextConfig.getHost())) != _portIpConfigList.end())
+					_portIpConfigList.find(std::pair<int, int >(nextConfig.getListenPort(), nextConfig.getHost()))->second.push_back(nextConfig);
 				else
 				{
 					std::vector<Config> tmp;
 					tmp.push_back(nextConfig);
 					std::cout << "\e[32mPushing back a new config in the PortConfigList\e[0m" << std::endl;
 					std::cout << "port :[" << nextConfig.getListenPort() << "]" << std::endl;
-					_portConfigList.insert(std::pair<int, std::vector<Config> >(nextConfig.getListenPort(), tmp));
+					_portIpConfigList.insert(std::pair< std::pair<int, int> ,std::vector<Config> >(std::pair<int, int>(nextConfig.getListenPort(), nextConfig.getHost()), tmp));
 				}
 				//_configList.push_back(nextConfig);// a suppr
 			}
@@ -217,9 +218,9 @@ int		Webserv::parseRawConfig(void)
 
 int		Webserv::createServerListByPortConfig(void)
 {
-	m_i_vc::iterator it;
+	m_piu_vc::iterator it;
 
-	for (it = _portConfigList.begin(); it != _portConfigList.end() && _openFd < _maxFd ; it++)
+	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end() && _openFd < _maxFd ; it++)
 	{
 		Server *newServer = new Server((*it).second);
 		_serverList.push_back(newServer);
@@ -254,7 +255,10 @@ int		Webserv::execServerLoop(void)
 			else if (_fdClientList.find(it->first) != _fdClientList.end())
 			{
 				if (!(_fdClientList.find(it->first)->second->execClientAction(it->first, it->second)))
+				{
+					_fdClientList.erase(it->first);
 					_openFd--;
+				}
 			}
 		}
 	}

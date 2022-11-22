@@ -35,10 +35,11 @@ class Config
 		typedef std::pair<int, int>						p_ii;
 // var
 	private:
-		int		_listenPort;
-		string	_rootDirectory;
-		m_s_vs	_serverInfoMap;
-		m_s_l	_location;
+		int				_listenPort;
+		string			_rootDirectory;
+		m_s_vs			_serverInfoMap;
+		m_s_l			_location;
+		unsigned int 	_host;
 // functions
 	public:
 		Config(void);
@@ -49,6 +50,7 @@ class Config
 
 		const string	getListenPortStr(void) const;
 		int	getListenPort(void) const;
+		int getHost(void) const;
 		const std::vector<string>	getServerName(void) const;
 		const char * getRootDir(void) const;
 		const std::vector<string> getParamByLocation(string &requestTarget, string field) const;
