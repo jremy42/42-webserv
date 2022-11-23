@@ -31,7 +31,7 @@ class Client
 
 	public:
 		Client();
-		Client(int clientFd, v_config *config, Server *myServ);
+		Client(int clientFd, v_config *config, Server *myServ, unsigned int host);
 		Client(const Client &src);
 		Client &operator=(const Client &rhs);
 		~Client(void);
@@ -41,7 +41,7 @@ class Client
 		int				getClientFd(void) const;
 		int				getState(void) const;
 		std::string&	getStateStr(void) const;
-		Config*			getMatchingConfig(void) const;
+		const Config*			getMatchingConfig(void) const;
 		Server*			getMyServer(void) const;
 
 	private:
@@ -52,10 +52,12 @@ class Client
 		int					_state;
 		int					_availableActions;
 		static std::string	_stateStr[4];
-		v_config*			_configList;
+		v_config			_configList;
 		Server*				_myServ;
 		unsigned long		_timeoutRequest;
 		unsigned long		_timeoutClient;
+		v_config			_matchingConfigListByHost(v_config * configList, unsigned int host);
+
 };
 
 #endif

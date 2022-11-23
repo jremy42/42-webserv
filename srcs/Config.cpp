@@ -103,7 +103,7 @@ int		Config::getListenPort(void) const
 	return (_listenPort);
 }
 
-int		Config::getHost(void) const
+unsigned int		Config::getHost(void) const
 {
 	return (_host);
 }

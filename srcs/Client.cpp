@@ -8,18 +8,21 @@ Client::Client()
 	_request = NULL;
 	_response = NULL;
 	_state = S_INIT;
-	_configList = NULL;
 	_timeoutRequest = 0;
 	_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 }
 
-Client::Client(int clientFd, v_config* config, Server *myServ)
+Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host)
 {
 	_clientFd = clientFd;
 	_request = NULL;
 	_response = NULL;\
-	_configList = config;
+	_configList = _matchingConfigListByHost(config, host);
 	std::cout << "create client with fd :" << _clientFd << std::endl;
+	std::cout << "====================================================================================" << std::endl;
+	std::cout << "create client with configList:" << std::endl;
+	std::cout << _configList << std::endl;
+	std::cout << "====================================================================================" << std::endl;
 	_state = S_INIT;
 	_myServ = myServ;
 	_timeoutRequest = 0;
@@ -59,11 +62,42 @@ void	Client::setAvailableActions(int epollFlags)
 	_availableActions = epollFlags;
 }
 
-Config		*Client::getMatchingConfig(void) const
+Client::v_config	Client::_matchingConfigListByHost(v_config *configList, unsigned int host)
+{
+	v_config ret;
+	v_config::iterator it = configList->begin();
+	for (; it != configList->end(); it++)
+	{
+		if (it->getHost() == host)
+		{
+			std::cout << " add new config by host" << std::endl;
+			ret.push_back(*it);
+		}
+	}
+	if (ret.empty())
+	{
+		for (it = configList->begin(); it != configList->end(); it++)
+		{
+			if (it->getHost() == 0)
+			{
+				std::cout << " add new config for wildcard" << std::endl;
+				ret.push_back(*it);
+			}
+		}
+	}
+	std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+	std::cout << "ret: \n";
+	std::cout << ret << std::endl;
+	std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+
+	return ret;
+}
+
+const Config		*Client::getMatchingConfig(void) const
 {
 	// p-e 
-	v_config::iterator							it = _configList->begin();
-	v_config::iterator							ite = _configList->end();
+	v_config::const_iterator							it = _configList.begin();
+	v_config::const_iterator							ite = _configList.end();
 	std::vector<std::string>::const_iterator	match;
 	std::vector<std::string>					currentCheckedConfig;
 	
@@ -80,7 +114,7 @@ Config		*Client::getMatchingConfig(void) const
 		}
 	}
 	std::cout << "No host matching in config : Defaulting to first host/server_name" << std::endl;
-	return (&_configList->begin()[0]);
+	return (&_configList.begin()[0]);
 }
 int Client::executeAction()
 {

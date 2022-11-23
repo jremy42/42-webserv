@@ -61,7 +61,7 @@ class Server
 	private:
 		void 				_createPassiveSocket(const char *service, const char *host);
 		void 				_clientAddressPrint(struct sockaddr *cliAddr);
-		v_config			_matchingConfigListByHost(int host);
+		v_config			_matchingConfigListByHost(unsigned int host);
 		static void			_delete_second(std::pair<int, Client*> toDelete);
 };
 

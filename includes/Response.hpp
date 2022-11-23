@@ -41,7 +41,7 @@ class Response
 
 	public:
 		Response(void);
-		Response(int clientFd, Request *request, Config *config, int statusCode);
+		Response(int clientFd, Request *request, const Config *config, int statusCode);
 		Response(const Response &src);
 		Response &operator=(const Response &rhs);
 		~Response(void);
@@ -62,7 +62,7 @@ class Response
 		v_c								_fullResponse;
 		string							_bodyToSend; // tmp
 		const Request *					_request;
-		Config *						_config;
+		const Config *						_config;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;

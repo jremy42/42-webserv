@@ -9,7 +9,7 @@ Server::Server(v_config configList)
 	try 
 	{
 		if (_configList[0].getServerInfoMap().find("listen")->second[0] == "*")
-			_createPassiveSocket(_port.c_str(), NULL);
+			_createPassiveSocket(_port.c_str(), "0.0.0.0");
 		else
 			_createPassiveSocket(_port.c_str(), _configList[0].getServerInfoMap().find("listen")->second[0].c_str());
 
@@ -72,7 +72,7 @@ Server &Server::operator=(const Server &src)
 	return *this;
 };
 
-Server::v_config	Server::_matchingConfigListByHost(int host)
+Server::v_config	Server::_matchingConfigListByHost(unsigned int host)
 {
 	v_config ret;
 	v_config::iterator it = _configList.begin();
@@ -82,6 +82,17 @@ Server::v_config	Server::_matchingConfigListByHost(int host)
 		{
 			std::cout << " add new config by host" << std::endl;
 			ret.push_back(*it);
+		}
+	}
+	if (!ret.empty())
+	{
+		for (it =_configList.begin(); it != _configList.end(); it++)
+		{
+			if (it->getHost() == 0)
+			{
+				std::cout << " add new config for wildcard" << std::endl;
+				ret.push_back(*it);
+			}
 		}
 	}
 	return ret;
@@ -109,8 +120,7 @@ int Server::acceptNewClient(void)
 		memset(buf, 0, sizeof(buf));
 		std:: cout << "\e[35mRequested Server IP : [" << inet_ntop(AF_INET, &requestedServerIp.sin_addr, buf, sizeof(buf)) << "]\e[0m" << std::endl;
 		_clientAddressPrint((struct sockaddr *)& claddr);
-		v_config _configListByHost = _matchingConfigListByHost((int)requestedServerIp.sin_addr.s_addr);
-		Client *newClient = new Client(clientFd, &_configListByHost, this);
+		Client *newClient = new Client(clientFd, &_configList, this, (unsigned int)requestedServerIp.sin_addr.s_addr);
 		_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient));
 		return clientFd;
 	}
@@ -140,10 +150,10 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 	struct addrinfo hints;
 	struct addrinfo *result;
 	struct addrinfo *result_it;
-	int optval;
+	int optval = 1;
 	int g_error;
 
-	std::cout << "createPassiveSocketWithHost [" << host << "]" << std::endl;
+	std::cout << "createPassiveSocketWithHost [" << (host != NULL ? host : "NULL HOST") << "]" << std::endl;
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_family =AF_INET;

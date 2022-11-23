@@ -20,7 +20,7 @@ std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /tit
 
 Response::Response(){};
 
-Response::Response(int clientFd, Request *request, Config *config, int statusCode)
+Response::Response(int clientFd, Request *request, const Config *config, int statusCode)
 {
 	_clientFd = clientFd;
 	_request = request;

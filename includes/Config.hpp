@@ -51,7 +51,7 @@ class Config
 
 		const string	getListenPortStr(void) const;
 		int	getListenPort(void) const;
-		int getHost(void) const;
+		unsigned int getHost(void) const;
 		const std::vector<string>	getServerName(void) const;
 		const char * getRootDir(void) const;
 		const std::vector<string> getParamByLocation(string &requestTarget, string field) const;
