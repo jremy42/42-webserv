@@ -37,6 +37,6 @@ int				isDir(std::string fileName);
 int 			fileExist(std::string fileName);
 void		__signal(int signal);
 unsigned long	ft_get_time(void);
-int			getipbyhost(const char *host, const char *service);
+unsigned int			getipbyhost(const char *host, const char *service);
 
 #endif

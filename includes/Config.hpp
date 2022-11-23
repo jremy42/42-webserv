@@ -28,6 +28,7 @@ class Config
 {
 // typedef
 	public:
+		typedef std::vector<Config>	v_config;
 		typedef std::string								string;
 		typedef std::map<string, std::vector<string> >	m_s_vs;
 		typedef std::pair<string, std::vector<string> >	p_s_vs;
@@ -39,7 +40,7 @@ class Config
 		string			_rootDirectory;
 		m_s_vs			_serverInfoMap;
 		m_s_l			_location;
-		unsigned int 	_host;
+		unsigned int	_host;
 // functions
 	public:
 		Config(void);
@@ -76,5 +77,6 @@ class Config
 };
 
 std::ostream	&operator<<(std::ostream &o, const Config config);
+std::ostream	&operator<<(std::ostream &o, const std::vector< Config > v_config);
 
 #endif

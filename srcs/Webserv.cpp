@@ -216,7 +216,7 @@ int		Webserv::parseRawConfig(void)
 	return (1);
 }
 
-void	Webserv::_adjustWildCardPort()
+void	Webserv::_moveHostConfigToWildcard()
 {
 	m_piu_vc::iterator it;
 	int 				searchPort;
@@ -224,12 +224,15 @@ void	Webserv::_adjustWildCardPort()
 	{
 		if (it->first.second == 0)
 		{
+			std::cout << "\e[35mFound Wildcard for port : [" << it->first.first << "]\e[0m" << std::endl;
+			std::cout << "Before WildCard Clean" << std::endl << it->second << std::endl;
 			searchPort = it->first.first;
 			m_piu_vc::iterator it2;
 			for (it2 = _portIpConfigList.begin(); it2 != _portIpConfigList.end(); it2++)
 			{
 				if (it2->first.first == searchPort && it != it2)
 				{
+					std::cout << "\e[36mFound a Host/Port pair matching Wildcard for port : Port[" << it2->first.first << "] Host : [" << it2->first.second << "]\e[0m" << std::endl;
 					v_config tmpVconfig = it2->second;
 					for (v_config::iterator confIt = tmpVconfig.begin(); confIt != tmpVconfig.end(); confIt++)
 						it->second.push_back(*confIt);
@@ -237,6 +240,7 @@ void	Webserv::_adjustWildCardPort()
 				}
 			}
 		}
+		std::cout << "After WildCard Clean" << std::endl << it->second << std::endl;
 	}
 
 }
@@ -245,7 +249,7 @@ int		Webserv::createServerListByPortConfig(void)
 {
 	m_piu_vc::iterator it;
 
-	_adjustWildCardPort();
+	_moveHostConfigToWildcard();
 	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end() && _openFd < _maxFd ; it++)
 	{
 		Server *newServer = new Server((*it).second);

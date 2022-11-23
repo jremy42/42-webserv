@@ -31,7 +31,7 @@ class Webserv
 		typedef v_server::iterator	v_iterator;
 		typedef std::map<int, std::vector<Config> > m_i_vc;
 		typedef std::map<int, Server*> m_i_serv;
-		typedef std::map< std::pair<int, int>, std::vector<Config> > m_piu_vc;
+		typedef std::map< std::pair<int, unsigned int>, std::vector<Config> > m_piu_vc; // pair <port, ip>
 
 		Webserv();
 		Webserv(string fileName); // open filenames, populates p_rawConfig
@@ -63,7 +63,7 @@ class Webserv
 		void					_loadFile(const char *fileName);
 		string					_checkServerName(std::vector<string> nextServerName, std::vector<string> currentServerName);
 		unsigned long			_getMaxFd();
-		void					_adjustWildCardPort();
+		void					_moveHostConfigToWildcard();
 };
 
 #endif

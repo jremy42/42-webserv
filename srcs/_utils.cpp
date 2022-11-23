@@ -145,7 +145,7 @@ unsigned long	ft_get_time(void)
 	return (now.tv_sec * 1000 + now.tv_usec / 1000);
 }
 
-int			getipbyhost(const char *host, const char *service)
+unsigned int			getipbyhost(const char *host, const char *service)
 {
 	struct addrinfo hints;
 	struct addrinfo *result;
@@ -161,5 +161,6 @@ int			getipbyhost(const char *host, const char *service)
 		throw(std::runtime_error(gai_strerror(g_error)));
 	ret = ((struct sockaddr_in*)(result->ai_addr))->sin_addr.s_addr;
 	freeaddrinfo(result);
+	std::cout << "ret : [" << ret << "]" << std::endl;
 	return ret;
 }

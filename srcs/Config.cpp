@@ -50,7 +50,12 @@ Config::Config(std::string rawServerConfig)
 	_parseClientMaxBodySize();
 	// WARNING -> valeurs a verfier avant de les recup
 	_listenPort = atoi(_serverInfoMap["listen"][1].c_str());
-	_host = getipbyhost(_serverInfoMap["listen"][0].c_str(), _serverInfoMap["listen"][1].c_str());
+	std::cout << "\e[32mlisten[0] :" << _serverInfoMap["listen"][0].c_str() << "\e[0m" << std::endl;
+	std::cout << "\e[32mlisten[1] :" << _serverInfoMap["listen"][1].c_str() << "\e[0m" << std::endl;
+	if (_serverInfoMap["listen"][0] == "*")
+		_host = 0;
+	else
+		_host = getipbyhost(_serverInfoMap["listen"][0].c_str(), _serverInfoMap["listen"][1].c_str());
 	_rootDirectory = _serverInfoMap["root"][0];
 	//Check de la conf a faire ici dans un fx, en incluant le check ci dessous	
 	if (_listenPort < 0)
@@ -357,6 +362,19 @@ std::ostream	&operator<<(std::ostream &o, const Config config)
 	for (Config::m_s_l::const_iterator it = location.begin(); it != ite; it++)
 		std::cout << "key: [" << (*it).first << "]\n" << (*it).second << std::endl;
 		 
+	return (o);
+}
+
+std::ostream	&operator<<(std::ostream &o, const std::vector< Config > v_config)
+{
+	Config::v_config::const_iterator	it = v_config.begin();
+	Config::v_config::const_iterator	ite = v_config.end();
+
+	for (int i = 0; it != ite; it++, i++)
+	{
+		o << "v_config[" << i << "]" << std::endl;
+		o << *it << std::endl;
+	}
 	return (o);
 }
 
