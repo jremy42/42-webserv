@@ -28,7 +28,7 @@
 # ifndef DEBUG_RESPONSE
 #  define DEBUG_RESPONSE 1
 # endif
-enum {R_INIT, R_WRITE, R_OVER};
+enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};
 class Config;
 
 class Response
@@ -46,8 +46,7 @@ class Response
 		Response &operator=(const Response &rhs);
 		~Response(void);
 		void setRequest(const Request *request);
-		int	createResponse(void);
-		int	writeClientResponse(void);
+		int handleResponse(void);
 		void reset(void);
 
 	private:
@@ -59,10 +58,11 @@ class Response
 		string							_lineStatus;
 		string							_header;
 		v_c								_body;
-		v_c								_fullResponse;
+		v_c								_fullHeader;
 		string							_bodyToSend; // tmp
 		const Request *					_request;
-		const Config *						_config;
+		const Config *					_config;
+		std::ifstream					_fs;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
@@ -72,10 +72,12 @@ class Response
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);
 		void							_createHeaderBase(void);
-		void							_createFullResponse(void);
+		void							_createFullHeader(void);
 		void							_checkAutorizationForMethod(void);
 		void							_checkRedirect(void);
 		string							_getExtensionFromTarget(string actualTarget);
+		int								_createResponse(void);
+		int								_writeClientResponse(void);
 //GET
 		void							_methodGET(void);
 		int								_createAutoIndex(const string &pathToDir);
@@ -83,14 +85,20 @@ class Response
 		std::string						_generateHTMLBodyWithPath(void);
 		string							_selectActualTarget(string &actualTarget, string requestTarget);
 		void							_createBodyFromFile(const string &actualTarget);
+		void							_createFileStreamFromFile(string actualTarget);
 // POST
 		void							_methodPOST(void);
 // CGI
-		void	_handleCGI(string actualTarget, string cgiExecutable);
-		void	_handleCGIfile(string actualTarget, string cgiExecutable);
-		void	_extractHeaderFromCgiBody(void);
-		void 	_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid);
-		void 	_parentPartCgiFile(int outChild, pid_t pid);
+		pid_t	_pid;
+		char _nameIn[256];
+		char _nameOut[256];
+		int	_inChild;
+		int _outChild;
+		//void	_handleCGI(string actualTarget, string cgiExecutable);
+		//void 	_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid);
+		void	_initCGIfile(string actualTarget, string cgiExecutable);
+		//void	_extractHeaderFromCgiBody(void);
+		void 	_waitCGIfile();
 };
 
 #endif

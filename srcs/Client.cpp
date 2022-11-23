@@ -176,8 +176,9 @@ int Client::executeAction()
 	}
 	else if ((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
-		_response->createResponse();
-		if (_response->writeClientResponse() == 0)
+		//_response->createResponse();
+		//if (_response->writeClientResponse() == 0)
+		if (_response->handleResponse() == 0) // 0 si ok et j'ai ecrit, donc je prolonge le timeout
 		{
 			_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 			_state = S_OVER;

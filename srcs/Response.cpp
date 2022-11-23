@@ -50,7 +50,7 @@ Response &Response::operator=(const Response &rhs)
 	_lineStatus = rhs._lineStatus;
 	_header = rhs._header;
 	_body = rhs._body;
-	_fullResponse = rhs._fullResponse;
+	_fullHeader = rhs._fullHeader;
 	_bodyToSend = rhs._bodyToSend;
 	_request = rhs._request;
 	_config = rhs._config;
@@ -170,34 +170,61 @@ std::string	Response::_selectActualTarget(string &actualTarget, string requested
 	}
 }
 
-void Response::_createBodyFromFile(const string &actualTarget)
+void Response::_createFileStreamFromFile(string actualTarget) // set le header avec taille qui va bien et open le Body
 {
-	std::ifstream	fs;
-	char			*buff;
 	int				length;
 
 	std::cout << "open " << actualTarget << std::endl;
-	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
-	if (fs.good())
+	_fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
+	if (_fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
 	{
 		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
 		_statusCode = 404;
-		fs.close();
+		_fs.close();
 		return;
 	}
-	fs.seekg(0, fs.end);
-	length = fs.tellg();
-	fs.seekg(0, fs.beg);
+	_fs.seekg(0, _fs.end);
+	length = _fs.tellg();
+	_fs.seekg(0, _fs.beg);
 	if (DEBUG_RESPONSE)
 		std::cout << "Body length: [" << length << "]\n";
-	buff = new char[length];
-	fs.read(buff, length);
-	_body = v_c(buff, buff + length);
-	delete buff;
-	fs.close();
+	_header += "content-length: " + itoa(length) + "\n";
+ //	buff = new char[length];
+ //	_fs.read(buff, length);
+ //	_body = v_c(buff, buff + length);
+ //	delete buff;
+ //	_fs.close();
 }
+ void Response::_createBodyFromFile(const string &actualTarget) // set le header avec taille qui va bien et open le Body
+ {
+ 	std::ifstream	fs;
+ 	char			*buff;
+ 	int				length;
+ 
+ 	std::cout << "open " << actualTarget << std::endl;
+ 	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
+ 	if (fs.good())
+ 		std::cout << "Successfully opened body file "<< std::endl;
+ 	else
+ 	{
+ 		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
+ 		_statusCode = 404;
+ 		fs.close();
+ 		return;
+ 	}
+ 	fs.seekg(0, fs.end);
+ 	length = fs.tellg();
+ 	fs.seekg(0, fs.beg);
+ 	if (DEBUG_RESPONSE)
+ 		std::cout << "Body length: [" << length << "]\n";
+ 	buff = new char[length];
+ 	fs.read(buff, length);
+ 	_body = v_c(buff, buff + length);
+ 	delete buff;
+ 	fs.close();
+ }
 
 std::string	Response::_getExtensionFromTarget(string actualTarget)
 {
@@ -229,10 +256,16 @@ void Response::_methodGET(void)
 		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(actualTarget))) != "")
 		{
 			std::cout << "\e[33mCGI\e[0m" << std::endl;
-			_handleCGIfile(actualTarget, cgiExecutable);
+			if (_state == R_INIT)
+				_initCGIfile(actualTarget, cgiExecutable);
+			if (_state == R_WAIT_CGI_EXEC)
+				_waitCGIfile();
 		}
 		else
-			_createBodyFromFile(actualTarget);
+		{
+			_createFileStreamFromFile(actualTarget);
+			_state = R_FILE_READY;
+		}
 	}
 	else
 	{
@@ -340,45 +373,58 @@ void Response::_handleCGI(string actualTarget, string cgiExecutable)
 }
  */
 
-void Response::_parentPartCgiFile(int outChild, pid_t pid)
+void Response::_waitCGIfile(void)
 {
 	int		status;
 	int		ret;
 	int		readRet;
 	char	readBuf[512];
 
-	waitpid(pid, &status, 0);
-	if (WIFEXITED(status) > 0)
-		ret = (WEXITSTATUS(status));
-	if (WIFSIGNALED(status) > 0)
-		ret = (WTERMSIG(status) + 128);
-	std::cerr << "ret : [" << ret << "]" << std::endl;
-	memset(readBuf, 0, 512);
-	lseek(outChild, 0, SEEK_SET);
-	while ((readRet = read(outChild, readBuf, 511)) > 0)
+	if (waitpid(_pid, &status, WNOHANG) == 0) // 0 car pas finit
+		return ;
+	else
 	{
-		std::cout << "readRet:" << readRet << std::endl;
-		_body.insert(_body.end(), readBuf, readBuf + readRet);
+
+		if (WIFEXITED(status) > 0)
+			ret = (WEXITSTATUS(status));
+		if (WIFSIGNALED(status) > 0)
+			ret = (WTERMSIG(status) + 128);
+		std::cerr << "ret : [" << ret << "]" << std::endl;
+		memset(readBuf, 0, 512);
+		lseek(_outChild, 0, SEEK_SET);
+		while ((readRet = read(_outChild, readBuf, 511)) > 0)
+		{
+			std::cout << "readRet:" << readRet << std::endl;
+			_body.insert(_body.end(), readBuf, readBuf + readRet);
+		}
+		//_extractHeaderFromCgiBody();
+		if (close(_inChild))
+			throw(std::runtime_error("Close error inChild" ));
+		if (unlink(_nameIn))
+			throw(std::runtime_error("unlink error" ));
+		if (close(_outChild))
+			throw(std::runtime_error("close error outChild" ));
+		/*if (unlink(_nameOut))
+			throw(std::runtime_error("unlink error" ));*/
+		_state = R_FILE_READY;
 	}
-	
-	_extractHeaderFromCgiBody();
 }
 
-void Response::_handleCGIfile(string actualTarget, string cgiExecutable)
+void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 {
-	pid_t	pid;
-	char nameIn[] = "/tmp/webserv/XXXXXX";
-	char nameOut[] = "/tmp/webserv/XXXXXX";
-	int	inChild = mkstemp(nameIn);
-	int outChild = mkstemp(nameOut);
+	memset(_nameOut, 0, 256);
+	memset(_nameIn, 0, 256);
+	strncpy(_nameIn, "/tmp/webserv/XXXXXX", 256);
+	strncpy(_nameOut, "/tmp/webserv/XXXXXX", 256);
+	_inChild = mkstemp(_nameIn);
+	_outChild = mkstemp(_nameOut);
 	v_c		requestBody = _request->getBody();
 
 
-
-	std::cout << "nameIn: [" << nameIn << "]" << std::endl;
-	std::cout << "nameOut: [" << nameOut << "]" << std::endl;
-	std::cout << "inchild fd: [" << inChild << "]" << std::endl;
-	std::cout << "outchild fd: [" << outChild << "]" << std::endl;
+	std::cout << "nameIn: [" << _nameIn << "]" << std::endl;
+	std::cout << "nameOut: [" << _nameOut << "]" << std::endl;
+	std::cout << "inchild fd: [" << _inChild << "]" << std::endl;
+	std::cout << "outchild fd: [" << _outChild << "]" << std::endl;
 	std::cout << "open " << actualTarget << std::endl;
 	if (requestBody.size() != 0)
 	{
@@ -387,17 +433,20 @@ void Response::_handleCGIfile(string actualTarget, string cgiExecutable)
 		v_c::iterator ite = requestBody.end();
 		for (v_c::iterator it = requestBody.begin(); it != ite; i++, it++)
 			buff[i] = *it;
-		write(inChild, buff, i);
+		write(_inChild, buff, i);
 	}
-	if ((pid = fork()) == -1)
+	if ((_pid = fork()) == -1)
 		throw(std::runtime_error("Fork error" ));
-	if (pid != 0)
-		_parentPartCgiFile(outChild, pid);
+	if (_pid != 0)
+	{
+		_state = R_WAIT_CGI_EXEC;
+		return ;
+	}
 	else
 	{
-		if (dup2(inChild, STDIN_FILENO) == -1)
+		if (dup2(_inChild, STDIN_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child DUP2 error 0") + strerror(errno)));
-		if (dup2(outChild, STDOUT_FILENO) == -1)
+		if (dup2(_outChild, STDOUT_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
 		char *arg[3];
 		arg[0] = const_cast<char *>(cgiExecutable.c_str());
@@ -407,34 +456,26 @@ void Response::_handleCGIfile(string actualTarget, string cgiExecutable)
 		execve(cgiExecutable.c_str(), arg, NULL);
 		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
 	}
-	if (close(inChild))
-		throw(std::runtime_error("Close error inChild" ));
-	if (close(outChild))
-		throw(std::runtime_error("close error outChild" ));
-	//if (unlink(nameIn))
-	//	throw(std::runtime_error("unlink error" ));
-	//if (unlink(nameOut))
-	//	throw(std::runtime_error("unlink error" ));
 }
 
-void	Response::_extractHeaderFromCgiBody()
-{
-	v_c::iterator	it = _body.begin();
-	v_c::iterator	ite = _body.end();
-
-	for (; it != ite; it++)
-	{
-		if (*it == '\r'
-			&& it + 1 != ite && *(it + 1) == '\n'
-			&& it + 2 != ite && *(it + 2) == '\r'
-			&& it + 3 != ite && *(it + 3) == '\n')
-		{
-			string rawHeader(_body.begin(), it);
-			_body.erase(_body.begin(), it + 4);
-			_header += rawHeader + "\n";
-		}
-	}
-}
+ //void	Response::_extractHeaderFromCgiBody()
+ //{
+ //	v_c::iterator	it = _body.begin();
+ //	v_c::iterator	ite = _body.end();
+ //
+ //	for (; it != ite; it++)
+ //	{
+ //		if (*it == '\r'
+ //			&& it + 1 != ite && *(it + 1) == '\n'
+ //			&& it + 2 != ite && *(it + 2) == '\r'
+ //			&& it + 3 != ite && *(it + 3) == '\n')
+ //		{
+ //			string rawHeader(_body.begin(), it);
+ //			_body.erase(_body.begin(), it + 4);
+ //			_header += rawHeader + "\n";
+ //		}
+ //	}
+ //}
 
 void Response::_createHeaderBase(void)
 {
@@ -448,12 +489,12 @@ void Response::_createHeaderBase(void)
 	std::cout << _header << std::endl;
 }
 
-void Response::_createFullResponse(void)
+void Response::_createFullHeader(void)
 {
-	_fullResponse = v_c(_lineStatus.begin(), _lineStatus.end());
-	_fullResponse.insert(_fullResponse.end(), _header.begin(), _header.end());
-	_fullResponse.push_back('\n');
-	_fullResponse.insert(_fullResponse.end(), _body.begin(), _body.end());
+	_fullHeader = v_c(_lineStatus.begin(), _lineStatus.end());
+	_fullHeader.insert(_fullHeader.end(), _header.begin(), _header.end());
+	_fullHeader.push_back('\n');
+	//_fullHeader.insert(_fullHeader.end(), _body.begin(), _body.end());
 }
 
 void Response::_checkAutorizationForMethod(void)
@@ -478,58 +519,91 @@ void Response::_checkRedirect(void)
 	}
 }
 
-int Response::createResponse(void)
+int Response::handleResponse(void)
+{
+	if (_state != R_WRITE)
+		_createResponse();
+	if (_state == R_WRITE)
+		_writeClientResponse();
+	if (_state == R_OVER)
+		return (0);
+	else
+		return (1);
+}
+
+int Response::_createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
 
-	_checkRedirect();
-	_checkAutorizationForMethod();
-	if(_statusCode > 200)
+	if (_state == R_INIT)
+	{
+		_checkRedirect();
+		_checkAutorizationForMethod();
+	}
+	if(_statusCode > 200 && _state == R_INIT)
+	{
 		_createErrorMessageBody();
-	else if (_request->getMethod() == "GET")
+		_state = R_FILE_READY;
+	}
+	if (_state < R_FILE_READY && _request->getMethod() == "GET")
 	{
 		std::cout << "GET METHOD" << std::endl;
-		_methodGET();
+		_methodGET(); // va set le status en R_FILE_READY a la fin du CGI ou directement si regular file
 	}
-	_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
-	_createHeaderBase();
-	_createFullResponse();
-	return 0;
+	else if (_state < R_FILE_READY && _request->getMethod() == "POST")
+	{
+
+	}
+	if (_state == R_FILE_READY)
+	{
+		_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
+		//_createHeaderBase();
+		_createFullHeader();
+		_state = R_WRITE;
+	}
+	return (_state);
 }
 
-int Response::writeClientResponse(void)
+int Response::_writeClientResponse(void)
 {
 	int		ret;
-	int 	buff_size;
+	int		buff_size;
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
 	char *buff;
-	if (_fullResponse.size() > BUFF_MAX)
-	{
-		buff = new char[BUFF_MAX];
-		buff_size = BUFF_MAX;
-	}
-	else
-	{
-		buff = new char[_fullResponse.size()];
-		buff_size = _fullResponse.size();
-	}
 	int i = 0;
-	v_c::iterator ite = _fullResponse.end();
-	for (v_c::iterator it = _fullResponse.begin(); i < buff_size && it != ite; i++, it++)
-		buff[i] = *it;
-	std::cout << "buff_size [" << buff_size << "]" << "About to write on fd [" << _clientFd << "]" << std::endl;
-	ret = send(_clientFd, buff, i, 0);
-	if (ret == -1)
-		std::cerr << "Error in writeClientResponse" << std::endl;
-	else
+	if (_fullHeader.size())
 	{
-		_fullResponse.erase(_fullResponse.begin(), _fullResponse.begin() + ret);
-		std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullResponse.size() << "]" <<std::endl;
+		buff = new char[_fullHeader.size()];
+		buff_size = sizeof(buff);
+		v_c::iterator ite = _fullHeader.end();
+		for (v_c::iterator it = _fullHeader.begin(); i < buff_size && it != ite; i++, it++)
+			buff[i] = *it;
+		std::cout << "buff_size [" << buff_size << "]" << "About to fullHeader write on fd [" << _clientFd << "]" << std::endl;
+		ret = send(_clientFd, buff, i, 0);
+		if (ret == -1)
+			std::cerr << "Error in writeClientResponse" << std::endl;
+		else
+		{
+			_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
+			std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
+		}
+		delete [] buff;
 	}
-	delete [] buff;
-	if (_fullResponse.empty())
-		return (0);
+	else if (_fullHeader.empty())
+	{
+		char	bufBody[BUFF_MAX];
+		memset(bufBody, 0, BUFF_MAX);
+
+		_fs.read(bufBody, BUFF_MAX);
+		ret = send(_clientFd, bufBody, _fs.gcount(), 0);
+		if (ret == -1)
+			std::cerr << "Error in writeClientResponse in Body state" << std::endl;
+		if (ret != _fs.gcount())
+			throw(std::runtime_error(std::string("Lazy Client")));
+		if (_fs)
+			_state = R_OVER;
+	}
 	return 1;
 }
 
