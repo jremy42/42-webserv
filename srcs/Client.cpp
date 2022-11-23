@@ -122,13 +122,16 @@ int Client::executeAction()
 	int	actionMade = 0;
 
 	usleep(50000);
-	std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
-	printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
-			(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
-			(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
-			(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
-			(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
-			(_availableActions & EPOLLHUP) ? "EPOLLHUP " : ""); 
+	if (DEBUG_CLIENT)
+	{
+		std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
+		printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
+				(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
+				(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
+				(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
+				(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
+				(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
+	}
 	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP || ft_get_time() > _timeoutClient)
 	{
 		_state = S_CLOSE_FD;
@@ -156,7 +159,8 @@ int Client::executeAction()
 			_request->setState(R_BODY);
 			actionReturnValue = _request->readClientRequest(0);
 		}
-		std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
+		if (DEBUG_CLIENT)
+			std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)
 		{
 			//std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";

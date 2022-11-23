@@ -87,9 +87,10 @@ class Response
 		void							_methodPOST(void);
 // CGI
 		void	_handleCGI(string actualTarget, string cgiExecutable);
+		void	_handleCGIfile(string actualTarget, string cgiExecutable);
 		void	_extractHeaderFromCgiBody(void);
-		void 												_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid);
-
+		void 	_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid);
+		void 	_parentPartCgiFile(int outChild, pid_t pid);
 };
 
 #endif

@@ -229,7 +229,7 @@ void Response::_methodGET(void)
 		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(actualTarget))) != "")
 		{
 			std::cout << "\e[33mCGI\e[0m" << std::endl;
-			_handleCGI(actualTarget, cgiExecutable);
+			_handleCGIfile(actualTarget, cgiExecutable);
 		}
 		else
 			_createBodyFromFile(actualTarget);
@@ -255,7 +255,7 @@ void Response::_methodPOST(void)
 	// create response
 }
 
-void Response::_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid)
+/* void Response::_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid)
 {
 	int		status;
 	int		ret;
@@ -313,7 +313,7 @@ void Response::_handleCGI(string actualTarget, string cgiExecutable)
 		throw(std::runtime_error("Fork error" ));
 	if (pid != 0)
 	{
-		
+		_parentPartCgi(pipefdParentToChild, pipefdChildToParent, pid);
 	}
 	else
 	{
@@ -338,6 +338,85 @@ void Response::_handleCGI(string actualTarget, string cgiExecutable)
 		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
 	}
 }
+ */
+
+void Response::_parentPartCgiFile(int outChild, pid_t pid)
+{
+	int		status;
+	int		ret;
+	int		readRet;
+	char	readBuf[512];
+
+	waitpid(pid, &status, 0);
+	if (WIFEXITED(status) > 0)
+		ret = (WEXITSTATUS(status));
+	if (WIFSIGNALED(status) > 0)
+		ret = (WTERMSIG(status) + 128);
+	std::cerr << "ret : [" << ret << "]" << std::endl;
+	memset(readBuf, 0, 512);
+	lseek(outChild, 0, SEEK_SET);
+	while ((readRet = read(outChild, readBuf, 511)) > 0)
+	{
+		std::cout << "readRet:" << readRet << std::endl;
+		_body.insert(_body.end(), readBuf, readBuf + readRet);
+	}
+	
+	_extractHeaderFromCgiBody();
+}
+
+void Response::_handleCGIfile(string actualTarget, string cgiExecutable)
+{
+	pid_t	pid;
+	char nameIn[] = "/tmp/webserv/XXXXXX";
+	char nameOut[] = "/tmp/webserv/XXXXXX";
+	int	inChild = mkstemp(nameIn);
+	int outChild = mkstemp(nameOut);
+	v_c		requestBody = _request->getBody();
+
+
+
+	std::cout << "nameIn: [" << nameIn << "]" << std::endl;
+	std::cout << "nameOut: [" << nameOut << "]" << std::endl;
+	std::cout << "inchild fd: [" << inChild << "]" << std::endl;
+	std::cout << "outchild fd: [" << outChild << "]" << std::endl;
+	std::cout << "open " << actualTarget << std::endl;
+	if (requestBody.size() != 0)
+	{
+		char *buff = new char[requestBody.size()];
+		int i = 0;
+		v_c::iterator ite = requestBody.end();
+		for (v_c::iterator it = requestBody.begin(); it != ite; i++, it++)
+			buff[i] = *it;
+		write(inChild, buff, i);
+	}
+	if ((pid = fork()) == -1)
+		throw(std::runtime_error("Fork error" ));
+	if (pid != 0)
+		_parentPartCgiFile(outChild, pid);
+	else
+	{
+		if (dup2(inChild, STDIN_FILENO) == -1)
+			throw(std::runtime_error(std::string("Child DUP2 error 0") + strerror(errno)));
+		if (dup2(outChild, STDOUT_FILENO) == -1)
+			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
+		char *arg[3];
+		arg[0] = const_cast<char *>(cgiExecutable.c_str());
+		arg[1] = const_cast<char *>(actualTarget.c_str());
+		arg[2] = NULL;
+		std::cerr << "actual Target : [" << actualTarget << "] CGI-executable : [" << cgiExecutable << "]" << std::endl;
+		execve(cgiExecutable.c_str(), arg, NULL);
+		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
+	}
+	if (close(inChild))
+		throw(std::runtime_error("Close error inChild" ));
+	if (close(outChild))
+		throw(std::runtime_error("close error outChild" ));
+	//if (unlink(nameIn))
+	//	throw(std::runtime_error("unlink error" ));
+	//if (unlink(nameOut))
+	//	throw(std::runtime_error("unlink error" ));
+}
+
 void	Response::_extractHeaderFromCgiBody()
 {
 	v_c::iterator	it = _body.begin();
@@ -403,16 +482,18 @@ int Response::createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
+
 	_checkRedirect();
 	_checkAutorizationForMethod();
 	if(_statusCode > 200)
 		_createErrorMessageBody();
 	else if (_request->getMethod() == "GET")
 	{
+		std::cout << "GET METHOD" << std::endl;
 		_methodGET();
 	}
-	_createHeaderBase();
 	_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
+	_createHeaderBase();
 	_createFullResponse();
 	return 0;
 }
