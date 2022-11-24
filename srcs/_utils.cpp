@@ -145,6 +145,21 @@ unsigned long	ft_get_time(void)
 	return (now.tv_sec * 1000 + now.tv_usec / 1000);
 }
 
+float	ft_get_time_sec(void)
+{
+	static struct timeval	begin;
+	static int				init = 0;
+	struct timeval	now;
+
+	if (init == 0)
+	{
+		gettimeofday(&begin, NULL);
+		init = 1;
+	}
+	gettimeofday(&now, NULL);
+	return ((now.tv_sec - begin.tv_sec) * 1000 + (now.tv_usec - begin.tv_usec) / 1000);
+}
+
 unsigned int			getipbyhost(const char *host, const char *service)
 {
 	struct addrinfo hints;

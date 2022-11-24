@@ -241,8 +241,8 @@ int Request::readClientRequest(int do_read)
 		_state = R_END;
 	if (read_ret == 0 && do_read)
 		_state = R_ZERO_READ;
-	if (DEBUG_REQUEST)
-		std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
+	//if (DEBUG_REQUEST)
+	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
 			<< "]" << std::endl;
 	return (_state);
 }

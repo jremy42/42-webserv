@@ -15,10 +15,10 @@
 # include "Server.hpp"
 
 # ifndef DEBUG_CLIENT
-#  define DEBUG_CLIENT 0
+#  define DEBUG_CLIENT 1
 # endif
 
-# define TIMEOUT_REQUEST 5000
+# define TIMEOUT_REQUEST 2000
 # define TIMEOUT_CLIENT 60000
 
 enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};

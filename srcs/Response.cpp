@@ -31,6 +31,11 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
 	std::cout << *_config;
 	std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
+	memset(_nameOut, 0, 32);
+	memset(_nameIn, 0, 32);
+	strncpy(_nameIn, "/tmp/webservXXXXXX", 32);
+	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
+
 }
 
 Response::Response(const Response &src)
@@ -40,6 +45,10 @@ Response::Response(const Response &src)
 
 Response::~Response(void)
 {
+	if (strcmp(_nameIn, "/tmp/webservXXXXXX"))
+		unlink(_nameIn);
+	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
+		unlink(_nameOut);
 }
 
 Response &Response::operator=(const Response &rhs)
@@ -55,6 +64,11 @@ Response &Response::operator=(const Response &rhs)
 	_request = rhs._request;
 	_config = rhs._config;
 	_state = rhs._state;
+ //	_fs = rhs._fs;
+ //	_ss = rhs._ss;
+ //	_nameIn = rhs._nameIn;
+ //	_nameOut = rhs._nameOut;
+	_bodyLength = rhs._bodyLength;
 
 	return (*this);
 }
@@ -195,7 +209,6 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
 	_fs.seekg(0, _fs.beg);
 	if (DEBUG_RESPONSE)
 		std::cout << "Body length: [" << _bodyLength << "]\n";
-	_header += "content-length: " + itoa(_bodyLength) + "\n";
  //	buff = new char[length];
  //	_fs.read(buff, length);
  //	_body = v_c(buff, buff + length);
@@ -241,7 +254,8 @@ std::string	Response::_getExtensionFromTarget(string actualTarget)
 	posEnd = endPart.find_first_of("/?");
 	posEnd = posEnd != std::string::npos ? posEnd : endPart.size();
 	std::string extension = endPart.substr(0, posEnd + 1);
-	std::cout << "Extension : [" << extension << "]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cout << "Extension : [" << extension << "]" << std::endl;
 	return (extension);
 }
 
@@ -252,7 +266,8 @@ void Response::_methodGET(void)
 	std::string	cgiExecutable;
 	
 	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
-	std::cout << "Actual target : [" << actualTarget << "]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cout << "Actual target : [" << actualTarget << "]" << std::endl;
 	if (selectActualTargetResult == "Do_listing")
 		_createAutoIndex(actualTarget);
 	else if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
@@ -260,7 +275,8 @@ void Response::_methodGET(void)
 		std::string rawTarget = _request->getTarget();
 		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(actualTarget))) != "")
 		{
-			std::cout << "\e[33mCGI\e[0m" << std::endl;
+			if (DEBUG_RESPONSE)
+				std::cout << "\e[33mCGI\e[0m" << std::endl;
 			if (_state == R_INIT)
 				_initCGIfile(actualTarget, cgiExecutable);
 			if (_state == R_WAIT_CGI_EXEC)
@@ -382,26 +398,26 @@ void Response::_waitCGIfile(void)
 {
 	int		status;
 	int		ret;
-	int		readRet;
-	char	readBuf[512];
+ //	int		readRet;
+ //	char	readBuf[512];
 
 	if (waitpid(_pid, &status, WNOHANG) == 0) // 0 car pas finit
 		return ;
 	else
 	{
-
+		std::cout << "A child is DEAD at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		if (WIFEXITED(status) > 0)
 			ret = (WEXITSTATUS(status));
 		if (WIFSIGNALED(status) > 0)
 			ret = (WTERMSIG(status) + 128);
 		std::cerr << "ret : [" << ret << "]" << std::endl;
-		memset(readBuf, 0, 512);
-		lseek(_outChild, 0, SEEK_SET);
-		while ((readRet = read(_outChild, readBuf, 511)) > 0)
-		{
-			std::cout << "readRet:" << readRet << std::endl;
-			_body.insert(_body.end(), readBuf, readBuf + readRet);
-		}
+ //		memset(readBuf, 0, 512);
+ //		lseek(_outChild, 0, SEEK_SET);
+ //		while ((readRet = read(_outChild, readBuf, 511)) > 0)
+ //		{
+ //			std::cout << "readRet:" << readRet << std::endl;
+ //			_body.insert(_body.end(), readBuf, readBuf + readRet);
+ //		}
 		//_extractHeaderFromCgiBody();
 		if (close(_inChild))
 			throw(std::runtime_error("Close error inChild" ));
@@ -411,26 +427,40 @@ void Response::_waitCGIfile(void)
 			throw(std::runtime_error("close error outChild" ));
 		/*if (unlink(_nameOut))
 			throw(std::runtime_error("unlink error" ));*/
+		_createFileStreamFromFile(_nameOut);
+		std::string extractedHeader; 
+		getline(_fs, extractedHeader, '\n');
+		while (extractedHeader != "\r")
+		{
+			_bodyLength -= (extractedHeader.size() + 1);
+			_header += extractedHeader + "\n";
+			getline(_fs, extractedHeader, '\n');
+		}
+		_bodyLength -= 2;
+		std::cout << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
 		_state = R_FILE_READY;
 	}
 }
 
 void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 {
-	memset(_nameOut, 0, 32);
-	memset(_nameIn, 0, 32);
-	strncpy(_nameIn, "/tmp/webserv/XXXXXX", 32);
-	strncpy(_nameOut, "/tmp/webserv/XXXXXX", 32);
-	_inChild = mkstemp(_nameIn);
-	_outChild = mkstemp(_nameOut);
+	if ((_inChild = mkstemp(_nameIn)) == -1)
+		throw(std::runtime_error(std::string("_nameIn mkstemp error") + strerror(errno)));
+	if ((_outChild = mkstemp(_nameOut)) == -1)
+		throw(std::runtime_error(std::string("_nameOut mkstemp error") + strerror(errno)));
 	v_c		requestBody = _request->getBody();
 
 
-	std::cout << "nameIn: [" << _nameIn << "]" << std::endl;
-	std::cout << "nameOut: [" << _nameOut << "]" << std::endl;
-	std::cout << "inchild fd: [" << _inChild << "]" << std::endl;
-	std::cout << "outchild fd: [" << _outChild << "]" << std::endl;
-	std::cout << "open " << actualTarget << std::endl;
+	if (DEBUG_RESPONSE)
+	{
+		std::cout << "_nameIN : [" << _nameIn << "]" << std::endl;
+		std::cout << "_nameOut : [" << _nameOut << "]" << std::endl;
+		std::cout << "nameIn: [" << _nameIn << "]" << std::endl;
+		std::cout << "nameOut: [" << _nameOut << "]" << std::endl;
+		std::cout << "inchild fd: [" << _inChild << "]" << std::endl;
+		std::cout << "outchild fd: [" << _outChild << "]" << std::endl;
+		std::cout << "open " << actualTarget << std::endl;
+	}
 	if (requestBody.size() != 0)
 	{
 		char *buff = new char[requestBody.size()];
@@ -444,6 +474,7 @@ void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 		throw(std::runtime_error("Fork error" ));
 	if (_pid != 0)
 	{
+		std::cout << "A child is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		_state = R_WAIT_CGI_EXEC;
 		return ;
 	}
@@ -496,6 +527,7 @@ void Response::_createHeaderBase(void)
 
 void Response::_createFullHeader(void)
 {
+	_header += "content-length: " + itoa(_bodyLength) + "\n";
 	_fullHeader = v_c(_lineStatus.begin(), _lineStatus.end());
 	_fullHeader.insert(_fullHeader.end(), _header.begin(), _header.end());
 	_fullHeader.push_back('\n');
@@ -527,10 +559,13 @@ void Response::_checkRedirect(void)
 
 int Response::handleResponse(void)
 {
-	std::cout << "Handle response start. Status [" << _state << "]" << std::endl;
+	std::cout << "handleResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cout << "Handle response start. Status [" << _state << "]" << std::endl;
 	if (_state != R_WRITE)
 	{
-		std::cout << "Calling _createResponse" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cout << "Calling _createResponse" << std::endl;
 		_createResponse();
 	}
 	if (_state == R_WRITE)
@@ -538,7 +573,9 @@ int Response::handleResponse(void)
 		std::cout << "Calling _writeClientResponse" << std::endl;
 		_writeClientResponse();
 	}
-	std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
+	std::cout << "handleResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER)
 		return (0);
 	else
@@ -549,6 +586,7 @@ int Response::_createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
+	std::cout << "createResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 
 	if (_state == R_INIT)
 	{
@@ -562,7 +600,8 @@ int Response::_createResponse(void)
 	}
 	if (_state < R_FILE_READY && _request->getMethod() == "GET")
 	{
-		std::cout << "GET METHOD" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cout << "GET METHOD" << std::endl;
 		_methodGET(); // va set le status en R_FILE_READY a la fin du CGI ou directement si regular file
 	}
 	else if (_state < R_FILE_READY && _request->getMethod() == "POST")
@@ -578,11 +617,13 @@ int Response::_createResponse(void)
 		_createFullHeader();
 		_state = R_WRITE;
 	}
+	std::cout << "createResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return (_state);
 }
 
 int Response::_writeClientResponse(void)
 {
+	std::cout << "write	Response IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	int		ret;
 	int		buff_size;
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
@@ -634,13 +675,14 @@ int Response::_writeClientResponse(void)
 		std::cout << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
 		std::cout << "Sending chunk of body to client" << std::endl;
 		ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
+		_bodyLength -= ret;
 		if (ret == -1)
 			std::cerr << "Error in writeClientResponse in Body state" << std::endl;
 		if (ret != bodyStream.gcount())
 		{
 			std::cout << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 		}
-		if (bodyStream.gcount() == 0)
+		if (_bodyLength == 0)
 		{
 			std::cout << "No more body data to read on body fd. Closing fd" << std::endl;
 			try {
@@ -656,11 +698,12 @@ int Response::_writeClientResponse(void)
 			}
 			_state = R_OVER;
 		}
-		_bodyLength -= ret;
-		bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
+		else
+			bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
 		delete [] bufBody;
 	}
 	std::cout << "End of Write Client response function" << std::endl;
+	std::cout << "writeResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return 1;
 }
 

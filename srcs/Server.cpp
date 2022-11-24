@@ -138,6 +138,7 @@ int Server::execClientAction(int fd, int availableAction ) // mode naif activate
 			std::cout << "Closing and removing Client with read return = 0" << std::endl;
 			close(currentCli->getClientFd());
 			_clientListFd.erase(currentCli->getClientFd());
+			delete currentCli;
 			return 0;
 		}
 	}

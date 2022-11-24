@@ -10,6 +10,7 @@ Client::Client()
 	_state = S_INIT;
 	_timeoutRequest = 0;
 	_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
+	std::cout << "A Client is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 }
 
 Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host)
@@ -29,7 +30,10 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 	_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 }
 
-Client::~Client(){};
+Client::~Client()
+{
+	std::cout << "A client is DEAD at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+}
 
 Client::Client(const Client & src)
 {
@@ -118,11 +122,12 @@ const Config		*Client::getMatchingConfig(void) const
 }
 int Client::executeAction()
 {
+	std::cout << "executeAction IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	int	actionReturnValue;
 	int	actionMade = 0;
 
 	usleep(50000);
-	if (DEBUG_CLIENT)
+	if (DEBUG_CLIENT > 1)
 	{
 		std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
 		printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
@@ -197,6 +202,7 @@ int Client::executeAction()
 		_state = S_CLOSE_FD;
 	}
 	//std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
+	std::cout << "executeAction OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return (actionMade);
 }
 
