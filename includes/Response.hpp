@@ -1,8 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#define WRITE_BUFFER_SIZE	1024
-#define BUFF_MAX			1024*1024*8
+#define WRITE_BUFFER_SIZE	1024*1024*8
 
 # include "Request.hpp"
 # include <string>
@@ -63,6 +62,7 @@ class Response
 		const Request *					_request;
 		const Config *					_config;
 		std::ifstream					_fs;
+		int								_bodyLength;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
@@ -90,8 +90,8 @@ class Response
 		void							_methodPOST(void);
 // CGI
 		pid_t	_pid;
-		char _nameIn[256];
-		char _nameOut[256];
+		char _nameIn[32];
+		char _nameOut[32];
 		int	_inChild;
 		int _outChild;
 		//void	_handleCGI(string actualTarget, string cgiExecutable);

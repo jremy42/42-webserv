@@ -172,9 +172,7 @@ std::string	Response::_selectActualTarget(string &actualTarget, string requested
 
 void Response::_createFileStreamFromFile(string actualTarget) // set le header avec taille qui va bien et open le Body
 {
-	int				length;
-
-	std::cout << "open " << actualTarget << std::endl;
+	std::cout << "createFsfrom file : open " << actualTarget << std::endl;
 	_fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (_fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
@@ -186,11 +184,11 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
 		return;
 	}
 	_fs.seekg(0, _fs.end);
-	length = _fs.tellg();
+	_bodyLength = _fs.tellg();
 	_fs.seekg(0, _fs.beg);
 	if (DEBUG_RESPONSE)
-		std::cout << "Body length: [" << length << "]\n";
-	_header += "content-length: " + itoa(length) + "\n";
+		std::cout << "Body length: [" << _bodyLength << "]\n";
+	_header += "content-length: " + itoa(_bodyLength) + "\n";
  //	buff = new char[length];
  //	_fs.read(buff, length);
  //	_body = v_c(buff, buff + length);
@@ -203,7 +201,7 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
  	char			*buff;
  	int				length;
  
- 	std::cout << "open " << actualTarget << std::endl;
+ 	std::cout << "create Body From file : open " << actualTarget << std::endl;
  	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
  	if (fs.good())
  		std::cout << "Successfully opened body file "<< std::endl;
@@ -412,10 +410,10 @@ void Response::_waitCGIfile(void)
 
 void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 {
-	memset(_nameOut, 0, 256);
-	memset(_nameIn, 0, 256);
-	strncpy(_nameIn, "/tmp/webserv/XXXXXX", 256);
-	strncpy(_nameOut, "/tmp/webserv/XXXXXX", 256);
+	memset(_nameOut, 0, 32);
+	memset(_nameIn, 0, 32);
+	strncpy(_nameIn, "/tmp/webserv/XXXXXX", 32);
+	strncpy(_nameOut, "/tmp/webserv/XXXXXX", 32);
 	_inChild = mkstemp(_nameIn);
 	_outChild = mkstemp(_nameOut);
 	v_c		requestBody = _request->getBody();
@@ -494,6 +492,7 @@ void Response::_createFullHeader(void)
 	_fullHeader = v_c(_lineStatus.begin(), _lineStatus.end());
 	_fullHeader.insert(_fullHeader.end(), _header.begin(), _header.end());
 	_fullHeader.push_back('\n');
+	std::cout << "Full Header size : [" << _fullHeader.size() << "]" << std::endl;
 	//_fullHeader.insert(_fullHeader.end(), _body.begin(), _body.end());
 }
 
@@ -521,10 +520,18 @@ void Response::_checkRedirect(void)
 
 int Response::handleResponse(void)
 {
+	std::cout << "Handle response start. Status [" << _state << "]" << std::endl;
 	if (_state != R_WRITE)
+	{
+		std::cout << "Calling _createResponse" << std::endl;
 		_createResponse();
+	}
 	if (_state == R_WRITE)
+	{
+		std::cout << "Calling _writeClientResponse" << std::endl;
 		_writeClientResponse();
+	}
+	std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
 	if (_state == R_OVER)
 		return (0);
 	else
@@ -557,8 +564,10 @@ int Response::_createResponse(void)
 	}
 	if (_state == R_FILE_READY)
 	{
+		std::cout << "Creating line status" << std::endl;
 		_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
 		//_createHeaderBase();
+		std::cout << "Creating Full Header" << std::endl;
 		_createFullHeader();
 		_state = R_WRITE;
 	}
@@ -572,14 +581,16 @@ int Response::_writeClientResponse(void)
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
 	char *buff;
 	int i = 0;
+	std::cout << "Begin of Write Client response function" << std::endl;
 	if (_fullHeader.size())
 	{
+		std::cout << "Header not empty -> sending it first" << std::endl;
 		buff = new char[_fullHeader.size()];
-		buff_size = sizeof(buff);
+		buff_size = _fullHeader.size();
 		v_c::iterator ite = _fullHeader.end();
 		for (v_c::iterator it = _fullHeader.begin(); i < buff_size && it != ite; i++, it++)
 			buff[i] = *it;
-		std::cout << "buff_size [" << buff_size << "]" << "About to fullHeader write on fd [" << _clientFd << "]" << std::endl;
+		std::cout << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
 		ret = send(_clientFd, buff, i, 0);
 		if (ret == -1)
 			std::cerr << "Error in writeClientResponse" << std::endl;
@@ -592,18 +603,32 @@ int Response::_writeClientResponse(void)
 	}
 	else if (_fullHeader.empty())
 	{
-		char	bufBody[BUFF_MAX];
-		memset(bufBody, 0, BUFF_MAX);
-
-		_fs.read(bufBody, BUFF_MAX);
+		std::cout << "Header IS empty -> sending Body" << std::endl;
+		char	*bufBody;
+		if (_bodyLength < WRITE_BUFFER_SIZE)
+			buff_size = _bodyLength;
+		else
+			buff_size = WRITE_BUFFER_SIZE;
+		bufBody = new char[buff_size];
+		_fs.read(bufBody, buff_size);
+		std::cout << "read [" << _fs.gcount() << "] from body file" << std::endl;
+		std::cout << "Sending chunk of body to client" << std::endl;
 		ret = send(_clientFd, bufBody, _fs.gcount(), 0);
 		if (ret == -1)
 			std::cerr << "Error in writeClientResponse in Body state" << std::endl;
 		if (ret != _fs.gcount())
-			throw(std::runtime_error(std::string("Lazy Client")));
-		if (_fs)
+		{
+			std::cout << "\e[32mLazy client : only [" << ret << "] out of [" << _fs.gcount() << "]\e[0m" << std::endl;
+		}
+		if (_fs.gcount() == 0)
+		{
+			std::cout << "No more body data to read on body fd. End of transmisson" << std::endl;
 			_state = R_OVER;
+		}
+		_bodyLength -= ret;
+		_fs.seekg(-(_fs.gcount() - ret), _fs.cur);
 	}
+	std::cout << "End of Write Client response function" << std::endl;
 	return 1;
 }
 
