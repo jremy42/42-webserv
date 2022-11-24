@@ -58,11 +58,12 @@ class Response
 		string							_header;
 		v_c								_body;
 		v_c								_fullHeader;
-		string							_bodyToSend; // tmp
+		string							_defaultErrorBodyToSend; // tmp
 		const Request *					_request;
 		const Config *					_config;
 		std::ifstream					_fs;
 		int								_bodyLength;
+		std::stringstream				_ss; // is in fact defautlErrorbodytoSendStringStream;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;

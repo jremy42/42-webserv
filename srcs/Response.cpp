@@ -51,7 +51,7 @@ Response &Response::operator=(const Response &rhs)
 	_header = rhs._header;
 	_body = rhs._body;
 	_fullHeader = rhs._fullHeader;
-	_bodyToSend = rhs._bodyToSend;
+	_defaultErrorBodyToSend = rhs._defaultErrorBodyToSend;
 	_request = rhs._request;
 	_config = rhs._config;
 	_state = rhs._state;
@@ -76,23 +76,30 @@ void Response::_createErrorMessageBody(void)
 		selectActualTargetResult = _selectActualTarget(actualTarget, matchingLocation + errorPage);
 		std::cout << ">>>>> selectActualTargetResult: [" << selectActualTargetResult << "]" << std::endl; 
 		if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
-			_createBodyFromFile(actualTarget);
+		{
+			_createFileStreamFromFile(actualTarget);
+			_state = R_FILE_READY;
+			return ;
+		}
 		else
 			errorPage = "";
 	}
 	if (errorPage == "")
 	{
-		_bodyToSend = _errorBodyTemplate;
+		_defaultErrorBodyToSend = _errorBodyTemplate;
 		for (int i = 0; i < 2; i++)
 		{
-			size_t pos = _bodyToSend.find("Error_placeholder");
-			_bodyToSend.erase(pos, strlen("Error_placeholder"));
-			_bodyToSend.insert(pos, errorMessage);
+			size_t pos = _defaultErrorBodyToSend.find("Error_placeholder");
+			_defaultErrorBodyToSend.erase(pos, strlen("Error_placeholder"));
+			_defaultErrorBodyToSend.insert(pos, errorMessage);
 		}
-		_body = v_c(_bodyToSend.begin(), _bodyToSend.end());
+		//_body = v_c(_defaultErrorBodyToSend.begin(), _defaultErrorBodyToSend.end());
+		_ss << _defaultErrorBodyToSend;
+		_bodyLength = _defaultErrorBodyToSend.size();
+		_header += "content-length: " + itoa(_bodyLength) + "\n";
 	}
 	if (DEBUG_RESPONSE)
-		std::cout << _bodyToSend;
+		std::cout << _defaultErrorBodyToSend;
 }
 
 void Response::setRequest(const Request *request)
@@ -581,6 +588,19 @@ int Response::_writeClientResponse(void)
 	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
 	char *buff;
 	int i = 0;
+	std::istream	*bodyStreamPtr;
+
+	if (_fs.is_open())
+	{
+		bodyStreamPtr = &_fs;
+		std::cout << "Body is a regular fs" << std::endl;
+	}
+	else
+	{
+		bodyStreamPtr = &_ss;
+		std::cout << "Body is an error string stream" << std::endl;
+	}
+	std::istream	&bodyStream = *bodyStreamPtr;
 	std::cout << "Begin of Write Client response function" << std::endl;
 	if (_fullHeader.size())
 	{
@@ -610,23 +630,35 @@ int Response::_writeClientResponse(void)
 		else
 			buff_size = WRITE_BUFFER_SIZE;
 		bufBody = new char[buff_size];
-		_fs.read(bufBody, buff_size);
-		std::cout << "read [" << _fs.gcount() << "] from body file" << std::endl;
+		bodyStream.read(bufBody, buff_size);
+		std::cout << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
 		std::cout << "Sending chunk of body to client" << std::endl;
-		ret = send(_clientFd, bufBody, _fs.gcount(), 0);
+		ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
 		if (ret == -1)
 			std::cerr << "Error in writeClientResponse in Body state" << std::endl;
-		if (ret != _fs.gcount())
+		if (ret != bodyStream.gcount())
 		{
-			std::cout << "\e[32mLazy client : only [" << ret << "] out of [" << _fs.gcount() << "]\e[0m" << std::endl;
+			std::cout << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 		}
-		if (_fs.gcount() == 0)
+		if (bodyStream.gcount() == 0)
 		{
-			std::cout << "No more body data to read on body fd. End of transmisson" << std::endl;
+			std::cout << "No more body data to read on body fd. Closing fd" << std::endl;
+			try {
+
+				std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream); 
+				std::cout << "Closing fs" << std::endl;
+				fsForClose.close();
+				}
+			catch (std::exception &e)
+			{
+				(void)e;
+				std::cout << "No need to close filestream : Body is default error body" << std::endl;
+			}
 			_state = R_OVER;
 		}
 		_bodyLength -= ret;
-		_fs.seekg(-(_fs.gcount() - ret), _fs.cur);
+		bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
+		delete [] bufBody;
 	}
 	std::cout << "End of Write Client response function" << std::endl;
 	return 1;
