@@ -1,7 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#define WRITE_BUFFER_SIZE	1024*1024*8
+#define WRITE_BUFFER_SIZE	1024*(32 - 1)
 
 # include "Request.hpp"
 # include <string>
