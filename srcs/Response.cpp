@@ -37,7 +37,6 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	memset(_nameIn, 0, 32);
 	strncpy(_nameIn, "/tmp/webservXXXXXX", 32);
 	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
-
 }
 
 Response::Response(const Response &src)
@@ -67,6 +66,13 @@ Response &Response::operator=(const Response &rhs)
 	_state = rhs._state;
 	_bodyLength = rhs._bodyLength;
 
+	_rawRequestedTarget = rhs._rawRequestedTarget;
+	_requestedTargetRoot = rhs._requestedTargetRoot;
+	_rawActualTarget = rhs._rawActualTarget;
+	_actualTarget = rhs._actualTarget;
+	_queryString = rhs._queryString;
+	_pathInfo = rhs._pathInfo;
+	_targetStatus = rhs._targetStatus;
 	return (*this);
 }
 
@@ -113,43 +119,43 @@ void Response::setRequest(const Request *request)
 
 //A faire a l'init du projet, pour pouvoir parser apres la query_string etc...
 
-std::string	Response::_selectActualTarget(string &actualTarget, string requestedTarget)
+void	Response::_selectActualTarget(void)
 {
-	std::string		requestedTargetLocation	= _config->getParamByLocation(requestedTarget, "root").at(0);
-
-	actualTarget = requestedTargetLocation + requestedTarget;	
+	_rawRequestedTarget = _request->getTarget();
+	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
+	_rawActualTarget = _requestedTargetRoot + "/" + _rawRequestedTarget;
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "requested Target : [" << requestedTarget << "]" << std::endl;
-		std::cout << "requested Target Location (according to root directives) : [" << requestedTargetLocation << "]" << std::endl;
-		std::cout << "actual Target : [" << actualTarget << "]" << std::endl;
-		if (!fileExist(actualTarget))
+		std::cout << "requested Target : [" << _rawRequestedTarget << "]" << std::endl;
+		std::cout << "requested Target Root (according to root directives) : [" << _requestedTargetRoot << "]" << std::endl;
+		std::cout << "actual Target : [" << _rawActualTarget << "]" << std::endl;
+		if (!fileExist(_rawActualTarget))
 			std::cout << "actual Target does not exists" << std::endl;
-		if (fileExist(actualTarget) && isDir(actualTarget))
+		if (fileExist(_rawActualTarget) && isDir(_rawActualTarget))
 			std::cout << "actual Target exist and is a Directory" << std::endl;
-		else if (fileExist(actualTarget) && !isDir(actualTarget))
+		else if (fileExist(_rawActualTarget) && !isDir(_rawActualTarget))
 			std::cout << "actual Target exist and is a regular file" << std::endl;
 	}
-	if (fileExist(actualTarget) && !isDir(actualTarget))
+	if (fileExist(_rawActualTarget) && !isDir(_rawActualTarget))
 	{
 		if (DEBUG_RESPONSE)
 			std::cout << "Requested file is standard" << std::endl;
-		return ("File_ok");
+		_targetStatus = "File_ok";
 	}
-	else if (fileExist(actualTarget) && isDir(actualTarget))
+	else if (fileExist(_rawActualTarget) && isDir(_rawActualTarget))
 	{
-		std::vector<string> indexTryFiles = _config->getParamByLocation(requestedTarget, "index");
+		std::vector<string> indexTryFiles = _config->getParamByLocation(_rawRequestedTarget, "index");
 		if (DEBUG_RESPONSE)
 			std::cout << "Trying files in indexTryFiles :" << indexTryFiles << std::endl;
 		std::vector<string>::iterator it = indexTryFiles.begin();
 		for (;it != indexTryFiles.end(); it++)
 		{
-			std::string	testedIndexFile = actualTarget + "/" + *it;
+			std::string	testedIndexFile = _requestedTargetRoot + "/" + *it;
 			if (DEBUG_RESPONSE)
 				std::cout << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
 			{
-				actualTarget = testedIndexFile;
+				_rawActualTarget = testedIndexFile;
 				break;
 			}
 		}
@@ -157,26 +163,26 @@ std::string	Response::_selectActualTarget(string &actualTarget, string requested
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "Found a suitable index file : [" << *it << "]" << std::endl;
-			return ("Index_file_ok");
+			_targetStatus = "Index_file_ok";
 		}
-		else if (_config->getParamByLocation(requestedTarget, "autoindex").at(0) == "on")
+		else if (_config->getParamByLocation(_rawRequestedTarget, "autoindex").at(0) == "on")
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "No suitable index file but autoindex is on. Returning Listing of directory" << std::endl;
-			return ("Do_listing");
+			_targetStatus = "Do_listing";
 		}
 		else
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "No suitable index file and autoindex is off" << std::endl;
-			return ("Index_file_nok");
+			_targetStatus = "Index_file_nok";
 		}
 	}
 	else
 	{
 		if (DEBUG_RESPONSE)
 			std::cout << "No such file or directory" << std::endl;
-		return ("File_nok");
+		_targetStatus = "File_nok";
 	}
 }
 
@@ -217,33 +223,32 @@ std::string	Response::_getExtensionFromTarget(string actualTarget)
 
 void Response::_methodGET(void)
 {
-	std::string	actualTarget;
-	std::string	selectActualTargetResult;
+	//std::string	selectActualTargetResult;
 	std::string	cgiExecutable;
 	
-	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
-	if (DEBUG_RESPONSE)
-		std::cout << "Actual target : [" << actualTarget << "]" << std::endl;
-	if (selectActualTargetResult == "Do_listing")
+	//selectActualTargetResult = _selectActualTarget(_rawActualTarget, _request->getTarget());
+	//if (DEBUG_RESPONSE)
+		//std::cout << "Actual target : [" << _rawActualTarget << "]" << std::endl;
+	if (_targetStatus == "Do_listing")
 	{
-		_createAutoIndex(actualTarget);
+		_createAutoIndex(_rawActualTarget);
 		_state = R_FILE_READY;
 	}
-	else if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
+	else if (_targetStatus != "Index_file_nok" && _targetStatus != "File_nok")
 	{
 		std::string rawTarget = _request->getTarget();
-		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(actualTarget))) != "")
+		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(_rawActualTarget))) != "")
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "\e[33mCGI\e[0m" << std::endl;
 			if (_state == R_INIT)
-				_initCGIfile(actualTarget, cgiExecutable);
+				_initCGIfile(_rawActualTarget, cgiExecutable);
 			if (_state == R_WAIT_CGI_EXEC)
 				_waitCGIfile();
 		}
 		else
 		{
-			_createFileStreamFromFile(actualTarget);
+			_createFileStreamFromFile(_rawActualTarget);
 			_state = R_FILE_READY;
 		}
 	}
@@ -257,12 +262,6 @@ void Response::_methodGET(void)
 
 void Response::_methodPOST(void)
 {
-	std::string	actualTarget;
-	std::string	selectActualTargetResult;
-	
-	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
-	
-
 	//access sur le fichier droit d'ecriture 
 	//if file existe append ?
 	// else create file
@@ -404,6 +403,12 @@ void Response::_checkRedirect(void)
 
 int Response::handleResponse(void)
 {
+	static int init = 1;
+	if (init)
+	{
+		_selectActualTarget();
+		init = 0;
+	}
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "handleResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
@@ -426,7 +431,10 @@ int Response::handleResponse(void)
 		std::cout << "handleResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	}
 	if (_state == R_OVER)
+	{
+		init = 1;
 		return (0);
+	}
 	else
 		return (1);
 }

@@ -63,6 +63,7 @@ class Response
 		std::ifstream					_fs;
 		int								_bodyLength;
 		std::stringstream				_ss; // is in fact defautlErrorbodytoSendStringStream;
+		//TODO !!!
 		// Appel de select actual target a faire en creation de response
 		string							_rawRequestedTarget;
 		string							_requestedTargetRoot;
@@ -75,6 +76,7 @@ class Response
 		//From _rawActualTarget
 		string							_targetStatus; // retour de actual target
 		// Appel de select actual target a faire en creation de response
+		//TODO !!!
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
@@ -97,7 +99,7 @@ class Response
 		std::map<string, unsigned int>	_populateDirectoryMap(const char *path);
 		std::string						_generateHTMLBodyWithPath(void);
 		void							_generateErrorBodyFromTemplate(std::string &errorMessage);
-		string							_selectActualTarget(string &actualTarget, string requestTarget);
+		void							_selectActualTarget(void);
 		void							_createFileStreamFromFile(string actualTarget);
 		std::istream					*_selectBodySourceBetweenFileAndStringStream(void);
 // POST
