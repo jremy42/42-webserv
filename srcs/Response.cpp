@@ -72,36 +72,31 @@ Response &Response::operator=(const Response &rhs)
 
 void Response::_createErrorMessageBody(void)
 {
-	std::string	actualTarget;
-	std::string	selectActualTargetResult;	
-	string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
-	string requestTarget = _request->getTarget();
-	string	errorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
-	string	matchingLocation = _config->getMatchingLocation(requestTarget);
+	string	requestTarget = _request->getTarget();
+	string	customErrorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
+	string  matchingLocationRoot = _config->getParamByLocation(requestTarget, "root").at(0);
+	string	errorPageFile = matchingLocationRoot + "/" + customErrorPage;
 
-	if (errorPage != "")
+	if (DEBUG_RESPONSE)
+	{
+		std::cout << "_createErrorMessageBody start" << std::endl;
+		std::cout << "requestTarget : [" << requestTarget << "]" << std::endl;
+		std::cout << "customErrorPage : [" << customErrorPage << "]" << std::endl;
+		std::cout << "matchingLocationRoot : [" << matchingLocationRoot << "]" << std::endl;
+		std::cout << "errorPageFile : [" << errorPageFile << "]" << std::endl;
+	}
+	if (customErrorPage != "" && fileExist(errorPageFile) && !isDir(errorPageFile))
 	{
 		if (DEBUG_RESPONSE)
 			std::cout << "An error page is specified for this error and location" << std::endl; 
-		selectActualTargetResult = _selectActualTarget(actualTarget, matchingLocation + errorPage);
-		if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
-		{
-			if (DEBUG_RESPONSE)
-				std::cout << "It is a valid file -> Building Body with this file" << std::endl; 
-			_createFileStreamFromFile(actualTarget);
-			return ;
-		}
-		else
-		{
-			if (DEBUG_RESPONSE)
-				std::cout << "It is NOT a valid file -> Building Body from _defaultErrorBodyToSend" << std::endl; 
-			errorPage = "";
-		}
+		_createFileStreamFromFile(errorPageFile);
+		return ;
 	}
-	if (errorPage == "")
+	else
 	{
 		if (DEBUG_RESPONSE)
 			std::cout << "No error page is specified for this error and location -> Building Body from _defaultErrorBodyToSend" << std::endl; 
+		string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
 		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
 		_bodyLength = _defaultErrorBodyToSend.size();
@@ -115,6 +110,8 @@ void Response::setRequest(const Request *request)
 	_request = request;
 	_statusCode = _request->getStatusCode();
 }
+
+//A faire a l'init du projet, pour pouvoir parser apres la query_string etc...
 
 std::string	Response::_selectActualTarget(string &actualTarget, string requestedTarget)
 {

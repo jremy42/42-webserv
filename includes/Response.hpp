@@ -63,11 +63,22 @@ class Response
 		std::ifstream					_fs;
 		int								_bodyLength;
 		std::stringstream				_ss; // is in fact defautlErrorbodytoSendStringStream;
+		// Appel de select actual target a faire en creation de response
+		string							_rawRequestedTarget;
+		string							_requestedTargetRoot;
+		//_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget
+		string							_rawActualTarget;
+		//From _rawActualTarget
+		string							_actualTarget;
+		string							_queryString;
+		string							_pathInfo;
+		//From _rawActualTarget
+		string							_targetStatus; // retour de actual target
+		// Appel de select actual target a faire en creation de response
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
 		static string					_autoIndexBodyTemplate;
-
 		static m_is 					_initStatusCodeMessage(void);
 
 		void							_createErrorMessageBody(void);
