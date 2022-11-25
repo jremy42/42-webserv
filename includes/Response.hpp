@@ -25,8 +25,9 @@
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
-#  define DEBUG_RESPONSE 0
+#  define DEBUG_RESPONSE 1
 # endif
+
 enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};
 class Config;
 
@@ -46,11 +47,9 @@ class Response
 		~Response(void);
 		void setRequest(const Request *request);
 		int handleResponse(void);
-		void reset(void);
 
 	private:
 
-		int								_responseReady; // CGI donc temps de process possible ?
 		int								_clientFd;
 		int								_statusCode;
 		int								_state;
@@ -70,23 +69,26 @@ class Response
 		static string					_autoIndexBodyTemplate;
 
 		static m_is 					_initStatusCodeMessage(void);
+
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);
-		void							_createHeaderBase(void);
 		void							_createFullHeader(void);
 		void							_checkAutorizationForMethod(void);
 		void							_checkRedirect(void);
 		string							_getExtensionFromTarget(string actualTarget);
 		int								_createResponse(void);
 		int								_writeClientResponse(void);
+		void							_sendHeaderToClient(void);
+		void							_sendBodyToClient(void);
 //GET
 		void							_methodGET(void);
 		int								_createAutoIndex(const string &pathToDir);
 		std::map<string, unsigned int>	_populateDirectoryMap(const char *path);
 		std::string						_generateHTMLBodyWithPath(void);
+		void							_generateErrorBodyFromTemplate(std::string &errorMessage);
 		string							_selectActualTarget(string &actualTarget, string requestTarget);
-		void							_createBodyFromFile(const string &actualTarget);
 		void							_createFileStreamFromFile(string actualTarget);
+		std::istream					*_selectBodySourceBetweenFileAndStringStream(void);
 // POST
 		void							_methodPOST(void);
 // CGI
@@ -95,11 +97,9 @@ class Response
 		char _nameOut[32];
 		int	_inChild;
 		int _outChild;
-		//void	_handleCGI(string actualTarget, string cgiExecutable);
-		//void 	_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid);
 		void	_initCGIfile(string actualTarget, string cgiExecutable);
-		//void	_extractHeaderFromCgiBody(void);
-		void 	_waitCGIfile();
+		void 	_waitCGIfile(void);
+		void 	_extractHeaderFromCgiOutputFile(void);
 };
 
 #endif

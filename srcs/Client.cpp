@@ -122,7 +122,8 @@ const Config		*Client::getMatchingConfig(void) const
 }
 int Client::executeAction()
 {
-	std::cout << "executeAction IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_CLIENT)
+		std::cout << "executeAction IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	int	actionReturnValue;
 	int	actionMade = 0;
 
@@ -202,7 +203,8 @@ int Client::executeAction()
 		_state = S_CLOSE_FD;
 	}
 	//std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
-	std::cout << "executeAction OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_CLIENT)
+		std::cout << "executeAction OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return (actionMade);
 }
 
