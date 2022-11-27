@@ -11,7 +11,6 @@ Response::m_is Response::_initStatusCodeMessage()
 	ret[404] = "Not Found";
 	ret[405] = "Method Not Allowed";
 	ret[408] = "Request Timeout";
-
 	return ret;
 }
 
@@ -27,15 +26,17 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	_config = config;
 	_statusCode = statusCode;
 	_state = R_INIT;
-	std::cout << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
-	std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
-	std::cout << *_config;
-	std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
+	if (DEBUG_RESPONSE)
+	{
+		std::cout << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
+		std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
+		std::cout << *_config;
+		std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
+	}
 	memset(_nameOut, 0, 32);
 	memset(_nameIn, 0, 32);
 	strncpy(_nameIn, "/tmp/webservXXXXXX", 32);
 	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
-
 }
 
 Response::Response(const Response &src)
@@ -53,7 +54,6 @@ Response::~Response(void)
 
 Response &Response::operator=(const Response &rhs)
 {
-	_responseReady = rhs._responseReady;
 	_clientFd = rhs._clientFd;
 	_statusCode = rhs._statusCode;
 	_lineStatus = rhs._lineStatus;
@@ -64,56 +64,50 @@ Response &Response::operator=(const Response &rhs)
 	_request = rhs._request;
 	_config = rhs._config;
 	_state = rhs._state;
- //	_fs = rhs._fs;
- //	_ss = rhs._ss;
- //	_nameIn = rhs._nameIn;
- //	_nameOut = rhs._nameOut;
 	_bodyLength = rhs._bodyLength;
 
+	_rawRequestedTarget = rhs._rawRequestedTarget;
+	_requestedTargetRoot = rhs._requestedTargetRoot;
+	_rawActualTarget = rhs._rawActualTarget;
+	_actualTarget = rhs._actualTarget;
+	_queryString = rhs._queryString;
+	_pathInfo = rhs._pathInfo;
+	_targetStatus = rhs._targetStatus;
 	return (*this);
 }
 
 void Response::_createErrorMessageBody(void)
 {
-	std::string	actualTarget;
-	std::string	selectActualTargetResult;	
-	string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
-	string requestTarget = _request->getTarget();
-	string	errorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
-	string	matchingLocation = _config->getMatchingLocation(requestTarget);
+	string	requestTarget = _request->getTarget();
+	string	customErrorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
+	string  matchingLocationRoot = _config->getParamByLocation(requestTarget, "root").at(0);
+	string	errorPageFile = matchingLocationRoot + "/" + customErrorPage;
 
-	std::cout << ">>>>>>>errorPage found [" << errorPage << "]" << std::endl;
-	
-	if (errorPage != "")
+	if (DEBUG_RESPONSE)
 	{
-	
-		selectActualTargetResult = _selectActualTarget(actualTarget, matchingLocation + errorPage);
-		std::cout << ">>>>> selectActualTargetResult: [" << selectActualTargetResult << "]" << std::endl; 
-		if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
-		{
-			_createFileStreamFromFile(actualTarget);
-			_state = R_FILE_READY;
-			return ;
-		}
-		else
-			errorPage = "";
+		std::cout << "_createErrorMessageBody start" << std::endl;
+		std::cout << "requestTarget : [" << requestTarget << "]" << std::endl;
+		std::cout << "customErrorPage : [" << customErrorPage << "]" << std::endl;
+		std::cout << "matchingLocationRoot : [" << matchingLocationRoot << "]" << std::endl;
+		std::cout << "errorPageFile : [" << errorPageFile << "]" << std::endl;
 	}
-	if (errorPage == "")
+	if (customErrorPage != "" && fileExist(errorPageFile) && !isDir(errorPageFile))
 	{
-		_defaultErrorBodyToSend = _errorBodyTemplate;
-		for (int i = 0; i < 2; i++)
-		{
-			size_t pos = _defaultErrorBodyToSend.find("Error_placeholder");
-			_defaultErrorBodyToSend.erase(pos, strlen("Error_placeholder"));
-			_defaultErrorBodyToSend.insert(pos, errorMessage);
-		}
-		//_body = v_c(_defaultErrorBodyToSend.begin(), _defaultErrorBodyToSend.end());
+		if (DEBUG_RESPONSE)
+			std::cout << "An error page is specified for this error and location" << std::endl; 
+		_createFileStreamFromFile(errorPageFile);
+		return ;
+	}
+	else
+	{
+		if (DEBUG_RESPONSE)
+			std::cout << "No error page is specified for this error and location -> Building Body from _defaultErrorBodyToSend" << std::endl; 
+		string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
+		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
 		_bodyLength = _defaultErrorBodyToSend.size();
 		_header += "content-length: " + itoa(_bodyLength) + "\n";
 	}
-	if (DEBUG_RESPONSE)
-		std::cout << _defaultErrorBodyToSend;
 }
 
 void Response::setRequest(const Request *request)
@@ -123,44 +117,45 @@ void Response::setRequest(const Request *request)
 	_statusCode = _request->getStatusCode();
 }
 
-std::string	Response::_selectActualTarget(string &actualTarget, string requestedTarget)
-{
-	//std::string		requestedTarget	= _request->getTarget();
-	std::string		requestedTargetLocation	= _config->getParamByLocation(requestedTarget, "root").at(0);
+//A faire a l'init du projet, pour pouvoir parser apres la query_string etc...
 
-	actualTarget = requestedTargetLocation + requestedTarget;	
+void	Response::_selectActualTarget(void)
+{
+	_rawRequestedTarget = _request->getTarget();
+	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
+	_rawActualTarget = _requestedTargetRoot + "/" + _rawRequestedTarget;
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "requested Target : [" << requestedTarget << "]" << std::endl;
-		std::cout << "requested Target Location (according to root directives) : [" << requestedTargetLocation << "]" << std::endl;
-		std::cout << "actual Target : [" << actualTarget << "]" << std::endl;
-		if (!fileExist(actualTarget))
+		std::cout << "requested Target : [" << _rawRequestedTarget << "]" << std::endl;
+		std::cout << "requested Target Root (according to root directives) : [" << _requestedTargetRoot << "]" << std::endl;
+		std::cout << "actual Target : [" << _rawActualTarget << "]" << std::endl;
+		if (!fileExist(_rawActualTarget))
 			std::cout << "actual Target does not exists" << std::endl;
-		if (fileExist(actualTarget) && isDir(actualTarget))
+		if (fileExist(_rawActualTarget) && isDir(_rawActualTarget))
 			std::cout << "actual Target exist and is a Directory" << std::endl;
-		else if (fileExist(actualTarget) && !isDir(actualTarget))
+		else if (fileExist(_rawActualTarget) && !isDir(_rawActualTarget))
 			std::cout << "actual Target exist and is a regular file" << std::endl;
 	}
-	if (fileExist(actualTarget) && !isDir(actualTarget))
+	if (fileExist(_rawActualTarget) && !isDir(_rawActualTarget))
 	{
 		if (DEBUG_RESPONSE)
 			std::cout << "Requested file is standard" << std::endl;
-		return ("File_ok");
+		_targetStatus = "File_ok";
 	}
-	else if (fileExist(actualTarget) && isDir(actualTarget))
+	else if (fileExist(_rawActualTarget) && isDir(_rawActualTarget))
 	{
-		std::vector<string> indexTryFiles = _config->getParamByLocation(requestedTarget, "index");
+		std::vector<string> indexTryFiles = _config->getParamByLocation(_rawRequestedTarget, "index");
 		if (DEBUG_RESPONSE)
 			std::cout << "Trying files in indexTryFiles :" << indexTryFiles << std::endl;
 		std::vector<string>::iterator it = indexTryFiles.begin();
 		for (;it != indexTryFiles.end(); it++)
 		{
-			std::string	testedIndexFile = actualTarget + "/" + *it;
+			std::string	testedIndexFile = _requestedTargetRoot + "/" + *it;
 			if (DEBUG_RESPONSE)
 				std::cout << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
 			{
-				actualTarget = testedIndexFile;
+				_rawActualTarget = testedIndexFile;
 				break;
 			}
 		}
@@ -168,26 +163,26 @@ std::string	Response::_selectActualTarget(string &actualTarget, string requested
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "Found a suitable index file : [" << *it << "]" << std::endl;
-			return ("Index_file_ok");
+			_targetStatus = "Index_file_ok";
 		}
-		else if (_config->getParamByLocation(requestedTarget, "autoindex").at(0) == "on")
+		else if (_config->getParamByLocation(_rawRequestedTarget, "autoindex").at(0) == "on")
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "No suitable index file but autoindex is on. Returning Listing of directory" << std::endl;
-			return ("Do_listing");
+			_targetStatus = "Do_listing";
 		}
 		else
-	{
+		{
 			if (DEBUG_RESPONSE)
 				std::cout << "No suitable index file and autoindex is off" << std::endl;
-			return ("Index_file_nok");
+			_targetStatus = "Index_file_nok";
 		}
 	}
 	else
 	{
 		if (DEBUG_RESPONSE)
 			std::cout << "No such file or directory" << std::endl;
-		return ("File_nok");
+		_targetStatus = "File_nok";
 	}
 }
 
@@ -209,40 +204,7 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
 	_fs.seekg(0, _fs.beg);
 	if (DEBUG_RESPONSE)
 		std::cout << "Body length: [" << _bodyLength << "]\n";
- //	buff = new char[length];
- //	_fs.read(buff, length);
- //	_body = v_c(buff, buff + length);
- //	delete buff;
- //	_fs.close();
 }
- void Response::_createBodyFromFile(const string &actualTarget) // set le header avec taille qui va bien et open le Body
- {
- 	std::ifstream	fs;
- 	char			*buff;
- 	int				length;
- 
- 	std::cout << "create Body From file : open " << actualTarget << std::endl;
- 	fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
- 	if (fs.good())
- 		std::cout << "Successfully opened body file "<< std::endl;
- 	else
- 	{
- 		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
- 		_statusCode = 404;
- 		fs.close();
- 		return;
- 	}
- 	fs.seekg(0, fs.end);
- 	length = fs.tellg();
- 	fs.seekg(0, fs.beg);
- 	if (DEBUG_RESPONSE)
- 		std::cout << "Body length: [" << length << "]\n";
- 	buff = new char[length];
- 	fs.read(buff, length);
- 	_body = v_c(buff, buff + length);
- 	delete buff;
- 	fs.close();
- }
 
 std::string	Response::_getExtensionFromTarget(string actualTarget)
 {
@@ -261,30 +223,32 @@ std::string	Response::_getExtensionFromTarget(string actualTarget)
 
 void Response::_methodGET(void)
 {
-	std::string	actualTarget;
-	std::string	selectActualTargetResult;
+	//std::string	selectActualTargetResult;
 	std::string	cgiExecutable;
 	
-	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
-	if (DEBUG_RESPONSE)
-		std::cout << "Actual target : [" << actualTarget << "]" << std::endl;
-	if (selectActualTargetResult == "Do_listing")
-		_createAutoIndex(actualTarget);
-	else if (selectActualTargetResult != "Index_file_nok" && selectActualTargetResult != "File_nok")
+	//selectActualTargetResult = _selectActualTarget(_rawActualTarget, _request->getTarget());
+	//if (DEBUG_RESPONSE)
+		//std::cout << "Actual target : [" << _rawActualTarget << "]" << std::endl;
+	if (_targetStatus == "Do_listing")
+	{
+		_createAutoIndex(_rawActualTarget);
+		_state = R_FILE_READY;
+	}
+	else if (_targetStatus != "Index_file_nok" && _targetStatus != "File_nok")
 	{
 		std::string rawTarget = _request->getTarget();
-		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(actualTarget))) != "")
+		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(_rawActualTarget))) != "")
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "\e[33mCGI\e[0m" << std::endl;
 			if (_state == R_INIT)
-				_initCGIfile(actualTarget, cgiExecutable);
+				_initCGIfile(_rawActualTarget, cgiExecutable);
 			if (_state == R_WAIT_CGI_EXEC)
 				_waitCGIfile();
 		}
 		else
 		{
-			_createFileStreamFromFile(actualTarget);
+			_createFileStreamFromFile(_rawActualTarget);
 			_state = R_FILE_READY;
 		}
 	}
@@ -292,165 +256,74 @@ void Response::_methodGET(void)
 	{
 		_statusCode = 404;
 		_createErrorMessageBody();
+		_state = R_FILE_READY;
 	}
 }
 
 void Response::_methodPOST(void)
 {
-	std::string	actualTarget;
-	std::string	selectActualTargetResult;
-	
-	selectActualTargetResult = _selectActualTarget(actualTarget, _request->getTarget());
-	
-
 	//access sur le fichier droit d'ecriture 
 	//if file existe append ?
 	// else create file
 	// create response
 }
 
-/* void Response::_parentPartCgi(int pipefdParentToChild[2], int pipefdChildToParent[2], pid_t pid)
+void Response::_extractHeaderFromCgiOutputFile(void)
 {
-	int		status;
-	int		ret;
-	int		readRet;
-	char	readBuf[512];
-	v_c		requestBody = _request->getBody();
+	std::string extractedHeader; 
 
-	if (close(pipefdParentToChild[0]))
-			throw(std::runtime_error("Close error" ));
-		if (requestBody.size() != 0)
-		{
-			std::cerr << "Parent sending body : [" << requestBody.size() << "]" << std::endl;
-			char *buff = new char[requestBody.size()];
-			int i = 0;
-			v_c::iterator ite = requestBody.end();
-			for (v_c::iterator it = requestBody.begin(); it != ite; i++, it++)
-				buff[i] = *it;
-			write(pipefdParentToChild[1], buff, i);
-		}
-		if (close(pipefdParentToChild[1]))
-			throw(std::runtime_error("Close error" ));
-		if (close(pipefdChildToParent[1]))
-			throw(std::runtime_error("Close error" ));
-		memset(readBuf, 0, 512);
-		while ((readRet = read(pipefdChildToParent[0], readBuf, 511)) > 0)
-		{
-			//std::cerr << "\e[34mreadBuf [" << readBuf << "]\e[0m" << std::endl;
-			_body.insert(_body.end(), readBuf, readBuf + readRet);
-		}
-		waitpid(pid, &status, 0);
-		if (WIFEXITED(status) > 0)
-			ret = (WEXITSTATUS(status));
-		if (WIFSIGNALED(status) > 0)
-			ret = (WTERMSIG(status) + 128);
-		std::cerr << "ret : [" << ret << "]" << std::endl;
-		if (close(pipefdChildToParent[0]))
-			throw(std::runtime_error("Close error" ));
-		_extractHeaderFromCgiBody();
-
-}
-
-void Response::_handleCGI(string actualTarget, string cgiExecutable)
-{
-	pid_t	pid;
-	int		pipefdParentToChild[2];
-	int		pipefdChildToParent[2];
-
-
-
-	if (pipe(pipefdParentToChild))
-		throw(std::runtime_error("Pipe error" ));
-	if (pipe(pipefdChildToParent))
-		throw(std::runtime_error("Pipe error" ));
-	if ((pid = fork()) == -1)
-		throw(std::runtime_error("Fork error" ));
-	if (pid != 0)
+	getline(_fs, extractedHeader, '\n');
+	while (extractedHeader != "\r")
 	{
-		_parentPartCgi(pipefdParentToChild, pipefdChildToParent, pid);
+		_bodyLength -= (extractedHeader.size() + 1);
+		_header += extractedHeader + "\n";
+		getline(_fs, extractedHeader, '\n');
 	}
-	else
-	{
-		if (close(pipefdParentToChild[1]))
-			throw(std::runtime_error("Close error" ));
-		if (close(pipefdChildToParent[0]))
-			throw(std::runtime_error("Close error" ));
-		if (dup2(pipefdParentToChild[0], STDIN_FILENO) == -1)
-			throw(std::runtime_error(std::string("Child DUP2 error 0") + strerror(errno)));
-		if (close(pipefdParentToChild[0]))
-			throw(std::runtime_error(std::string("Child Close error 0") + strerror(errno)));
-		if (dup2(pipefdChildToParent[1], STDOUT_FILENO) == -1)
-			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
-		if (close(pipefdChildToParent[1]))
-			throw(std::runtime_error(std::string("Child Close error 1") + strerror(errno)));
-		char *arg[3];
-		arg[0] = const_cast<char *>(cgiExecutable.c_str());
-		arg[1] = const_cast<char *>(actualTarget.c_str());
-		arg[2] = NULL;
-		std::cerr << "actual Target : [" << actualTarget << "] CGI-executable : [" << cgiExecutable << "]" << std::endl;
-		execve(cgiExecutable.c_str(), arg, NULL);
-		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
-	}
+	_bodyLength -= 2;
+	if (DEBUG_RESPONSE)
+		std::cout << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
 }
- */
 
 void Response::_waitCGIfile(void)
 {
 	int		status;
 	int		ret;
- //	int		readRet;
- //	char	readBuf[512];
 
-	if (waitpid(_pid, &status, WNOHANG) == 0) // 0 car pas finit
+	if (waitpid(_pid, &status, WNOHANG) == 0)
+	{
+		if (DEBUG_RESPONSE)
+			std::cout << "A child is still working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		return ;
+	}
 	else
 	{
-		std::cout << "A child is DEAD at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cout << "A child is done working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		if (WIFEXITED(status) > 0)
 			ret = (WEXITSTATUS(status));
 		if (WIFSIGNALED(status) > 0)
 			ret = (WTERMSIG(status) + 128);
 		std::cerr << "ret : [" << ret << "]" << std::endl;
- //		memset(readBuf, 0, 512);
- //		lseek(_outChild, 0, SEEK_SET);
- //		while ((readRet = read(_outChild, readBuf, 511)) > 0)
- //		{
- //			std::cout << "readRet:" << readRet << std::endl;
- //			_body.insert(_body.end(), readBuf, readBuf + readRet);
- //		}
-		//_extractHeaderFromCgiBody();
 		if (close(_inChild))
 			throw(std::runtime_error("Close error inChild" ));
 		if (unlink(_nameIn))
 			throw(std::runtime_error("unlink error" ));
 		if (close(_outChild))
 			throw(std::runtime_error("close error outChild" ));
-		/*if (unlink(_nameOut))
-			throw(std::runtime_error("unlink error" ));*/
 		_createFileStreamFromFile(_nameOut);
-		std::string extractedHeader; 
-		getline(_fs, extractedHeader, '\n');
-		while (extractedHeader != "\r")
-		{
-			_bodyLength -= (extractedHeader.size() + 1);
-			_header += extractedHeader + "\n";
-			getline(_fs, extractedHeader, '\n');
-		}
-		_bodyLength -= 2;
-		std::cout << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
+		_extractHeaderFromCgiOutputFile();
 		_state = R_FILE_READY;
 	}
 }
 
 void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 {
+	v_c		requestBody = _request->getBody();
+
 	if ((_inChild = mkstemp(_nameIn)) == -1)
 		throw(std::runtime_error(std::string("_nameIn mkstemp error") + strerror(errno)));
 	if ((_outChild = mkstemp(_nameOut)) == -1)
 		throw(std::runtime_error(std::string("_nameOut mkstemp error") + strerror(errno)));
-	v_c		requestBody = _request->getBody();
-
-
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "_nameIN : [" << _nameIn << "]" << std::endl;
@@ -474,7 +347,8 @@ void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 		throw(std::runtime_error("Fork error" ));
 	if (_pid != 0)
 	{
-		std::cout << "A child is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cout << "A child is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		_state = R_WAIT_CGI_EXEC;
 		return ;
 	}
@@ -488,41 +362,11 @@ void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 		arg[0] = const_cast<char *>(cgiExecutable.c_str());
 		arg[1] = const_cast<char *>(actualTarget.c_str());
 		arg[2] = NULL;
-		std::cerr << "actual Target : [" << actualTarget << "] CGI-executable : [" << cgiExecutable << "]" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "actual Target : [" << actualTarget << "] CGI-executable : [" << cgiExecutable << "]" << std::endl;
 		execve(cgiExecutable.c_str(), arg, NULL);
 		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
 	}
-}
-
- //void	Response::_extractHeaderFromCgiBody()
- //{
- //	v_c::iterator	it = _body.begin();
- //	v_c::iterator	ite = _body.end();
- //
- //	for (; it != ite; it++)
- //	{
- //		if (*it == '\r'
- //			&& it + 1 != ite && *(it + 1) == '\n'
- //			&& it + 2 != ite && *(it + 2) == '\r'
- //			&& it + 3 != ite && *(it + 3) == '\n')
- //		{
- //			string rawHeader(_body.begin(), it);
- //			_body.erase(_body.begin(), it + 4);
- //			_header += rawHeader + "\n";
- //		}
- //	}
- //}
-
-void Response::_createHeaderBase(void)
-{
-	string contentType(_request->getTarget());
-	size_t pos = contentType.find_last_of(".");
-	if (pos != std::string::npos)
-		contentType = string(contentType.begin() + pos + 1, contentType.end());
-	_header += "content-length: " + itoa(_body.size()) + "\n";
-	if (contentType == "jpg")
-		_header += "content-type: image/" + contentType + "\n";
-	std::cout << _header << std::endl;
 }
 
 void Response::_createFullHeader(void)
@@ -531,8 +375,8 @@ void Response::_createFullHeader(void)
 	_fullHeader = v_c(_lineStatus.begin(), _lineStatus.end());
 	_fullHeader.insert(_fullHeader.end(), _header.begin(), _header.end());
 	_fullHeader.push_back('\n');
-	std::cout << "Full Header size : [" << _fullHeader.size() << "]" << std::endl;
-	//_fullHeader.insert(_fullHeader.end(), _body.begin(), _body.end());
+	if (DEBUG_RESPONSE)
+		std::cout << "Full Header size : [" << _fullHeader.size() << "]" << std::endl;
 }
 
 void Response::_checkAutorizationForMethod(void)
@@ -559,10 +403,22 @@ void Response::_checkRedirect(void)
 
 int Response::handleResponse(void)
 {
+<<<<<<< HEAD
 	if (DEBUG_RESPONSE)
 		std::cout << "handleResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+=======
+	static int init = 1;
+	if (init)
+	{
+		_selectActualTarget();
+		init = 0;
+	}
+>>>>>>> a144d8dcdbe600f513bc980e992b690cec115d02
 	if (DEBUG_RESPONSE)
+	{
+		std::cout << "handleResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		std::cout << "Handle response start. Status [" << _state << "]" << std::endl;
+	}
 	if (_state != R_WRITE)
 	{
 		if (DEBUG_RESPONSE)
@@ -575,12 +431,16 @@ int Response::handleResponse(void)
 		_writeClientResponse();
 	}
 	if (DEBUG_RESPONSE)
+	{
 		std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
 	
 	if (DEBUG_RESPONSE)
 		std::cout << "handleResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER)
+	{
+		init = 1;
 		return (0);
+	}
 	else
 		return (1);
 }
@@ -597,7 +457,7 @@ int Response::_createResponse(void)
 		_checkRedirect();
 		_checkAutorizationForMethod();
 	}
-	if(_statusCode > 200 && _state == R_INIT)
+	if (_statusCode > 200 && _state == R_INIT)
 	{
 		_createErrorMessageBody();
 		_state = R_FILE_READY;
@@ -610,14 +470,11 @@ int Response::_createResponse(void)
 	}
 	else if (_state < R_FILE_READY && _request->getMethod() == "POST")
 	{
-
+		//POST a implementer !!!
 	}
 	if (_state == R_FILE_READY)
 	{
-		std::cout << "Creating line status" << std::endl;
 		_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
-		//_createHeaderBase();
-		std::cout << "Creating Full Header" << std::endl;
 		_createFullHeader();
 		_state = R_WRITE;
 	}
@@ -626,14 +483,8 @@ int Response::_createResponse(void)
 	return (_state);
 }
 
-int Response::_writeClientResponse(void)
+std::istream *Response::_selectBodySourceBetweenFileAndStringStream(void)
 {
-	std::cout << "write	Response IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	int		ret;
-	int		buff_size;
-	// debut de gestion des chunks -> fonction qui ecrit la reponses dans un tableau de buff[WRITE_BUFF_SIZE];
-	char *buff;
-	int i = 0;
 	std::istream	*bodyStreamPtr;
 
 	if (_fs.is_open())
@@ -646,75 +497,93 @@ int Response::_writeClientResponse(void)
 		bodyStreamPtr = &_ss;
 		std::cout << "Body is an error string stream" << std::endl;
 	}
-	std::istream	&bodyStream = *bodyStreamPtr;
-	std::cout << "Begin of Write Client response function" << std::endl;
-	if (_fullHeader.size())
-	{
-		std::cout << "Header not empty -> sending it first" << std::endl;
-		buff = new char[_fullHeader.size()];
-		buff_size = _fullHeader.size();
-		v_c::iterator ite = _fullHeader.end();
-		for (v_c::iterator it = _fullHeader.begin(); i < buff_size && it != ite; i++, it++)
-			buff[i] = *it;
-		std::cout << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
-		ret = send(_clientFd, buff, i, 0);
-		if (ret == -1)
-			std::cerr << "Error in writeClientResponse" << std::endl;
-		else
-		{
-			_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
-			std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
-		}
-		delete [] buff;
-	}
-	else if (_fullHeader.empty())
-	{
-		std::cout << "Header IS empty -> sending Body" << std::endl;
-		char	*bufBody;
-		if (_bodyLength < WRITE_BUFFER_SIZE)
-			buff_size = _bodyLength;
-		else
-			buff_size = WRITE_BUFFER_SIZE;
-		bufBody = new char[buff_size];
-		bodyStream.read(bufBody, buff_size);
-		std::cout << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
-		std::cout << "Sending chunk of body to client" << std::endl;
-		ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
-		_bodyLength -= ret;
-		if (ret == -1)
-			std::cerr << "Error in writeClientResponse in Body state" << std::endl;
-		if (ret != bodyStream.gcount())
-		{
-			std::cout << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
-		}
-		if (_bodyLength == 0)
-		{
-			std::cout << "No more body data to read on body fd. Closing fd" << std::endl;
-			try {
-
-				std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream); 
-				std::cout << "Closing fs" << std::endl;
-				fsForClose.close();
-				}
-			catch (std::exception &e)
-			{
-				(void)e;
-				std::cout << "No need to close filestream : Body is default error body" << std::endl;
-			}
-			_state = R_OVER;
-		}
-		else
-			bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
-		delete [] bufBody;
-	}
-	std::cout << "End of Write Client response function" << std::endl;
-	std::cout << "writeResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	return 1;
+	return (bodyStreamPtr);
 }
 
-void Response::reset(void)
+void Response::_sendHeaderToClient(void)
 {
-	std::cout << "\x1b[31m Clean Response \x1b[0m" << std::endl;
+	int		ret;
+	int		buff_size;
+	char	*buff;
+	int		i = 0;
+
+	std::cout << "Header not empty -> sending it first" << std::endl;
+	buff = new char[_fullHeader.size()];
+	buff_size = _fullHeader.size();
+	v_c::iterator ite = _fullHeader.end();
+	for (v_c::iterator it = _fullHeader.begin(); i < buff_size && it != ite; i++, it++)
+		buff[i] = *it;
+	std::cout << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
+	ret = send(_clientFd, buff, i, 0);
+	if (ret == -1)
+		std::cerr << "Error in writeClientResponse" << std::endl;
+	else
+	{
+		_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
+		std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
+	}
+	delete [] buff;
+}
+
+void Response::_sendBodyToClient(void)
+{
+	int		ret;
+	int		buff_size;
+	char	*bufBody;
+	std::istream	*bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
+	std::istream	&bodyStream = *bodyStreamPtr;
+
+	std::cout << "Header IS empty -> sending Body" << std::endl;
+	if (_bodyLength < WRITE_BUFFER_SIZE)
+		buff_size = _bodyLength;
+	else
+		buff_size = WRITE_BUFFER_SIZE;
+	bufBody = new char[buff_size];
+	bodyStream.read(bufBody, buff_size);
+	std::cout << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
+	std::cout << "Sending chunk of body to client" << std::endl;
+	ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
+	_bodyLength -= ret;
+	if (ret == -1)
+		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
+	if (ret != bodyStream.gcount())
+	{
+		std::cout << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
+	}
+	if (_bodyLength == 0)
+	{
+		std::cout << "No more body data to read on body fd. Closing fd" << std::endl;
+		try
+		{
+			std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream); 
+			std::cout << "Closing fs" << std::endl;
+			fsForClose.close();
+		}
+		catch (std::exception &e)
+		{
+			(void)e;
+			std::cout << "No need to close filestream : Body is default error body" << std::endl;
+		}
+		_state = R_OVER;
+	}
+	else
+		bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
+	delete [] bufBody;
+}
+
+int Response::_writeClientResponse(void)
+{
+
+	if (DEBUG_RESPONSE)
+		std::cout << "write	Response IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	std::cout << "Begin of Write Client response function" << std::endl;
+	if (_fullHeader.size())
+		_sendHeaderToClient();
+	else if (_fullHeader.empty())
+		_sendBodyToClient();
+	if (DEBUG_RESPONSE)
+		std::cout << "writeResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	return 1;
 }
 
 std::map<std::string, unsigned int>	Response::_populateDirectoryMap(const char *path)
@@ -742,6 +611,17 @@ std::map<std::string, unsigned int>	Response::_populateDirectoryMap(const char *
 	return (dirMap);
 }
 
+void	Response::_generateErrorBodyFromTemplate(std::string &errorMessage)
+{
+	_defaultErrorBodyToSend = _errorBodyTemplate;
+	for (int i = 0; i < 2; i++)
+	{
+		size_t pos = _defaultErrorBodyToSend.find("Error_placeholder");
+		_defaultErrorBodyToSend.erase(pos, strlen("Error_placeholder"));
+		_defaultErrorBodyToSend.insert(pos, errorMessage);
+	}
+}
+
 std::string	Response::_generateHTMLBodyWithPath(void)
 {
 	string HTMLbody = _autoIndexBodyTemplate;
@@ -764,13 +644,13 @@ int Response::_createAutoIndex(const string &pathToDir)
 
 
 	cleanTargetDir += cleanTargetDir[cleanTargetDir.size() - 1] != '/' ? "/" : "";
+	//Ajout des fichiers
 	for (std::map<string, unsigned int>::reverse_iterator it = dirMap.rbegin(); it != dirMap.rend(); it++)
 	{
 		if (it->second != DT_DIR)
 		{
 			std::stringstream out;
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
-			//std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << getFileSize(it->first) << std::endl;
 			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size())
 				<< "<a href=\"" + cleanTargetDir + it->first + "\">" + it->first + "</a>"
 				<< std::setw(40) <<  getFileSize(cleanPathToDir + it->first) + " bytes" << std::endl;
@@ -780,6 +660,8 @@ int Response::_createAutoIndex(const string &pathToDir)
 			HTMLbody.insert(pos, out.str());
 		}
 	}
+	//Ajout des fichiers
+	//Ajout des dossiers
 	for (std::map<string, unsigned int>::reverse_iterator it = dirMap.rbegin(); it != dirMap.rend(); it++)
 	{	
 		if (it->second == DT_DIR)
@@ -790,12 +672,16 @@ int Response::_createAutoIndex(const string &pathToDir)
 			HTMLbody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n");
 		}
 	}
+	//Ajout des dossiers
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "\e[33m-----------Autoindex BODY-----------" << std::endl;
 		std::cout << HTMLbody << std::endl;
 		std::cout << "-----------Autoindex BODY-----------\e[0m" << std::endl;
 	}
-	_body = v_c(HTMLbody.begin(), HTMLbody.end());
+	_ss << HTMLbody;
+	_bodyLength = HTMLbody.size();
+	_header += "content-length: " + itoa(_bodyLength) + "\n";
 	return (1);
 }
+
