@@ -19,7 +19,7 @@
 # endif
 
 # define CLIENT 0
-# define SERVER 1
+# define SERVER 0
 
 class Webserv
 {

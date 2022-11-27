@@ -15,6 +15,9 @@
 # include <iostream>
 # include <sstream>
 # include <iterator>
+# include <iomanip>
+# include <fstream>
+# include <stdlib.h>
 
 # define VALID_REQUEST_N 3
 # define HEADER_FIELD 3
@@ -24,7 +27,7 @@
 #  define DEBUG_REQUEST 0
 # endif
 
-enum {R_REQUESTLINE, R_HEADER, R_GET_MAX_BODY_SIZE, R_BODY, R_END, R_ERROR, R_ZERO_READ};
+enum {R_REQUESTLINE, R_HEADER, R_GET_MAX_BODY_SIZE, R_INIT_BODY_FILE, R_BODY, R_END, R_ERROR, R_ZERO_READ};
 
 class Request
 {
@@ -78,6 +81,12 @@ class Request
 		int		checkRequestLine(void);
 		int		checkHeader(void);
 
+		//handle body
+		void _initBodyFile(void);
+		char _nameBodyFile[32];
+		//int	 _bodyFile;
+		int  _bodyFileSize;
+		std::ofstream _fs;
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);

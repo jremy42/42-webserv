@@ -179,3 +179,28 @@ unsigned int			getipbyhost(const char *host, const char *service)
 	std::cout << "ret : [" << ret << "]" << std::endl;
 	return ret;
 }
+
+
+void printTimeDebug(int debug, std::string quote, std::string arg)
+{
+	if (debug)
+	{
+		if (arg.size() > 0)
+			std::cout << "[\e[32m" << ft_get_time_sec() << "\e[0m]] :" << quote << ": [" << arg << "]" << std::endl;
+		else
+			std::cout << "[\e[32m" << ft_get_time_sec() << "\e[0m]] :" << quote << std::endl;
+	}
+}
+
+void printAvailableAction(int debug, int _clientFd, int _availableActions)
+{
+	if (debug)
+	{
+		printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
+				(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
+				(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
+				(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
+				(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
+				(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
+	}
+}

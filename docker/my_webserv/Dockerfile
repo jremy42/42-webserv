@@ -1,5 +1,5 @@
 FROM debian:buster
-RUN apt-get update -y && apt-get -y install make clang valgrind
+RUN apt-get update -y && apt-get -y install make clang valgrind php-cgi
 COPY ./docker/my_webserv/entrypoint.sh /
 RUN chmod a+x /entrypoint.sh
 WORKDIR /webserv

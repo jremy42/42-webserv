@@ -21,6 +21,8 @@ Request::Request(int clientFd)
 	_state = R_REQUESTLINE;
 	_clientFd = clientFd;
 	_statusCode = 200;
+	memset(_nameBodyFile, 0, 32);
+	strncpy(_nameBodyFile, "/tmp/webservXXXXXX", 32);
 }
 
 Request::Request(const Request &src)
@@ -85,7 +87,7 @@ int	Request::parseRequestLine(string rawRequestLine)
 	}
 	if (checkRequestLine() == -1)
 		return -1;
-	return (0);
+	return 0;
 }
 
 int Request::checkHeader()
@@ -191,16 +193,35 @@ void Request::_handleHeader(void)
 	}
 }
 
+void Request::_initBodyFile(void)
+{
+	tmpnam(_nameBodyFile);
+	_fs.open(_nameBodyFile, std::ofstream::out | std::ofstream::binary | std::ofstream::app);
+	if (_fs.good())
+		std::cout << "Successfully opened body file "<< std::endl;
+	else
+	{
+		throw(std::runtime_error(std::string("Failed to open tmpfile body") + strerror(errno)));
+	}
+	_state = R_BODY;
+}
+
 void Request::_handleBody(void)
 {
 	v_c_it ite = _rawRequest.end();
 	v_c_it it = _rawRequest.begin();
 
 	if (DEBUG_REQUEST)
+	{
 		std::cout << "Handle body" << std::endl;
-	if (_rawRequest.size() > 42)
+		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
+	}
+	_bodyFileSize = _body.size();
+	if (_bodyFileSize > _clientMaxBodySize)
 		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
 	_body.insert(_body.end(), it, ite);
+	std::ostream_iterator<char> output_iterator(_fs, "");
+	std::copy(_body.begin(), _body.end(), output_iterator);
 	_rawRequest.clear();
 }
 
@@ -208,7 +229,7 @@ int Request::readClientRequest(int do_read)
 {
 	std::string	rawRequestLine;
 	char		buf[READ_BUFFER_SIZE];
-	int			read_ret = 0;
+	int			read_ret = 1;
 	//char		*next_nl;
 	//char		*headerStart;
 
@@ -216,18 +237,22 @@ int Request::readClientRequest(int do_read)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	if (do_read)
 	{
-		memset(buf, 0, sizeof(buf));
-		read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
-		if (read_ret == -1)
-			throw (std::runtime_error(strerror(errno)));
-		if (DEBUG_REQUEST)
+		while(read_ret)
 		{
-			std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
-				<< "]\x1b[0m" << std::endl << buf << std::endl
-				<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+			memset(buf, 0, sizeof(buf));
+			read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
+			if (read_ret == -1)
+				throw (std::runtime_error(strerror(errno)));
+			write(1, buf, read_ret);
+			if (DEBUG_REQUEST)
+			{
+				std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
+					<< "]\x1b[0m" << std::endl << buf << std::endl
+					<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+			}
+			for (int i = 0; i < read_ret; i++)
+				_rawRequest.push_back(buf[i]);
 		}
-		for (int i = 0; i < read_ret; i++)
-			_rawRequest.push_back(buf[i]);
 	}
 	if (_state == R_REQUESTLINE)
 		_handleRequestLine();
@@ -235,10 +260,14 @@ int Request::readClientRequest(int do_read)
 		_handleHeader();
 	if (_state == R_GET_MAX_BODY_SIZE)
 		return(_state);
+	if (_state == R_INIT_BODY_FILE)
+		_initBodyFile();
 	if (_state == R_BODY)
 		_handleBody();
 	if (read_ret < READ_BUFFER_SIZE && _state == R_BODY)
+	{
 		_state = R_END;
+	}
 	if (read_ret == 0 && do_read)
 		_state = R_ZERO_READ;
 	//if (DEBUG_REQUEST)

@@ -99,44 +99,33 @@ Client::v_config	Client::_matchingConfigListByHost(v_config *configList, unsigne
 
 const Config		*Client::getMatchingConfig(void) const
 {
-	// p-e 
 	v_config::const_iterator							it = _configList.begin();
 	v_config::const_iterator							ite = _configList.end();
 	std::vector<std::string>::const_iterator	match;
 	std::vector<std::string>					currentCheckedConfig;
-	
-	std::cout << "_request->getHost() : [" << _request->getHost() << "]" << std::endl;
+
+	printTimeDebug(DEBUG_CLIENT, "_request->getHost()", _request->getHost());
 	for (; it != ite; it++)
 	{
 		currentCheckedConfig = it->getServerName();
 		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), _request->getHost());
 		if (match != currentCheckedConfig.end())
 		{
-			std::cout << "found a match for requested host/server_name" << std::endl;
-			std::cout << "Matched [" << *match << "]" << std::endl;
+			printTimeDebug(DEBUG_CLIENT, "found a match for requested host/server_name", "");
+			printTimeDebug(DEBUG_CLIENT, "Matched", *match);
 			return (&(*it));
 		}
 	}
-	std::cout << "No host matching in config : Defaulting to first host/server_name" << std::endl;
+	printTimeDebug(DEBUG_CLIENT, "No host matching in config : Defaulting to first host/server_name", "");
 	return (&_configList.begin()[0]);
 }
+
 int Client::executeAction()
 {
-	std::cout << "executeAction IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	int	actionReturnValue;
-	int	actionMade = 0;
 
-	//usleep(50000);
-	if (DEBUG_CLIENT)
-	{
-		std::cout << "Client State at beginning of executeAction :" <<  getStateStr() << std::endl;
-		printf(" Client_fd:[%d], events [%s][%s][%s][%s][%s]\n", _clientFd,
-				(_availableActions & EPOLLIN) ? "EPOLLIN " : "",
-				(_availableActions & EPOLLOUT) ? "EPOLLOUT " : "",
-				(_availableActions & EPOLLERR) ? "EPOLLERR " : "",
-				(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
-				(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
-	}
+	//printTimeDebug(DEBUG_CLIENT, "Client State at beginning of executeAction :", getStateStr());
+	//printAvailableAction(DEBUG_CLIENT,_clientFd, _availableActions);
 	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP || ft_get_time() > _timeoutClient)
 	{
 		_state = S_CLOSE_FD;
@@ -158,17 +147,15 @@ int Client::executeAction()
 			std::string	target = _request->getTarget();
 			int clientMaxBodySize = atoi(getMatchingConfig()->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
 			_request->setClientMaxBodySize(clientMaxBodySize);
-			if (DEBUG_CLIENT)
-				std::cout << "Setting Client Max Body Size to : [" << clientMaxBodySize << "]" << std::endl;
+			printTimeDebug(DEBUG_CLIENT, "Setting Client Max Body Size to :", itoa(clientMaxBodySize) );
 			//A faire uniquement quand reqline & header a ete lu pour connaitre host/server_name
-			_request->setState(R_BODY);
+			_request->setState(R_INIT_BODY_FILE);
 			actionReturnValue = _request->readClientRequest(0);
 		}
 		if (DEBUG_CLIENT)
 			std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)
 		{
-			//std::cout << "client getrootDir:[" << _config->getRootDir() << "]\n";
 			if (ft_get_time() > _timeoutRequest)
 				_response = new Response(_clientFd, _request, getMatchingConfig(), 408); // passer la bonne config
 			else
@@ -177,18 +164,14 @@ int Client::executeAction()
 		}
 		if (actionReturnValue == R_ZERO_READ)
 			_state = S_CLOSE_FD;
-		actionMade++;
 	}
 	else if ((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
-		//_response->createResponse();
-		//if (_response->writeClientResponse() == 0)
 		if (_response->handleResponse() == 0) // 0 si ok et j'ai ecrit, donc je prolonge le timeout
 		{
 			_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 			_state = S_OVER;
 		}
-		actionMade++;
 	}
 	if(_state == S_OVER)
 	{
@@ -201,9 +184,9 @@ int Client::executeAction()
 		delete _request;
 		_state = S_CLOSE_FD;
 	}
-	//std::cout << "Client State at end of executeAction :" <<  getStateStr() << std::endl;
-	std::cout << "executeAction OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	return (actionMade);
+	//printTimeDebug(DEBUG_CLIENT, "Client State at end of executeAction", getStateStr());
+	//printTimeDebug(DEBUG_CLIENT, "executeAction OUT", "");
+	return (1 );
 }
 
 int Client::getClientFd(void) const

@@ -16,6 +16,8 @@
 # include <arpa/inet.h>
 # include <netdb.h>
 # include <string.h>
+# include <sys/epoll.h>
+
 
 # ifndef DEBUG_UTILS
 #  define DEBUG_UTILS 0
@@ -39,5 +41,6 @@ void		__signal(int signal);
 unsigned long	ft_get_time(void);
 float	ft_get_time_sec(void);
 unsigned int			getipbyhost(const char *host, const char *service);
-
+void                    printTimeDebug(int debug,std::string quote, std::string arg);
+void                    printAvailableAction(int debug, int _clientFd, int _availableActions);
 #endif

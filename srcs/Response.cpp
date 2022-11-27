@@ -559,7 +559,8 @@ void Response::_checkRedirect(void)
 
 int Response::handleResponse(void)
 {
-	std::cout << "handleResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cout << "handleResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (DEBUG_RESPONSE)
 		std::cout << "Handle response start. Status [" << _state << "]" << std::endl;
 	if (_state != R_WRITE)
@@ -575,7 +576,9 @@ int Response::handleResponse(void)
 	}
 	if (DEBUG_RESPONSE)
 		std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
-	std::cout << "handleResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	
+	if (DEBUG_RESPONSE)
+		std::cout << "handleResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER)
 		return (0);
 	else
@@ -586,7 +589,8 @@ int Response::_createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
-	std::cout << "createResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cout << "createResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 
 	if (_state == R_INIT)
 	{
@@ -617,7 +621,8 @@ int Response::_createResponse(void)
 		_createFullHeader();
 		_state = R_WRITE;
 	}
-	std::cout << "createResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cout << "createResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return (_state);
 }
 
