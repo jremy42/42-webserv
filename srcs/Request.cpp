@@ -14,6 +14,7 @@ Request::Request(void)
 	_state = R_REQUESTLINE;
 	_clientFd = -1;
 	_statusCode = 200;
+	_maxRead = 0;
 }
 
 Request::Request(int clientFd, v_config* configList )
@@ -22,6 +23,7 @@ Request::Request(int clientFd, v_config* configList )
 	_clientFd = clientFd;
 	_statusCode = 200;
 	_configList = configList;
+	_maxRead = 0;
 }
 
 Request::Request(const Request &src)
@@ -46,6 +48,7 @@ Request	&Request::operator=(const Request &rhs)
 	_config = rhs._config;
 	_maxRead = rhs._maxRead;
 	_rawRequestString = rhs._rawRequestString;
+	_rawRequest = rhs._rawRequest;
 	_readRet = rhs._readRet;
 	return (*this);
 }
@@ -214,6 +217,9 @@ void Request::_initBodyFile(void)
 
 void Request::_handleBody(void)
 {
+	v_c_it ite = _rawRequest.end();
+	v_c_it it = _rawRequest.begin();
+
 	if (DEBUG_REQUEST)
 	{
 		std::cout << "Handle body" << std::endl;
@@ -221,16 +227,13 @@ void Request::_handleBody(void)
 	}
 	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
 		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
-	int size = std::distance(_rawRequestString.begin(), _rawRequestString.end());
-	std::cout << "size to write = [" << size << "]" << std::endl;
-	_fs.write(_rawRequestString.c_str(), size);
-	_rawRequestString.erase(_rawRequestString.begin(), _rawRequestString.end());
-	_rawRequestString.clear();
+	for (; it != ite; it++)
+		_fs << *it;
+	_rawRequest.clear();
 }
 
 int Request::readClientRequest(void)
 {
-	std::string	rawRequestLine;
 	char		buf[READ_BUFFER_SIZE];
 	int			read_ret = 0;
 	//char		*next_nl;
@@ -249,9 +252,10 @@ int Request::readClientRequest(void)
 		<< "]\x1b[0m" << std::endl << buf << std::endl
 		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
 	} */
+	for (int i = 0; i < read_ret; i++)
+		_rawRequest.push_back(buf[i]);
 	_readRet = read_ret;
 	_maxRead += read_ret;
-	_rawRequestString += buf;
 	return read_ret;
 }
 
@@ -373,9 +377,8 @@ std::string Request::getTmpBodyFile(void) const
 
 const Config	*Request::getMatchingConfig(void) const
 {
-	v_config::const_iterator		size to write = [306]
-					it = _configList->begin();
-	v_config::const_iterator							ite = _configList->end();
+	v_config::const_iterator	it = _configList->begin();
+	v_config::const_iterator	ite = _configList->end();
 	std::vector<std::string>::const_iterator	match;
 	std::vector<std::string>					currentCheckedConfig;
 
