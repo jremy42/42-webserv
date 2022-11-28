@@ -318,7 +318,9 @@ void Response::_waitCGIfile(void)
 
 void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 {
-	v_c		requestBody = _request->getBody();
+	//v_c		requestBody = _request->getBody();
+	string bodyFile = _request->getTmpBodyFile();
+	long bodyFileSize = getFileSize(bodyFile);
 
 	if ((_inChild = mkstemp(_nameIn)) == -1)
 		throw(std::runtime_error(std::string("_nameIn mkstemp error") + strerror(errno)));
@@ -334,14 +336,14 @@ void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 		std::cout << "outchild fd: [" << _outChild << "]" << std::endl;
 		std::cout << "open " << actualTarget << std::endl;
 	}
-	if (requestBody.size() != 0)
+	if (bodyFileSize != 0)
 	{
-		char *buff = new char[requestBody.size()];
-		int i = 0;
-		v_c::iterator ite = requestBody.end();
-		for (v_c::iterator it = requestBody.begin(); it != ite; i++, it++)
-			buff[i] = *it;
-		write(_inChild, buff, i);
+		//char *buff = new char[bodyFileSize];
+		//int i = 0;
+		//v_c::iterator ite = requestBody.end();
+		//for (v_c::iterator it = requestBody.begin(); it != ite; i++, it++)
+		//	buff[i] = *it;
+		//write(_inChild, buff, i);
 	}
 	if ((_pid = fork()) == -1)
 		throw(std::runtime_error("Fork error" ));
@@ -649,7 +651,7 @@ int Response::_createAutoIndex(const string &pathToDir)
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size())
 				<< "<a href=\"" + cleanTargetDir + it->first + "\">" + it->first + "</a>"
-				<< std::setw(40) <<  getFileSize(cleanPathToDir + it->first) + " bytes" << std::endl;
+				<< std::setw(40) <<  getFileSizeStr(cleanPathToDir + it->first) + " bytes" << std::endl;
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();

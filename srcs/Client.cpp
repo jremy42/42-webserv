@@ -118,7 +118,7 @@ int Client::executeAction()
 	if ((_availableActions & EPOLLIN) && _state == S_REQREAD)
 	{
 		_state = S_REQREAD;
-		actionReturnValue = _request->readClientRequest();
+		actionReturnValue = _request->handleRequest();
 		if (DEBUG_CLIENT)
 			std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)

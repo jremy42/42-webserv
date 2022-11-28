@@ -18,6 +18,7 @@
 # include <iomanip>
 # include <fstream>
 # include <stdlib.h>
+# include <string.h>
 # include "Config.hpp"
 
 # define VALID_REQUEST_N 3
@@ -25,10 +26,12 @@
 # define REQUEST_LINE_FIELD 3
 
 # ifndef DEBUG_REQUEST
-#  define DEBUG_REQUEST 0
+#  define DEBUG_REQUEST 1
 # endif
 
 enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_END, R_ERROR, R_ZERO_READ};
+
+class Config;
 
 class Request
 {
@@ -57,7 +60,7 @@ class Request
 		int			getStatusCode(void) const;
 		void 		reset(void);
 		string		getHost(void) const;
-		std::vector<char>	getBody(void) const;
+		string		getTmpBodyFile(void) const;
 		void		setClientMaxBodySize(int clientMaxBodySize);
 		void		setState(int state);
 		int			handleRequest(void);
@@ -72,10 +75,13 @@ class Request
 		int				_state;
 		int				_clientFd;
 		int				_statusCode;
+		int				_maxRead;
 		m_ss			_requestLine;
 		m_ss			_header;
-		v_c				_body;
-		v_c				_rawRequest;
+		//v_c				_body;
+		//v_c				_rawRequest;
+		string			_rawRequestString;
+		int				_readRet;
 		string			_rawRequestLine;
 		int				_clientMaxBodySize;
 		v_config		*_configList;
@@ -83,7 +89,7 @@ class Request
 		static string	_requestLineField[3];
 		static string	_headerField[3];
 		static string	_validRequest[3];
-		static string	_stateStr[7];
+		static string	_stateStr[8];
 
 		void	_handleRequestLine(void);
 		void	_handleHeader(void);

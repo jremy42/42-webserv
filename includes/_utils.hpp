@@ -39,7 +39,9 @@ std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::strin
 
 std::string		itoa(int statusCode);
 std::string		ltoa(long statusCode);
-std::string		getFileSize(std::string filename);
+std::string		getFileSizeStr(std::string filename);
+long			getFileSize(std::string filename);
+
 int				isDir(std::string fileName);
 int 			fileExist(std::string fileName);
 std::string		_tmpFileName(const std::string path);
