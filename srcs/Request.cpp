@@ -237,8 +237,8 @@ int Request::readClientRequest(int do_read)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	if (do_read)
 	{
-		while(read_ret)
-		{
+ //		while(read_ret)
+ //		{
 			memset(buf, 0, sizeof(buf));
 			read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
 			if (read_ret == -1)
@@ -252,7 +252,7 @@ int Request::readClientRequest(int do_read)
 			}
 			for (int i = 0; i < read_ret; i++)
 				_rawRequest.push_back(buf[i]);
-		}
+//		}
 	}
 	if (_state == R_REQUESTLINE)
 		_handleRequestLine();

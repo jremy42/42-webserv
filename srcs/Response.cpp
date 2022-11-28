@@ -403,17 +403,14 @@ void Response::_checkRedirect(void)
 
 int Response::handleResponse(void)
 {
-<<<<<<< HEAD
 	if (DEBUG_RESPONSE)
 		std::cout << "handleResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-=======
 	static int init = 1;
 	if (init)
 	{
 		_selectActualTarget();
 		init = 0;
 	}
->>>>>>> a144d8dcdbe600f513bc980e992b690cec115d02
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "handleResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
@@ -431,7 +428,6 @@ int Response::handleResponse(void)
 		_writeClientResponse();
 	}
 	if (DEBUG_RESPONSE)
-	{
 		std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
 	
 	if (DEBUG_RESPONSE)
