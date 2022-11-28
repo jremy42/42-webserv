@@ -22,6 +22,7 @@
 # include <iostream>
 # include <iomanip>
 # include <sys/wait.h>
+# include <cctype>
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
@@ -82,6 +83,7 @@ class Response
 		static string					_autoIndexBodyTemplate;
 		static m_is 					_initStatusCodeMessage(void);
 
+		int								_urlDecodeString(string &strToDecode);
 		void							_parseRawRequestTarget(void);
 		void							_selectActualTarget(void);
 		void							_createErrorMessageBody(void);

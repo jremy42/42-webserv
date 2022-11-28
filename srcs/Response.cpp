@@ -123,6 +123,25 @@ void Response::_createErrorMessageBody(void)
 	}
 }
 
+int	Response::_urlDecodeString(string &strToDecode)
+{
+	std::size_t	i = 0;
+	std::size_t	strSize = strToDecode.size();
+	std::string	base = "0123456789abcdef";
+
+	for (; i + 2 < strSize; i++)
+	{
+		if (strToDecode[i] == '%' && isxdigit(strToDecode[i + 1]) && isxdigit(strToDecode[i + 2]))
+		{
+			char decodedChar = (base.find(tolower(strToDecode[i + 1])) << 4)
+				+ base.find(tolower(strToDecode[i + 2]));
+			strToDecode.erase(i, 3);
+			strToDecode.insert(strToDecode.begin() + i, decodedChar);
+		}
+	} 
+	return (1);
+}
+
 void	Response::_parseRawRequestTarget(void)
 {
 	_rawRequestedTarget = _request->getTarget();
@@ -142,7 +161,6 @@ void	Response::_parseRawRequestTarget(void)
 	if (posLastQuestionMark != std::string::npos)
 	{
 		_queryString = _rawActualTarget.substr(posLastQuestionMark + 1);	
-		//posLastQuestionMark = _rawActualTarget.find_last_of("?");
 		_actualTarget = _actualTarget.substr(0, posLastQuestionMark);
 	}
 	std::size_t	posLastDot = _actualTarget.find_last_of(".");
@@ -151,6 +169,8 @@ void	Response::_parseRawRequestTarget(void)
 		_targetExtension = _actualTarget.substr(posLastDot);
 		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
+	_urlDecodeString(_pathInfo);
+	_urlDecodeString(_queryString);
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
@@ -242,19 +262,6 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
 	if (DEBUG_RESPONSE)
 		std::cout << "Body length: [" << _bodyLength << "]\n";
 }
-
- //std::string	Response::_getExtensionFromTarget(string actualTarget)
- //{
- //	std::size_t	posDot;
- //	std::size_t	posEnd;
- //
- //	posDot = actualTarget.find_last_of(".");
- //	std::string endPart = actualTarget.substr(posDot);
- //	//posEnd = endPart.find_first_of("/?");
- //	//posEnd = posEnd != std::string::npos ? posEnd : endPart.size();
- //	std::string extension = endPart.substr(0, posEnd + 1);
- //	return (extension);
- //}
 
 void Response::_methodGET(void)
 {
