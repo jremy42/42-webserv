@@ -79,7 +79,7 @@ class Request
 		m_ss			_requestLine;
 		m_ss			_header;
 		//v_c				_body;
-		//v_c				_rawRequest;
+		v_c				_rawRequest;
 		string			_rawRequestString;
 		int				_readRet;
 		string			_rawRequestLine;

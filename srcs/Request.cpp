@@ -221,7 +221,10 @@ void Request::_handleBody(void)
 	}
 	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
 		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
-	_fs << _rawRequestString;
+	int size = std::distance(_rawRequestString.begin(), _rawRequestString.end());
+	std::cout << "size to write = [" << size << "]" << std::endl;
+	_fs.write(_rawRequestString.c_str(), size);
+	_rawRequestString.erase(_rawRequestString.begin(), _rawRequestString.end());
 	_rawRequestString.clear();
 }
 
@@ -242,54 +245,14 @@ int Request::readClientRequest(void)
 	std::cout << "read ret[" << read_ret << "]" << std::endl;
 	/* if (DEBUG_REQUEST)
 	{
-<<<<<<< HEAD
 		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
 		<< "]\x1b[0m" << std::endl << buf << std::endl
 		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
 	} */
 	_readRet = read_ret;
 	_maxRead += read_ret;
-	_rawRequestString += string(buf);
+	_rawRequestString += buf;
 	return read_ret;
-=======
- //		while(read_ret)
- //		{
-			memset(buf, 0, sizeof(buf));
-			read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
-			if (read_ret == -1)
-				throw (std::runtime_error(strerror(errno)));
-			write(1, buf, read_ret);
-			if (DEBUG_REQUEST)
-			{
-				std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
-					<< "]\x1b[0m" << std::endl << buf << std::endl
-					<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
-			}
-			for (int i = 0; i < read_ret; i++)
-				_rawRequest.push_back(buf[i]);
-	//	}
-	}
-	if (_state == R_REQUESTLINE)
-		_handleRequestLine();
-	if (_state == R_HEADER)
-		_handleHeader();
-	if (_state == R_GET_MAX_BODY_SIZE)
-		return(_state);
-	if (_state == R_INIT_BODY_FILE)
-		_initBodyFile();
-	if (_state == R_BODY)
-		_handleBody();
-	if (read_ret < READ_BUFFER_SIZE && _state == R_BODY)
-	{
-		_state = R_END;
-	}
-	if (read_ret == 0 && do_read)
-		_state = R_ZERO_READ;
-	//if (DEBUG_REQUEST)
-	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
-			<< "]" << std::endl;
-	return (_state);
->>>>>>> e925b4d0e019074ff46ed6f11fedfca2c16c5489
 }
 
 int Request::getState(void) const
@@ -376,6 +339,7 @@ int	Request::handleRequest(void)
 	//if (DEBUG_REQUEST)																
 	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
 			<< "]" << std::endl;
+	std::cout << "Max read = [" << _maxRead << "]" << std::endl;
 	return (_state);
 
 }
@@ -409,7 +373,8 @@ std::string Request::getTmpBodyFile(void) const
 
 const Config	*Request::getMatchingConfig(void) const
 {
-	v_config::const_iterator							it = _configList->begin();
+	v_config::const_iterator		size to write = [306]
+					it = _configList->begin();
 	v_config::const_iterator							ite = _configList->end();
 	std::vector<std::string>::const_iterator	match;
 	std::vector<std::string>					currentCheckedConfig;
