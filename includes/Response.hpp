@@ -45,7 +45,6 @@ class Response
 		Response(const Response &src);
 		Response &operator=(const Response &rhs);
 		~Response(void);
-		//void setRequest(const Request *request);
 		int handleResponse(void);
 
 	private:

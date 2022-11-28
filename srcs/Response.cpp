@@ -121,25 +121,20 @@ void Response::_createErrorMessageBody(void)
 	}
 }
 
-/*
-void Response::setRequest(const Request *request)
-{
-	std::cout << "\e[31m set request with target " << request->getTarget() << "\e[0m\n";
-	_request = request;
-	_statusCode = _request->getStatusCode();
-}
-*/
-
 void	Response::_selectActualTarget(void)
 {
 	_rawRequestedTarget = _request->getTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
-	_rawActualTarget = _requestedTargetRoot + "/" + _rawRequestedTarget;
+	_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
+	_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget;
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "requested Target : [" << _rawRequestedTarget << "]" << std::endl;
-		std::cout << "requested Target Root (according to root directives) : [" << _requestedTargetRoot << "]" << std::endl;
-		std::cout << "actual Target : [" << _rawActualTarget << "]" << std::endl;
+		std::cout << "_rawRequestedTargetTarget : [" << _rawRequestedTarget << "]" << std::endl;
+		std::cout << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
+		std::cout << "_rawActualTargetTarget : [" << _rawActualTarget << "]" << std::endl;
+		std::cout << "_actualTarget : [" << _actualTarget << "]" << std::endl;
+		std::cout << "_queryString : [" << _queryString << "]" << std::endl;
+		std::cout << "_pathInfo : [" << _pathInfo << "]" << std::endl;
 		if (!fileExist(_rawActualTarget))
 			std::cout << "actual Target does not exists" << std::endl;
 		if (fileExist(_rawActualTarget) && isDir(_rawActualTarget))
@@ -161,7 +156,7 @@ void	Response::_selectActualTarget(void)
 		std::vector<string>::iterator it = indexTryFiles.begin();
 		for (;it != indexTryFiles.end(); it++)
 		{
-			std::string	testedIndexFile = _requestedTargetRoot + "/" + *it;
+			std::string	testedIndexFile = _requestedTargetRoot + _rawRequestedTarget + "/" + *it;
 			if (DEBUG_RESPONSE)
 				std::cout << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
