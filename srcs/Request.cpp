@@ -146,22 +146,23 @@ int	Request::parseHeader(string rawHeader)
 
 void Request::_handleRequestLine(void)
 {
-	std::string::iterator ite = _rawRequestString.end();
-	std::string::iterator it = _rawRequestString.begin();
+	v_c_it ite = _rawRequest.end();
+	v_c_it it = _rawRequest.begin();
 
-	std::cout << "Handle Request Line" << std::endl;
-	if (_maxRead > MAX_REQUESTLINE_SIZE)
+	if (DEBUG_REQUEST)
+		std::cout << "Handle Request Line" << std::endl;
+	if (_rawRequest.size() > MAX_REQUESTLINE_SIZE)
 		throw(std::runtime_error("webserv: request : Request Line is too long"));
 	for (; it != ite; it++)
 	{
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
 		{
-			string rawRequestLine(_rawRequestString.begin(), it);
+			string rawRequestLine(_rawRequest.begin(), it);
 			if(this->parseRequestLine(rawRequestLine) == -1)
 				_state = R_ERROR;
 			if (_state == R_ERROR)
 				return;
-			_rawRequestString.erase(_rawRequestString.begin(), it + 2);
+			_rawRequest.erase(_rawRequest.begin(), it + 2);
 			_state = R_HEADER;
 			return;
 		}
@@ -170,12 +171,12 @@ void Request::_handleRequestLine(void)
 
 void Request::_handleHeader(void)
 {
-	string::iterator ite = _rawRequestString.end();
-	string::iterator it = _rawRequestString.begin();
+	v_c_it ite = _rawRequest.end();
+	v_c_it it = _rawRequest.begin();
 
 	if (DEBUG_REQUEST)
 		std::cout << "Handle header" << std::endl;
-	if (_maxRead > MAX_HEADER_SIZE)
+	if (_rawRequest.size() > MAX_HEADER_SIZE)
 		throw(std::runtime_error("webserv: request : Header is too long"));
 	for (; it != ite; it++)
 	{
@@ -185,18 +186,17 @@ void Request::_handleHeader(void)
 			&& it + 2 != ite && *(it + 2) == '\r'
 			&& it + 3 != ite && *(it + 3) == '\n')
 		{
-			string rawHeader(_rawRequestString.begin(), it);
+			string rawHeader(_rawRequest.begin(), it);
 			if(this->parseHeader(rawHeader))
 				_state = R_ERROR;
 			if (_state == R_ERROR)
 				return;
-			_rawRequestString.erase(_rawRequestString.begin(), it + 4);
+			_rawRequest.erase(_rawRequest.begin(), it + 4);
 			_state = R_SET_CONFIG;
 			return ;
 		}
 	} 
 }
-
 void Request::_initBodyFile(void)
 {
 	_nameBodyFile = _tmpFileName("./tmp/webserv");
