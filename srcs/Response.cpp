@@ -41,9 +41,10 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	}
 	_selectActualTarget();
 	memset(_nameOut, 0, 32);
-	memset(_nameIn, 0, 32);
-	strncpy(_nameIn, "/tmp/webservXXXXXX", 32);
 	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
+	_requestBodyFile = _request->getTmpBodyFile();
+	_requestBodyFileSize = getFileSize(_requestBodyFile);
+
 }
 
 Response::Response(const Response &src)
@@ -57,8 +58,6 @@ Response::~Response(void)
 {
 	if (DEBUG_RESPONSE)
 		std::cout << "Response : Default Destructor called" << std::endl; 
-	if (strcmp(_nameIn, "/tmp/webservXXXXXX"))
-		unlink(_nameIn);
 	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
 		unlink(_nameOut);
 }
@@ -340,10 +339,8 @@ void Response::_waitCGIfile(void)
 		if (WIFSIGNALED(status) > 0)
 			ret = (WTERMSIG(status) + 128);
 		std::cerr << "ret : [" << ret << "]" << std::endl;
-		if (close(_inChild))
+		if (_requestBodyFileSize != 0 && close(_inChild))
 			throw(std::runtime_error("Close error inChild" ));
-		if (unlink(_nameIn))
-			throw(std::runtime_error("unlink error" ));
 		if (close(_outChild))
 			throw(std::runtime_error("close error outChild" ));
 		_createFileStreamFromFile(_nameOut);
@@ -354,32 +351,19 @@ void Response::_waitCGIfile(void)
 
 void Response::_initCGIfile(void)
 {
-	//v_c		requestBody = _request->getBody();
-	string bodyFile = _request->getTmpBodyFile();
-	long bodyFileSize = getFileSize(bodyFile);
-
-	if ((_inChild = mkstemp(_nameIn)) == -1)
-		throw(std::runtime_error(std::string("_nameIn mkstemp error") + strerror(errno)));
 	if ((_outChild = mkstemp(_nameOut)) == -1)
 		throw(std::runtime_error(std::string("_nameOut mkstemp error") + strerror(errno)));
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "_nameIN : [" << _nameIn << "]" << std::endl;
-		std::cout << "_nameOut : [" << _nameOut << "]" << std::endl;
-		std::cout << "nameIn: [" << _nameIn << "]" << std::endl;
 		std::cout << "nameOut: [" << _nameOut << "]" << std::endl;
 		std::cout << "inchild fd: [" << _inChild << "]" << std::endl;
 		std::cout << "outchild fd: [" << _outChild << "]" << std::endl;
 		std::cout << "open " << _actualTarget << std::endl;
 	}
-	if (bodyFileSize != 0)
+	if (_requestBodyFileSize != 0)
 	{
-		//char *buff = new char[bodyFileSize];
-		//int i = 0;
-		//v_c::iterator ite = requestBody.end();
-		//for (v_c::iterator it = requestBody.begin(); it != ite; i++, it++)
-		//	buff[i] = *it;
-		//write(_inChild, buff, i);
+		if ((_inChild = open(_requestBodyFile.c_str(), O_RDONLY)) == -1)
+			throw(std::runtime_error(std::string("_open error request bodyfile") + strerror(errno)));
 	}
 	if ((_pid = fork()) == -1)
 		throw(std::runtime_error("Fork error" ));
@@ -392,7 +376,7 @@ void Response::_initCGIfile(void)
 	}
 	else
 	{
-		if (dup2(_inChild, STDIN_FILENO) == -1)
+		if (_requestBodyFileSize != 0 && dup2(_inChild, STDIN_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child DUP2 error 0") + strerror(errno)));
 		if (dup2(_outChild, STDOUT_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
@@ -707,4 +691,3 @@ int Response::_createAutoIndex(const string &pathToDir)
 	_header += "content-length: " + itoa(_bodyLength) + "\n";
 	return (1);
 }
-

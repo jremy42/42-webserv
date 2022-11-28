@@ -76,7 +76,9 @@ class Response
 		//From _rawActualTarget
 		string							_targetStatus; // retour de actual target
 		string							_cgiExecutable; // Empty si la target est un regular file
-
+														//
+		string							_requestBodyFile;
+		long							_requestBodyFileSize;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
@@ -107,7 +109,6 @@ class Response
 		void							_methodPOST(void);
 // CGI
 		pid_t	_pid;
-		char _nameIn[32];
 		char _nameOut[32];
 		int	_inChild;
 		int _outChild;
