@@ -121,14 +121,14 @@ void Response::_createErrorMessageBody(void)
 	}
 }
 
+/*
 void Response::setRequest(const Request *request)
 {
 	std::cout << "\e[31m set request with target " << request->getTarget() << "\e[0m\n";
 	_request = request;
 	_statusCode = _request->getStatusCode();
 }
-
-//A faire a l'init du projet, pour pouvoir parser apres la query_string etc...
+*/
 
 void	Response::_selectActualTarget(void)
 {
