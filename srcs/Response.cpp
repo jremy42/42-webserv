@@ -84,6 +84,8 @@ Response &Response::operator=(const Response &rhs)
 	_queryString = rhs._queryString;
 	_pathInfo = rhs._pathInfo;
 	_targetStatus = rhs._targetStatus;
+	_cgiExecutable = rhs._cgiExecutable;
+	_targetExtension = rhs._targetExtension;
 	return (*this);
 }
 
@@ -140,8 +142,14 @@ void	Response::_parseRawRequestTarget(void)
 	if (posLastQuestionMark != std::string::npos)
 	{
 		_queryString = _rawActualTarget.substr(posLastQuestionMark + 1);	
-		posLastQuestionMark = _rawActualTarget.find_last_of("?");
+		//posLastQuestionMark = _rawActualTarget.find_last_of("?");
 		_actualTarget = _actualTarget.substr(0, posLastQuestionMark);
+	}
+	std::size_t	posLastDot = _actualTarget.find_last_of(".");
+	if (posLastDot != std::string::npos)
+	{
+		_targetExtension = _actualTarget.substr(posLastDot);
+		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
 	if (DEBUG_RESPONSE)
 	{
@@ -151,6 +159,8 @@ void	Response::_parseRawRequestTarget(void)
 		std::cout << "_actualTarget : [" << _actualTarget << "]" << std::endl;
 		std::cout << "_queryString : [" << _queryString << "]" << std::endl;
 		std::cout << "_pathInfo : [" << _pathInfo << "]" << std::endl;
+		std::cout << "_targetExtension : [" << _targetExtension << "]" << std::endl;
+		std::cout << "_cgiExecutable : [" << _cgiExecutable << "]" << std::endl;
 		if (!fileExist(_actualTarget))
 			std::cout << "actual Target does not exists" << std::endl;
 		if (fileExist(_actualTarget) && isDir(_actualTarget))
@@ -233,29 +243,21 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
 		std::cout << "Body length: [" << _bodyLength << "]\n";
 }
 
-std::string	Response::_getExtensionFromTarget(string actualTarget)
-{
-	std::size_t	posDot;
-	std::size_t	posEnd;
-
-	posDot = actualTarget.find_last_of(".");
-	std::string endPart = actualTarget.substr(posDot);
-	posEnd = endPart.find_first_of("/?");
-	posEnd = posEnd != std::string::npos ? posEnd : endPart.size();
-	std::string extension = endPart.substr(0, posEnd + 1);
-	if (DEBUG_RESPONSE)
-		std::cout << "Extension : [" << extension << "]" << std::endl;
-	return (extension);
-}
+ //std::string	Response::_getExtensionFromTarget(string actualTarget)
+ //{
+ //	std::size_t	posDot;
+ //	std::size_t	posEnd;
+ //
+ //	posDot = actualTarget.find_last_of(".");
+ //	std::string endPart = actualTarget.substr(posDot);
+ //	//posEnd = endPart.find_first_of("/?");
+ //	//posEnd = posEnd != std::string::npos ? posEnd : endPart.size();
+ //	std::string extension = endPart.substr(0, posEnd + 1);
+ //	return (extension);
+ //}
 
 void Response::_methodGET(void)
 {
-	//std::string	selectActualTargetResult;
-	std::string	cgiExecutable;
-	
-	//selectActualTargetResult = _selectActualTarget(_rawActualTarget, _request->getTarget());
-	//if (DEBUG_RESPONSE)
-		//std::cout << "Actual target : [" << _rawActualTarget << "]" << std::endl;
 	if (_targetStatus == "Do_listing")
 	{
 		_createAutoIndex(_actualTarget);
@@ -264,12 +266,12 @@ void Response::_methodGET(void)
 	else if (_targetStatus != "Index_file_nok" && _targetStatus != "File_nok")
 	{
 		std::string rawTarget = _request->getTarget();
-		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(_actualTarget))) != "")
+		if (_cgiExecutable != "")
 		{
-			if (DEBUG_RESPONSE)
+			if (DEBUG_RESPONSE && _state == R_INIT)
 				std::cout << "\e[33mCGI\e[0m" << std::endl;
 			if (_state == R_INIT)
-				_initCGIfile(_actualTarget, cgiExecutable);
+				_initCGIfile();
 			if (_state == R_WAIT_CGI_EXEC)
 				_waitCGIfile();
 		}
@@ -318,7 +320,7 @@ void Response::_waitCGIfile(void)
 
 	if (waitpid(_pid, &status, WNOHANG) == 0)
 	{
-		if (DEBUG_RESPONSE)
+		if (DEBUG_RESPONSE > 1)
 			std::cout << "A child is still working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		return ;
 	}
@@ -343,7 +345,7 @@ void Response::_waitCGIfile(void)
 	}
 }
 
-void Response::_initCGIfile(string actualTarget, string cgiExecutable)
+void Response::_initCGIfile(void)
 {
 	v_c		requestBody = _request->getBody();
 
@@ -359,7 +361,7 @@ void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 		std::cout << "nameOut: [" << _nameOut << "]" << std::endl;
 		std::cout << "inchild fd: [" << _inChild << "]" << std::endl;
 		std::cout << "outchild fd: [" << _outChild << "]" << std::endl;
-		std::cout << "open " << actualTarget << std::endl;
+		std::cout << "open " << _actualTarget << std::endl;
 	}
 	if (requestBody.size() != 0)
 	{
@@ -386,12 +388,12 @@ void Response::_initCGIfile(string actualTarget, string cgiExecutable)
 		if (dup2(_outChild, STDOUT_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
 		char *arg[3];
-		arg[0] = const_cast<char *>(cgiExecutable.c_str());
-		arg[1] = const_cast<char *>(actualTarget.c_str());
+		arg[0] = const_cast<char *>(_cgiExecutable.c_str());
+		arg[1] = const_cast<char *>(_actualTarget.c_str());
 		arg[2] = NULL;
 		if (DEBUG_RESPONSE)
-			std::cerr << "actual Target : [" << actualTarget << "] CGI-executable : [" << cgiExecutable << "]" << std::endl;
-		execve(cgiExecutable.c_str(), arg, NULL);
+			std::cerr << "actual Target : [" << _actualTarget << "] CGI-executable : [" << _cgiExecutable << "]" << std::endl;
+		execve(_cgiExecutable.c_str(), arg, NULL);
 		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
 	}
 }
@@ -430,16 +432,14 @@ void Response::_checkRedirect(void)
 
 int Response::handleResponse(void)
 {
-	if (DEBUG_RESPONSE)
-		std::cout << "handleResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	if (DEBUG_RESPONSE)
+	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 	{
 		std::cout << "handleResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		std::cout << "Handle response start. Status [" << _state << "]" << std::endl;
 	}
 	if (_state != R_WRITE)
 	{
-		if (DEBUG_RESPONSE)
+		if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 			std::cout << "Calling _createResponse" << std::endl;
 		_createResponse();
 	}
@@ -448,11 +448,11 @@ int Response::handleResponse(void)
 		std::cout << "Calling _writeClientResponse" << std::endl;
 		_writeClientResponse();
 	}
-	if (DEBUG_RESPONSE)
+	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 		std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
 	
-	if (DEBUG_RESPONSE)
-		std::cout << "handleResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
+		std::cout << "handleResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER)
 		return (0);
 	else
@@ -463,8 +463,8 @@ int Response::_createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
-	if (DEBUG_RESPONSE)
-		std::cout << "createResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
+		std::cout << "createResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 
 	if (_state == R_INIT)
 	{
@@ -478,7 +478,7 @@ int Response::_createResponse(void)
 	}
 	if (_state < R_FILE_READY && _request->getMethod() == "GET")
 	{
-		if (DEBUG_RESPONSE)
+		if (DEBUG_RESPONSE > 2)
 			std::cout << "GET METHOD" << std::endl;
 		_methodGET(); // va set le status en R_FILE_READY a la fin du CGI ou directement si regular file
 	}
@@ -492,8 +492,8 @@ int Response::_createResponse(void)
 		_createFullHeader();
 		_state = R_WRITE;
 	}
-	if (DEBUG_RESPONSE)
-		std::cout << "createResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
+		std::cout << "createResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return (_state);
 }
 

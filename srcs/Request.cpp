@@ -252,7 +252,7 @@ int Request::readClientRequest(int do_read)
 			}
 			for (int i = 0; i < read_ret; i++)
 				_rawRequest.push_back(buf[i]);
-//		}
+	//	}
 	}
 	if (_state == R_REQUESTLINE)
 		_handleRequestLine();

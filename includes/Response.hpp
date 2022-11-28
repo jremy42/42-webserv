@@ -62,8 +62,7 @@ class Response
 		std::ifstream					_fs;
 		int								_bodyLength;
 		std::stringstream				_ss; // is in fact defautlErrorbodytoSendStringStream;
-		//TODO !!!
-		// Appel de select actual target a faire en creation de response
+
 		string							_rawRequestedTarget;
 		string							_requestedTargetRoot;
 		//_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget
@@ -72,10 +71,11 @@ class Response
 		string							_actualTarget;
 		string							_queryString;
 		string							_pathInfo;
+		string							_targetExtension;
 		//From _rawActualTarget
 		string							_targetStatus; // retour de actual target
-		// Appel de select actual target a faire en creation de response
-		//TODO !!!
+		string							_cgiExecutable; // Empty si la target est un regular file
+
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
@@ -89,7 +89,6 @@ class Response
 		void							_createFullHeader(void);
 		void							_checkAutorizationForMethod(void);
 		void							_checkRedirect(void);
-		string							_getExtensionFromTarget(string actualTarget);
 		int								_createResponse(void);
 		int								_writeClientResponse(void);
 		void							_sendHeaderToClient(void);
@@ -110,7 +109,7 @@ class Response
 		char _nameOut[32];
 		int	_inChild;
 		int _outChild;
-		void	_initCGIfile(string actualTarget, string cgiExecutable);
+		void	_initCGIfile(void);
 		void 	_waitCGIfile(void);
 		void 	_extractHeaderFromCgiOutputFile(void);
 };
