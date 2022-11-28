@@ -6,7 +6,7 @@ std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept
 
 std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
-std::string	Request::_stateStr[7] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_GET_MAX_BODY_SIZE\x1b[0m",
+std::string	Request::_stateStr[7] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_SET_CONFIG\x1b[0m",
 "\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
 
 Request::Request(void)
@@ -16,11 +16,12 @@ Request::Request(void)
 	_statusCode = 200;
 }
 
-Request::Request(int clientFd)
+Request::Request(int clientFd, v_config* configList )
 {
 	_state = R_REQUESTLINE;
 	_clientFd = clientFd;
 	_statusCode = 200;
+	_configList = configList;
 	memset(_nameBodyFile, 0, 32);
 	strncpy(_nameBodyFile, "/tmp/webservXXXXXX", 32);
 }
@@ -42,6 +43,7 @@ Request	&Request::operator=(const Request &rhs)
 	_header = rhs._header;
 	_body = rhs._body;
 	_clientMaxBodySize = rhs._clientMaxBodySize;
+	_configList = rhs._configList;
 	return (*this);
 }
 
@@ -187,16 +189,17 @@ void Request::_handleHeader(void)
 			if (_state == R_ERROR)
 				return;
 			_rawRequest.erase(_rawRequest.begin(), it + 4);
-			_state = R_GET_MAX_BODY_SIZE;
+			_state = R_SET_CONFIG;
 			return ;
 		}
-	}
+	} 
 }
 
 void Request::_initBodyFile(void)
 {
-	tmpnam(_nameBodyFile);
-	_fs.open(_nameBodyFile, std::ofstream::out | std::ofstream::binary | std::ofstream::app);
+	_nameBodyFile = _tmpFileName("/tmp/webserv");
+	std::cout << _nameBodyFile;
+	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
 	if (_fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
@@ -219,61 +222,34 @@ void Request::_handleBody(void)
 	_bodyFileSize = _body.size();
 	if (_bodyFileSize > _clientMaxBodySize)
 		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
-	_body.insert(_body.end(), it, ite);
-	std::ostream_iterator<char> output_iterator(_fs, "");
-	std::copy(_body.begin(), _body.end(), output_iterator);
+	for (; it != ite; it++)
+		_fs << *it;
 	_rawRequest.clear();
 }
 
-int Request::readClientRequest(int do_read)
+int Request::readClientRequest(void)
 {
 	std::string	rawRequestLine;
 	char		buf[READ_BUFFER_SIZE];
-	int			read_ret = 1;
+	int			read_ret = 0;
 	//char		*next_nl;
 	//char		*headerStart;
 
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
-	if (do_read)
+	memset(buf, 0, sizeof(buf));
+	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
+	if (read_ret == -1)
+			throw (std::runtime_error(strerror(errno)));
+	if (DEBUG_REQUEST)
 	{
- //		while(read_ret)
- //		{
-			memset(buf, 0, sizeof(buf));
-			read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
-			if (read_ret == -1)
-				throw (std::runtime_error(strerror(errno)));
-			write(1, buf, read_ret);
-			if (DEBUG_REQUEST)
-			{
-				std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
-					<< "]\x1b[0m" << std::endl << buf << std::endl
-					<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
-			}
-			for (int i = 0; i < read_ret; i++)
-				_rawRequest.push_back(buf[i]);
-//		}
+		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
+		<< "]\x1b[0m" << std::endl << buf << std::endl
+		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
 	}
-	if (_state == R_REQUESTLINE)
-		_handleRequestLine();
-	if (_state == R_HEADER)
-		_handleHeader();
-	if (_state == R_GET_MAX_BODY_SIZE)
-		return(_state);
-	if (_state == R_INIT_BODY_FILE)
-		_initBodyFile();
-	if (_state == R_BODY)
-		_handleBody();
-	if (read_ret < READ_BUFFER_SIZE && _state == R_BODY)
-	{
-		_state = R_END;
-	}
-	if (read_ret == 0 && do_read)
-		_state = R_ZERO_READ;
-	//if (DEBUG_REQUEST)
-	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
-			<< "]" << std::endl;
-	return (_state);
+	for (int i = 0; i < read_ret; i++)
+		_rawRequest.push_back(buf[i]);
+	return read_ret;
 }
 
 int Request::getState(void) const
@@ -327,7 +303,7 @@ std::vector<char>	Request::getBody(void) const
 
 void Request::reset(void)
 {
-	*this = Request(_clientFd);
+	*this = Request(_clientFd, _configList);
 }
 
 void	Request::setClientMaxBodySize(int clientMaxBodySize)
@@ -338,4 +314,74 @@ void	Request::setClientMaxBodySize(int clientMaxBodySize)
 void	Request::setState(int state)
 {
 	_state = state;
+}
+
+
+int	Request::handleRequest(void)
+{
+	int ret = 0;
+
+	ret = readClientRequest();
+	if (ret == 0)
+		return (R_ZERO_READ);
+	else if (ret < READ_BUFFER_SIZE && _state == R_BODY)
+		_state = R_END;	
+	if (_state == R_REQUESTLINE)
+		_handleRequestLine();
+	if (_state == R_HEADER)
+		_handleHeader();
+	if (_state == R_SET_CONFIG)
+		_setConfig();
+	if (_state == R_INIT_BODY_FILE)
+		_initBodyFile();
+	if (_state == R_BODY)
+		_handleBody();
+
+	//if (DEBUG_REQUEST)																
+	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
+			<< "]" << std::endl;
+	return (_state);
+
+}
+
+const Config	*Request::getRequestConfig(void) const
+{
+	return _config;
+}
+
+
+void Request::_setConfig(void)
+{
+	_config = getMatchingConfig();
+	_clientMaxBodySize = atoi(_config->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
+	_state = R_BODY;
+}
+
+const Config *Request::getConfig(void) const
+{
+	return _config;
+}
+
+
+const Config	*Request::getMatchingConfig(void) const
+{
+	v_config::const_iterator							it = _configList->begin();
+	v_config::const_iterator							ite = _configList->end();
+	std::vector<std::string>::const_iterator	match;
+	std::vector<std::string>					currentCheckedConfig;
+
+	printTimeDebug(DEBUG_REQUEST, "host", _header.find("Host")->second);
+	for (; it != ite; it++)
+	{
+		currentCheckedConfig = it->getServerName();
+		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), _header.find("Host")->second);
+		if (match != currentCheckedConfig.end())
+		{
+			printTimeDebug(DEBUG_REQUEST, "found a match for requested host/server_name", "");
+			printTimeDebug(DEBUG_REQUEST, "Matched", *match);
+			return (&(*it));
+		}
+	}
+	printTimeDebug(DEBUG_REQUEST, "No host matching in config : Defaulting to first host/server_name", "");
+	return (&_configList->begin()[0]);
 }

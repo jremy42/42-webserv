@@ -17,7 +17,12 @@
 # include <netdb.h>
 # include <string.h>
 # include <sys/epoll.h>
+# include <time.h>
+# include <cstdlib>
+# include <unistd.h>
 
+
+# define MAX_FILENAME 20
 
 # ifndef DEBUG_UTILS
 #  define DEBUG_UTILS 0
@@ -37,6 +42,7 @@ std::string		ltoa(long statusCode);
 std::string		getFileSize(std::string filename);
 int				isDir(std::string fileName);
 int 			fileExist(std::string fileName);
+std::string		_tmpFileName(const std::string path);
 void		__signal(int signal);
 unsigned long	ft_get_time(void);
 float	ft_get_time_sec(void);

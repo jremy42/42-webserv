@@ -97,28 +97,6 @@ Client::v_config	Client::_matchingConfigListByHost(v_config *configList, unsigne
 	return ret;
 }
 
-const Config		*Client::getMatchingConfig(void) const
-{
-	v_config::const_iterator							it = _configList.begin();
-	v_config::const_iterator							ite = _configList.end();
-	std::vector<std::string>::const_iterator	match;
-	std::vector<std::string>					currentCheckedConfig;
-
-	printTimeDebug(DEBUG_CLIENT, "_request->getHost()", _request->getHost());
-	for (; it != ite; it++)
-	{
-		currentCheckedConfig = it->getServerName();
-		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), _request->getHost());
-		if (match != currentCheckedConfig.end())
-		{
-			printTimeDebug(DEBUG_CLIENT, "found a match for requested host/server_name", "");
-			printTimeDebug(DEBUG_CLIENT, "Matched", *match);
-			return (&(*it));
-		}
-	}
-	printTimeDebug(DEBUG_CLIENT, "No host matching in config : Defaulting to first host/server_name", "");
-	return (&_configList.begin()[0]);
-}
 
 int Client::executeAction()
 {
@@ -134,32 +112,21 @@ int Client::executeAction()
 	if ((_availableActions & EPOLLIN) && (_state == S_INIT))
 	{
 			_timeoutRequest = ft_get_time() + TIMEOUT_REQUEST;
-			_request = new Request(_clientFd);
+			_request = new Request(_clientFd, &_configList);
 			_state = S_REQREAD;
 	}
 	if ((_availableActions & EPOLLIN) && _state == S_REQREAD)
 	{
 		_state = S_REQREAD;
-		actionReturnValue = _request->readClientRequest(1);
-		if (actionReturnValue == R_GET_MAX_BODY_SIZE)
-		{
-			//A faire uniquement quand reqline & header a ete lu pour connaitre host/server_name 
-			std::string	target = _request->getTarget();
-			int clientMaxBodySize = atoi(getMatchingConfig()->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
-			_request->setClientMaxBodySize(clientMaxBodySize);
-			printTimeDebug(DEBUG_CLIENT, "Setting Client Max Body Size to :", itoa(clientMaxBodySize) );
-			//A faire uniquement quand reqline & header a ete lu pour connaitre host/server_name
-			_request->setState(R_INIT_BODY_FILE);
-			actionReturnValue = _request->readClientRequest(0);
-		}
+		actionReturnValue = _request->readClientRequest();
 		if (DEBUG_CLIENT)
 			std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)
 		{
 			if (ft_get_time() > _timeoutRequest)
-				_response = new Response(_clientFd, _request, getMatchingConfig(), 408); // passer la bonne config
+				_response = new Response(_clientFd, _request, _request->getConfig(), 408); // passer la bonne config
 			else
-				_response = new Response(_clientFd, _request, getMatchingConfig(), _request->getStatusCode()); // passer la bonne config
+				_response = new Response(_clientFd, _request, _request->getConfig(), _request->getStatusCode()); // passer la bonne config
 			_state = S_RESWRITE;
 		}
 		if (actionReturnValue == R_ZERO_READ)

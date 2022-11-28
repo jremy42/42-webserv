@@ -204,3 +204,18 @@ void printAvailableAction(int debug, int _clientFd, int _availableActions)
 				(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
 	}
 }
+
+
+std::string _tmpFileName(const std::string path)
+{
+	static char * allowedChar = "abcdefghijklmnoprstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	std::string fileName(path);
+
+	for (int i = 0; i < MAX_FILENAME; i++)
+	{
+		fileName += allowedChar[rand() % strlen(allowedChar)];
+		if (access(fileName.c_str(), F_OK) == -1)
+			return fileName;
+	}
+	return (NULL);
+}
