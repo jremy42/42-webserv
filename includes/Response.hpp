@@ -45,7 +45,6 @@ class Response
 		Response(const Response &src);
 		Response &operator=(const Response &rhs);
 		~Response(void);
-		void setRequest(const Request *request);
 		int handleResponse(void);
 
 	private:
@@ -63,8 +62,7 @@ class Response
 		std::ifstream					_fs;
 		int								_bodyLength;
 		std::stringstream				_ss; // is in fact defautlErrorbodytoSendStringStream;
-		//TODO !!!
-		// Appel de select actual target a faire en creation de response
+
 		string							_rawRequestedTarget;
 		string							_requestedTargetRoot;
 		//_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget
@@ -73,22 +71,24 @@ class Response
 		string							_actualTarget;
 		string							_queryString;
 		string							_pathInfo;
+		string							_targetExtension;
 		//From _rawActualTarget
 		string							_targetStatus; // retour de actual target
-		// Appel de select actual target a faire en creation de response
-		//TODO !!!
+		string							_cgiExecutable; // Empty si la target est un regular file
+
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
 		static string					_autoIndexBodyTemplate;
 		static m_is 					_initStatusCodeMessage(void);
 
+		void							_parseRawRequestTarget(void);
+		void							_selectActualTarget(void);
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);
 		void							_createFullHeader(void);
 		void							_checkAutorizationForMethod(void);
 		void							_checkRedirect(void);
-		string							_getExtensionFromTarget(string actualTarget);
 		int								_createResponse(void);
 		int								_writeClientResponse(void);
 		void							_sendHeaderToClient(void);
@@ -99,7 +99,6 @@ class Response
 		std::map<string, unsigned int>	_populateDirectoryMap(const char *path);
 		std::string						_generateHTMLBodyWithPath(void);
 		void							_generateErrorBodyFromTemplate(std::string &errorMessage);
-		void							_selectActualTarget(void);
 		void							_createFileStreamFromFile(string actualTarget);
 		std::istream					*_selectBodySourceBetweenFileAndStringStream(void);
 // POST
@@ -110,7 +109,7 @@ class Response
 		char _nameOut[32];
 		int	_inChild;
 		int _outChild;
-		void	_initCGIfile(string actualTarget, string cgiExecutable);
+		void	_initCGIfile(void);
 		void 	_waitCGIfile(void);
 		void 	_extractHeaderFromCgiOutputFile(void);
 };
