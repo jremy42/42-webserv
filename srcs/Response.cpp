@@ -40,7 +40,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 		std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
 	}
 	_selectActualTarget();
-	memset(_nameOut, 0, 32);
+	memset(_nameOut, 0, 32);::
 	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
 	_requestBodyFile = _request->getTmpBodyFile();
 	_requestBodyFileSize = getFileSize(_requestBodyFile);

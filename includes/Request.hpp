@@ -105,7 +105,7 @@ class Request
 		string _nameBodyFile;
 		//int	 _bodyFile;
 		int  _bodyFileSize;
-		std::ofstream _fs;
+		std::fstream _fs;
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);

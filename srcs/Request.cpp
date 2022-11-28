@@ -183,7 +183,6 @@ void Request::_handleHeader(void)
 		throw(std::runtime_error("webserv: request : Header is too long"));
 	for (; it != ite; it++)
 	{
-		//std::cout << static_cast<int>(*it) << ":[" << *it << "]" << std::endl;
 		if (*it == '\r'
 			&& it + 1 != ite && *(it + 1) == '\n'
 			&& it + 2 != ite && *(it + 2) == '\r'
@@ -228,7 +227,10 @@ void Request::_handleBody(void)
 	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
 		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
 	for (; it != ite; it++)
+	{
 		_fs << *it;
+	}
+	_fs.flush();
 	_rawRequest.clear();
 }
 
@@ -246,12 +248,12 @@ int Request::readClientRequest(void)
 	if (read_ret == -1)
 			throw (std::runtime_error(strerror(errno)));
 	std::cout << "read ret[" << read_ret << "]" << std::endl;
-	/* if (DEBUG_REQUEST)
+	if (DEBUG_REQUEST)
 	{
 		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
 		<< "]\x1b[0m" << std::endl << buf << std::endl
 		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
-	} */
+	} 
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
 	_readRet = read_ret;
@@ -329,7 +331,7 @@ int	Request::handleRequest(void)
 		_handleRequestLine();
 	if (_state == R_HEADER)
 		_handleHeader();
-	if (_state == R_SET_CONFIG)
+	if (_state == R_SET_CONFIG || _state == R_ERROR)
 		_setConfig();
 	if (_state == R_INIT_BODY_FILE)
 		_initBodyFile();
@@ -392,6 +394,7 @@ const Config	*Request::getMatchingConfig(void) const
 			printTimeDebug(DEBUG_REQUEST, "found a match for requested host/server_name", "");
 			printTimeDebug(DEBUG_REQUEST, "Matched", *match);
 			return (&(*it));
+
 		}
 	}
 	printTimeDebug(DEBUG_REQUEST, "No host matching in config : Defaulting to first host/server_name", "");
