@@ -82,6 +82,8 @@ class Response
 		static string					_autoIndexBodyTemplate;
 		static m_is 					_initStatusCodeMessage(void);
 
+		void							_parseRawRequestTarget(void);
+		void							_selectActualTarget(void);
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);
 		void							_createFullHeader(void);
@@ -98,7 +100,6 @@ class Response
 		std::map<string, unsigned int>	_populateDirectoryMap(const char *path);
 		std::string						_generateHTMLBodyWithPath(void);
 		void							_generateErrorBodyFromTemplate(std::string &errorMessage);
-		void							_selectActualTarget(void);
 		void							_createFileStreamFromFile(string actualTarget);
 		std::istream					*_selectBodySourceBetweenFileAndStringStream(void);
 // POST

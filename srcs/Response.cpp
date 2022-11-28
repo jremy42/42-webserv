@@ -121,34 +121,55 @@ void Response::_createErrorMessageBody(void)
 	}
 }
 
-void	Response::_selectActualTarget(void)
+void	Response::_parseRawRequestTarget(void)
 {
 	_rawRequestedTarget = _request->getTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
 	_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
 	_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget;
+	_actualTarget = _rawActualTarget;
+
+	std::size_t	posLastSlash = _rawActualTarget.find_last_of("/");
+	std::size_t	posLastQuestionMark = _rawActualTarget.find_last_of("?");
+	std::string testFile = _rawActualTarget.substr(0, posLastSlash);
+	if (fileExist(testFile) && !isDir(testFile))
+	{
+		_actualTarget = testFile;
+		_pathInfo = _rawActualTarget.substr(posLastSlash, posLastQuestionMark - posLastSlash);   
+	}
+	if (posLastQuestionMark != std::string::npos)
+	{
+		_queryString = _rawActualTarget.substr(posLastQuestionMark + 1);	
+		posLastQuestionMark = _rawActualTarget.find_last_of("?");
+		_actualTarget = _actualTarget.substr(0, posLastQuestionMark);
+	}
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "_rawRequestedTargetTarget : [" << _rawRequestedTarget << "]" << std::endl;
+		std::cout << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
 		std::cout << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
-		std::cout << "_rawActualTargetTarget : [" << _rawActualTarget << "]" << std::endl;
+		std::cout << "_rawActualTarget : [" << _rawActualTarget << "]" << std::endl;
 		std::cout << "_actualTarget : [" << _actualTarget << "]" << std::endl;
 		std::cout << "_queryString : [" << _queryString << "]" << std::endl;
 		std::cout << "_pathInfo : [" << _pathInfo << "]" << std::endl;
-		if (!fileExist(_rawActualTarget))
+		if (!fileExist(_actualTarget))
 			std::cout << "actual Target does not exists" << std::endl;
-		if (fileExist(_rawActualTarget) && isDir(_rawActualTarget))
+		if (fileExist(_actualTarget) && isDir(_actualTarget))
 			std::cout << "actual Target exist and is a Directory" << std::endl;
-		else if (fileExist(_rawActualTarget) && !isDir(_rawActualTarget))
+		else if (fileExist(_actualTarget) && !isDir(_actualTarget))
 			std::cout << "actual Target exist and is a regular file" << std::endl;
 	}
-	if (fileExist(_rawActualTarget) && !isDir(_rawActualTarget))
+}
+
+void	Response::_selectActualTarget(void)
+{
+	_parseRawRequestTarget();
+	if (fileExist(_actualTarget) && !isDir(_actualTarget))
 	{
 		if (DEBUG_RESPONSE)
 			std::cout << "Requested file is standard" << std::endl;
 		_targetStatus = "File_ok";
 	}
-	else if (fileExist(_rawActualTarget) && isDir(_rawActualTarget))
+	else if (fileExist(_actualTarget) && isDir(_actualTarget))
 	{
 		std::vector<string> indexTryFiles = _config->getParamByLocation(_rawRequestedTarget, "index");
 		if (DEBUG_RESPONSE)
@@ -161,7 +182,7 @@ void	Response::_selectActualTarget(void)
 				std::cout << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
 			{
-				_rawActualTarget = testedIndexFile;
+				_actualTarget = testedIndexFile;
 				break;
 			}
 		}
@@ -237,24 +258,24 @@ void Response::_methodGET(void)
 		//std::cout << "Actual target : [" << _rawActualTarget << "]" << std::endl;
 	if (_targetStatus == "Do_listing")
 	{
-		_createAutoIndex(_rawActualTarget);
+		_createAutoIndex(_actualTarget);
 		_state = R_FILE_READY;
 	}
 	else if (_targetStatus != "Index_file_nok" && _targetStatus != "File_nok")
 	{
 		std::string rawTarget = _request->getTarget();
-		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(_rawActualTarget))) != "")
+		if ((cgiExecutable = _config->getCgiByLocation(rawTarget, _getExtensionFromTarget(_actualTarget))) != "")
 		{
 			if (DEBUG_RESPONSE)
 				std::cout << "\e[33mCGI\e[0m" << std::endl;
 			if (_state == R_INIT)
-				_initCGIfile(_rawActualTarget, cgiExecutable);
+				_initCGIfile(_actualTarget, cgiExecutable);
 			if (_state == R_WAIT_CGI_EXEC)
 				_waitCGIfile();
 		}
 		else
 		{
-			_createFileStreamFromFile(_rawActualTarget);
+			_createFileStreamFromFile(_actualTarget);
 			_state = R_FILE_READY;
 		}
 	}
@@ -521,7 +542,7 @@ void Response::_sendHeaderToClient(void)
 void Response::_sendBodyToClient(void)
 {
 	int		ret;
-	int		buff_size;
+	int		buff_size = 0;
 	char	*bufBody;
 	std::istream	*bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
 	std::istream	&bodyStream = *bodyStreamPtr;
