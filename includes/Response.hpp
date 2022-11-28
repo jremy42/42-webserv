@@ -22,6 +22,7 @@
 # include <iostream>
 # include <iomanip>
 # include <sys/wait.h>
+# include <cctype>
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
@@ -75,13 +76,16 @@ class Response
 		//From _rawActualTarget
 		string							_targetStatus; // retour de actual target
 		string							_cgiExecutable; // Empty si la target est un regular file
-
+														//
+		string							_requestBodyFile;
+		long							_requestBodyFileSize;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
 		static string					_autoIndexBodyTemplate;
 		static m_is 					_initStatusCodeMessage(void);
 
+		int								_urlDecodeString(string &strToDecode);
 		void							_parseRawRequestTarget(void);
 		void							_selectActualTarget(void);
 		void							_createErrorMessageBody(void);
@@ -105,7 +109,6 @@ class Response
 		void							_methodPOST(void);
 // CGI
 		pid_t	_pid;
-		char _nameIn[32];
 		char _nameOut[32];
 		int	_inChild;
 		int _outChild;

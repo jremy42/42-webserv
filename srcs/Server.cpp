@@ -157,7 +157,7 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 	std::cout << "createPassiveSocketWithHost [" << (host != NULL ? host : "NULL HOST") << "]" << std::endl;
 	memset(&hints, 0, sizeof(struct addrinfo));
 
-	hints.ai_family =AF_INET;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	if ((g_error = getaddrinfo(host, service, &hints, &result )) != 0)
 		throw(std::runtime_error(gai_strerror(g_error)));
