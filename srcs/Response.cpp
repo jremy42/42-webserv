@@ -17,10 +17,16 @@ Response::m_is Response::_initStatusCodeMessage()
 std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>";
 std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>";
 
-Response::Response(){};
+Response::Response()
+{
+	if (DEBUG_RESPONSE)
+		std::cout << "Response : Default Constructor called" << std::endl; 
+}
 
 Response::Response(int clientFd, Request *request, const Config *config, int statusCode)
 {
+	if (DEBUG_RESPONSE)
+		std::cout << "Response : Parametric Constructor called" << std::endl; 
 	_clientFd = clientFd;
 	_request = request;
 	_config = config;
@@ -33,6 +39,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 		std::cout << *_config;
 		std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
 	}
+	_selectActualTarget();
 	memset(_nameOut, 0, 32);
 	memset(_nameIn, 0, 32);
 	strncpy(_nameIn, "/tmp/webservXXXXXX", 32);
@@ -41,11 +48,15 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 
 Response::Response(const Response &src)
 {
+	if (DEBUG_RESPONSE)
+		std::cout << "Response : Copy Constructor called" << std::endl; 
 	*this = src;
 }
 
 Response::~Response(void)
 {
+	if (DEBUG_RESPONSE)
+		std::cout << "Response : Default Destructor called" << std::endl; 
 	if (strcmp(_nameIn, "/tmp/webservXXXXXX"))
 		unlink(_nameIn);
 	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
@@ -405,12 +416,6 @@ int Response::handleResponse(void)
 {
 	if (DEBUG_RESPONSE)
 		std::cout << "handleResponse IN\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	static int init = 1;
-	if (init)
-	{
-		_selectActualTarget();
-		init = 0;
-	}
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "handleResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
@@ -433,10 +438,7 @@ int Response::handleResponse(void)
 	if (DEBUG_RESPONSE)
 		std::cout << "handleResponse OUT\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER)
-	{
-		init = 1;
 		return (0);
-	}
 	else
 		return (1);
 }
