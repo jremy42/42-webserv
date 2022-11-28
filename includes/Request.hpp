@@ -18,33 +18,40 @@
 # include <iomanip>
 # include <fstream>
 # include <stdlib.h>
+# include <string.h>
+# include "Config.hpp"
 
 # define VALID_REQUEST_N 3
 # define HEADER_FIELD 3
 # define REQUEST_LINE_FIELD 3
 
 # ifndef DEBUG_REQUEST
-#  define DEBUG_REQUEST 0
+#  define DEBUG_REQUEST 1
 # endif
 
-enum {R_REQUESTLINE, R_HEADER, R_GET_MAX_BODY_SIZE, R_INIT_BODY_FILE, R_BODY, R_END, R_ERROR, R_ZERO_READ};
+enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_END, R_ERROR, R_ZERO_READ};
+
+class Config;
 
 class Request
 {
-	typedef std::string					string;
-	typedef std::map<string, string>	m_ss;
-	typedef std::vector<char>			v_c;
-	typedef v_c::iterator				v_c_it;
+	public:
+		typedef std::string					string;
+		typedef std::map<string, string>	m_ss;
+		typedef std::vector<char>			v_c;
+		typedef v_c::iterator				v_c_it;
+		typedef std::vector<Config> 		v_config;
+
 
 	public:
 
 		Request(void);
-		Request(int clientFd);
+		Request(int clientFd, v_config *configList);
 		Request(const Request &src);
 		Request &operator=(const Request &rhs);
 		~Request(void);
 
-		int			readClientRequest(int do_read);
+		int			readClientRequest(void);
 		int			getState(void) const;
 		string		&getStateStr(void) const;
 		string		getMethod(void) const;
@@ -53,25 +60,36 @@ class Request
 		int			getStatusCode(void) const;
 		void 		reset(void);
 		string		getHost(void) const;
-		std::vector<char>	getBody(void) const;
+		string		getTmpBodyFile(void) const;
 		void		setClientMaxBodySize(int clientMaxBodySize);
 		void		setState(int state);
+		int			handleRequest(void);
+		const Config		*getMatchingConfig(void) const;
+		const Config		*getRequestConfig(void) const;
+		const Config		*getConfig(void) const;
+
+
 
 	private:
 
 		int				_state;
 		int				_clientFd;
 		int				_statusCode;
+		int				_maxRead;
 		m_ss			_requestLine;
 		m_ss			_header;
-		v_c				_body;
-		v_c				_rawRequest;
+		//v_c				_body;
+		//v_c				_rawRequest;
+		string			_rawRequestString;
+		int				_readRet;
 		string			_rawRequestLine;
 		int				_clientMaxBodySize;
+		v_config		*_configList;
+		const Config			*_config;
 		static string	_requestLineField[3];
 		static string	_headerField[3];
 		static string	_validRequest[3];
-		static string	_stateStr[7];
+		static string	_stateStr[8];
 
 		void	_handleRequestLine(void);
 		void	_handleHeader(void);
@@ -80,10 +98,11 @@ class Request
 		int		parseHeader(string rawRequestLine);
 		int		checkRequestLine(void);
 		int		checkHeader(void);
+		void	_setConfig(void);
 
 		//handle body
 		void _initBodyFile(void);
-		char _nameBodyFile[32];
+		string _nameBodyFile;
 		//int	 _bodyFile;
 		int  _bodyFileSize;
 		std::ofstream _fs;

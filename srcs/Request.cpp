@@ -6,8 +6,8 @@ std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept
 
 std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
-std::string	Request::_stateStr[7] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_GET_MAX_BODY_SIZE\x1b[0m",
-"\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
+std::string	Request::_stateStr[8] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_SET_CONFIG\x1b[0m",
+"\x1b[35mR_INIT_BODY_FILE\x1b[0m", "\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
 
 Request::Request(void)
 {
@@ -16,13 +16,12 @@ Request::Request(void)
 	_statusCode = 200;
 }
 
-Request::Request(int clientFd)
+Request::Request(int clientFd, v_config* configList )
 {
 	_state = R_REQUESTLINE;
 	_clientFd = clientFd;
 	_statusCode = 200;
-	memset(_nameBodyFile, 0, 32);
-	strncpy(_nameBodyFile, "/tmp/webservXXXXXX", 32);
+	_configList = configList;
 }
 
 Request::Request(const Request &src)
@@ -32,7 +31,7 @@ Request::Request(const Request &src)
 
 Request::~Request(void)
 {
-
+	unlink(_nameBodyFile.c_str());
 }
 
 Request	&Request::operator=(const Request &rhs)
@@ -40,8 +39,14 @@ Request	&Request::operator=(const Request &rhs)
 	_state = rhs._state;
 	_clientFd = rhs._clientFd;
 	_header = rhs._header;
-	_body = rhs._body;
 	_clientMaxBodySize = rhs._clientMaxBodySize;
+	_configList = rhs._configList;
+	_bodyFileSize = rhs._bodyFileSize;
+	_nameBodyFile = rhs._nameBodyFile;
+	_config = rhs._config;
+	_maxRead = rhs._maxRead;
+	_rawRequestString = rhs._rawRequestString;
+	_readRet = rhs._readRet;
 	return (*this);
 }
 
@@ -141,23 +146,22 @@ int	Request::parseHeader(string rawHeader)
 
 void Request::_handleRequestLine(void)
 {
-	v_c_it ite = _rawRequest.end();
-	v_c_it it = _rawRequest.begin();
+	std::string::iterator ite = _rawRequestString.end();
+	std::string::iterator it = _rawRequestString.begin();
 
-	if (DEBUG_REQUEST)
-		std::cout << "Handle Request Line" << std::endl;
-	if (_rawRequest.size() > MAX_REQUESTLINE_SIZE)
+	std::cout << "Handle Request Line" << std::endl;
+	if (_maxRead > MAX_REQUESTLINE_SIZE)
 		throw(std::runtime_error("webserv: request : Request Line is too long"));
 	for (; it != ite; it++)
 	{
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
 		{
-			string rawRequestLine(_rawRequest.begin(), it);
+			string rawRequestLine(_rawRequestString.begin(), it);
 			if(this->parseRequestLine(rawRequestLine) == -1)
 				_state = R_ERROR;
 			if (_state == R_ERROR)
 				return;
-			_rawRequest.erase(_rawRequest.begin(), it + 2);
+			_rawRequestString.erase(_rawRequestString.begin(), it + 2);
 			_state = R_HEADER;
 			return;
 		}
@@ -166,12 +170,12 @@ void Request::_handleRequestLine(void)
 
 void Request::_handleHeader(void)
 {
-	v_c_it ite = _rawRequest.end();
-	v_c_it it = _rawRequest.begin();
+	string::iterator ite = _rawRequestString.end();
+	string::iterator it = _rawRequestString.begin();
 
 	if (DEBUG_REQUEST)
 		std::cout << "Handle header" << std::endl;
-	if (_rawRequest.size() > MAX_HEADER_SIZE)
+	if (_maxRead > MAX_HEADER_SIZE)
 		throw(std::runtime_error("webserv: request : Header is too long"));
 	for (; it != ite; it++)
 	{
@@ -181,22 +185,24 @@ void Request::_handleHeader(void)
 			&& it + 2 != ite && *(it + 2) == '\r'
 			&& it + 3 != ite && *(it + 3) == '\n')
 		{
-			string rawHeader(_rawRequest.begin(), it);
+			string rawHeader(_rawRequestString.begin(), it);
 			if(this->parseHeader(rawHeader))
 				_state = R_ERROR;
 			if (_state == R_ERROR)
 				return;
-			_rawRequest.erase(_rawRequest.begin(), it + 4);
-			_state = R_GET_MAX_BODY_SIZE;
+			_rawRequestString.erase(_rawRequestString.begin(), it + 4);
+			_state = R_SET_CONFIG;
 			return ;
 		}
-	}
+	} 
 }
 
 void Request::_initBodyFile(void)
 {
-	tmpnam(_nameBodyFile);
-	_fs.open(_nameBodyFile, std::ofstream::out | std::ofstream::binary | std::ofstream::app);
+	_nameBodyFile = _tmpFileName("./tmp/webserv");
+
+	printTimeDebug(DEBUG_REQUEST, "initBodyfile with file", _nameBodyFile);
+	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
 	if (_fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
@@ -208,35 +214,44 @@ void Request::_initBodyFile(void)
 
 void Request::_handleBody(void)
 {
-	v_c_it ite = _rawRequest.end();
-	v_c_it it = _rawRequest.begin();
-
 	if (DEBUG_REQUEST)
 	{
 		std::cout << "Handle body" << std::endl;
 		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
 	}
-	_bodyFileSize = _body.size();
-	if (_bodyFileSize > _clientMaxBodySize)
+	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
 		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
-	_body.insert(_body.end(), it, ite);
-	std::ostream_iterator<char> output_iterator(_fs, "");
-	std::copy(_body.begin(), _body.end(), output_iterator);
-	_rawRequest.clear();
+	_fs << _rawRequestString;
+	_rawRequestString.clear();
 }
 
-int Request::readClientRequest(int do_read)
+int Request::readClientRequest(void)
 {
 	std::string	rawRequestLine;
 	char		buf[READ_BUFFER_SIZE];
-	int			read_ret = 1;
+	int			read_ret = 0;
 	//char		*next_nl;
 	//char		*headerStart;
 
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
-	if (do_read)
+	memset(buf, 0, sizeof(buf));
+	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
+	if (read_ret == -1)
+			throw (std::runtime_error(strerror(errno)));
+	std::cout << "read ret[" << read_ret << "]" << std::endl;
+	/* if (DEBUG_REQUEST)
 	{
+<<<<<<< HEAD
+		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
+		<< "]\x1b[0m" << std::endl << buf << std::endl
+		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+	} */
+	_readRet = read_ret;
+	_maxRead += read_ret;
+	_rawRequestString += string(buf);
+	return read_ret;
+=======
  //		while(read_ret)
  //		{
 			memset(buf, 0, sizeof(buf));
@@ -274,6 +289,7 @@ int Request::readClientRequest(int do_read)
 	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
 			<< "]" << std::endl;
 	return (_state);
+>>>>>>> e925b4d0e019074ff46ed6f11fedfca2c16c5489
 }
 
 int Request::getState(void) const
@@ -320,14 +336,9 @@ std::string	Request::getHost(void) const
 	return (_header.find("Host")->second);
 }
 
-std::vector<char>	Request::getBody(void) const
-{
-	return _body;
-}
-
 void Request::reset(void)
 {
-	*this = Request(_clientFd);
+	*this = Request(_clientFd, _configList);
 }
 
 void	Request::setClientMaxBodySize(int clientMaxBodySize)
@@ -338,4 +349,83 @@ void	Request::setClientMaxBodySize(int clientMaxBodySize)
 void	Request::setState(int state)
 {
 	_state = state;
+}
+
+
+int	Request::handleRequest(void)
+{
+	int ret = 0;
+
+	ret = readClientRequest();
+
+	if (_state == R_REQUESTLINE)
+		_handleRequestLine();
+	if (_state == R_HEADER)
+		_handleHeader();
+	if (_state == R_SET_CONFIG)
+		_setConfig();
+	if (_state == R_INIT_BODY_FILE)
+		_initBodyFile();
+	if (_state == R_BODY)
+		_handleBody();
+	if (ret == 0)
+		_state = R_ZERO_READ;
+	//else if (ret < READ_BUFFER_SIZE && _state == R_BODY)
+	//	_state = R_END;	
+
+	//if (DEBUG_REQUEST)																
+	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
+			<< "]" << std::endl;
+	return (_state);
+
+}
+
+const Config	*Request::getRequestConfig(void) const
+{
+	return _config;
+}
+
+
+void Request::_setConfig(void)
+{
+	_config = getMatchingConfig();
+	_clientMaxBodySize = atoi(_config->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
+	if (_requestLine.find("method")->second == "POST")
+		_state = R_INIT_BODY_FILE;
+	else
+		_state = R_END;
+}
+
+const Config *Request::getConfig(void) const
+{
+	return _config;
+}
+
+std::string Request::getTmpBodyFile(void) const
+{
+	return _nameBodyFile;
+}
+
+
+const Config	*Request::getMatchingConfig(void) const
+{
+	v_config::const_iterator							it = _configList->begin();
+	v_config::const_iterator							ite = _configList->end();
+	std::vector<std::string>::const_iterator	match;
+	std::vector<std::string>					currentCheckedConfig;
+
+	printTimeDebug(DEBUG_REQUEST, "host", _header.find("Host")->second);
+	for (; it != ite; it++)
+	{
+		currentCheckedConfig = it->getServerName();
+		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), _header.find("Host")->second);
+		if (match != currentCheckedConfig.end())
+		{
+			printTimeDebug(DEBUG_REQUEST, "found a match for requested host/server_name", "");
+			printTimeDebug(DEBUG_REQUEST, "Matched", *match);
+			return (&(*it));
+		}
+	}
+	printTimeDebug(DEBUG_REQUEST, "No host matching in config : Defaulting to first host/server_name", "");
+	return (&_configList->begin()[0]);
 }

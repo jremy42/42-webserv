@@ -98,7 +98,24 @@ std::string ltoa(long statusCode)
 }
 
 
-std::string getFileSize(std::string filename)
+long getFileSize(std::string filename)
+{
+	std::cout << "getFileSize FILENAME:" << filename << std::endl; 
+    FILE *fp = fopen(filename.c_str(), "r");
+
+    if (fp == NULL)
+        return (0);
+    if (fseek(fp, 0, SEEK_END) < 0)
+	{
+        fclose(fp);
+        return (0);
+    }
+    long size = ftell(fp);
+    fclose(fp);
+    return size;
+}
+
+std::string getFileSizeStr(std::string filename)
 {
 	std::cout << "getFileSize FILENAME:" << filename << std::endl; 
     FILE *fp = fopen(filename.c_str(), "r");
@@ -203,4 +220,19 @@ void printAvailableAction(int debug, int _clientFd, int _availableActions)
 				(_availableActions & EPOLLRDHUP) ? "EPOLLRDHUP " : "",
 				(_availableActions & EPOLLHUP) ? "EPOLLHUP " : "");
 	}
+}
+
+
+std::string _tmpFileName(const std::string path)
+{
+	std::string allowedChar = "abcdefghijklmnoprstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	std::string fileName(path);
+
+	for (int i = 0; i < MAX_FILENAME; i++)
+	{
+		fileName += allowedChar[rand() % allowedChar.size()];
+		if (access(fileName.c_str(), F_OK) == -1)
+			return fileName;
+	}
+	return (NULL);
 }

@@ -15,6 +15,8 @@ int main(int argc, char *argv[])
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 	std::string		request = "POST / HTTP/1.1\n";
+	srand(time(0));
+
 
 	/* Call getaddrinfo() to obtain a list of addresses that
 	we can try connecting to */
