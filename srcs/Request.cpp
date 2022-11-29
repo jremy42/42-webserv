@@ -525,7 +525,7 @@ const Config	*Request::getMatchingConfig(void) const
 	return (&_configList->begin()[0]);
 }
 
-Request::m_ss &Request::getHeader(void)
+Request::m_ss Request::getHeader(void) const
 {
 	return _header;
 }

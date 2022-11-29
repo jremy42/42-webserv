@@ -105,7 +105,7 @@ int Client::executeAction()
 	//printTimeDebug(DEBUG_CLIENT, "Client State at beginning of executeAction :", getStateStr());
 	//if (_availableActions & EPOLLIN)
 	//sleep(1);
-	printAvailableAction(DEBUG_CLIENT,_clientFd, _availableActions);
+	//printAvailableAction(DEBUG_CLIENT,_clientFd, _availableActions);
 	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP || ft_get_time() > _timeoutClient)
 	{
 		_state = S_CLOSE_FD;
