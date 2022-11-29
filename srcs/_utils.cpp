@@ -228,11 +228,15 @@ std::string _tmpFileName(const std::string path)
 	std::string allowedChar = "abcdefghijklmnoprstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	std::string fileName(path);
 
-	for (int i = 0; i < MAX_FILENAME; i++)
+	for (int y = 0; y < MAX_TRY; y++)
 	{
-		fileName += allowedChar[rand() % allowedChar.size()];
+
+		for (int i = 0; i < MAX_FILENAME; i++)
+			fileName += allowedChar[rand() % allowedChar.size()];
 		if (access(fileName.c_str(), F_OK) == -1)
 			return fileName;
+		else
+			fileName.clear();
 	}
 	return (NULL);
 }

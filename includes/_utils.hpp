@@ -22,7 +22,8 @@
 # include <unistd.h>
 
 
-# define MAX_FILENAME 20
+# define MAX_FILENAME 6
+# define MAX_TRY 200
 
 # ifndef DEBUG_UTILS
 #  define DEBUG_UTILS 0

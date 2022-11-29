@@ -132,15 +132,8 @@ int	Request::parseHeader(string rawHeader)
 		header_key = strtrim(header_key, "\f\t\n\r\v ");
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
 		//std::cout << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
-		for (int i = 0; i < 3; i++)
-		{
-			if (header_key == _headerField[i])
-			{
-				_header.insert(std::pair<string, string>(header_key, header_value));
-				std::cout << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
-				break;
-			}
-		}
+		_header.insert(std::pair<string, string>(header_key, header_value));
+		std::cout << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
 	}
 	if (checkHeader() == -1)
 		return -1;
@@ -339,8 +332,8 @@ int	Request::handleRequest(void)
 		_handleBody();
 	if (ret == 0)
 		_state = R_ZERO_READ;
-	//else if (ret < READ_BUFFER_SIZE && _state == R_BODY)
-	//	_state = R_END;	
+	else if (ret < READ_BUFFER_SIZE && _state == R_BODY)
+		_state = R_END;	
 
 	//if (DEBUG_REQUEST)																
 	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
@@ -399,4 +392,9 @@ const Config	*Request::getMatchingConfig(void) const
 	}
 	printTimeDebug(DEBUG_REQUEST, "No host matching in config : Defaulting to first host/server_name", "");
 	return (&_configList->begin()[0]);
+}
+
+Request::m_ss &Request::getHeader(void)
+{
+	return _header;
 }
