@@ -39,7 +39,15 @@ Response::m_ss Response::_initCgiMetaVar()
 
 void	Response::_setCgiMetaVar(void)
 {
+	m_ss				requestHeader = _request->getHeader();
+	m_ss::iterator		it;
+
+	_cgiMetaVar["AUTH_TYPE"] = (it = requestHeader.find("Authorization")) != requestHeader.end() ? it->second : "";
+	_cgiMetaVar["CONTENT_LENGTH"] = (_requestBodyFileSize != 0) ? ltoa(_requestBodyFileSize) : "";
+	_cgiMetaVar["CONTENT_TYPE"] = (it = requestHeader.find("Content-Type")) != requestHeader.end() ? it->second : "";
+	//_cgiMetaVar["GATEWAY_INTERFACE"] = "CGI/1.1";
 	_cgiMetaVar["PATH_INFO"] = _PATH_INFO;
+	_cgiMetaVar["PATH_TRANSLATED"] = _requestedTargetRoot + _PATH_INFO;
 	_cgiMetaVar["QUERY_STRING"] = _QUERY_STRING;
 }
 
@@ -114,7 +122,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	memset(_nameOut, 0, 32);::
 	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
 	_requestBodyFile = _request->getTmpBodyFile();
-	_requestBodyFileSize = getFileSize(_requestBodyFile);
+	_requestBodyFileSize = (_requestBodyFile != "" ) ? getFileSize(_requestBodyFile) : 0;
 
 }
 

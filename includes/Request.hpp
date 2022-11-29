@@ -68,7 +68,7 @@ class Request
 		const Config		*getMatchingConfig(void) const;
 		const Config		*getRequestConfig(void) const;
 		const Config		*getConfig(void) const;
-		m_ss				&getHeader(void);
+		m_ss				getHeader(void) const;
 
 	private:
 
