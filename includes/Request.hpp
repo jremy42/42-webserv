@@ -41,6 +41,7 @@ class Request
 		typedef std::vector<char>			v_c;
 		typedef v_c::iterator				v_c_it;
 		typedef std::vector<Config> 		v_config;
+		typedef std::vector<string>			v_s;
 
 
 	public:
@@ -77,9 +78,11 @@ class Request
 		int				_maxRead;
 		m_ss			_requestLine;
 		m_ss			_header;
-		//v_c				_body;
+		v_s				_contentType;
 		v_c				_rawRequest;
 		string			_rawRequestString;
+		string			_boundary;
+		int				_contentLength;
 		int				_readRet;
 		string			_rawRequestLine;
 		int				_clientMaxBodySize;
@@ -105,6 +108,7 @@ class Request
 		//int	 _bodyFile;
 		int  _bodyFileSize;
 		std::fstream _fs;
+		void _parseContentType(string  rawContentType);
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);

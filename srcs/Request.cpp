@@ -136,7 +136,10 @@ int	Request::parseHeader(string rawHeader)
 		std::cout << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
 	}
 	if (checkHeader() == -1)
+	{
+		_statusCode = 400;
 		return -1;
+	}
 	return (0);
 }
 
@@ -192,10 +195,26 @@ void Request::_handleHeader(void)
 		}
 	} 
 }
+
+void Request::_parseContentType(string rawContentType)
+{
+	std::istringstream	buf(rawContentType);
+	string				bufExtract;
+	while (std::getline(buf, bufExtract, ';'))
+	{
+		bufExtract = strtrim(bufExtract, "\f\t\n\r\v ");
+		//printTimeDebug(DEBUG_REQUEST, "insert", bufExtract);
+		_contentType.push_back(bufExtract);
+	}
+}
+
 void Request::_initBodyFile(void)
 {
-	_nameBodyFile = _tmpFileName("./tmp/webserv");
+	string rawContentType;
+	string rawContentLength;
 
+
+	_nameBodyFile = _tmpFileName("./tmp/webserv");
 	printTimeDebug(DEBUG_REQUEST, "initBodyfile with file", _nameBodyFile);
 	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
 	if (_fs.good())
@@ -204,6 +223,41 @@ void Request::_initBodyFile(void)
 	{
 		throw(std::runtime_error(std::string("Failed to open tmpfile body") + strerror(errno)));
 	}
+	if (_header.find("Content-Type") != _header.end())
+		rawContentType = _header.find("Content-Type")->second;
+	if (rawContentType.empty())
+	{
+		_state = R_ERROR;
+		_statusCode = 400;
+		return;
+	}
+	else
+		_parseContentType(rawContentType);
+	if (_header.find("Content-Length") != _header.end())
+		rawContentLength = _header.find("Content-Length")->second;
+	if (rawContentLength.empty())
+	{
+		_state = R_ERROR;
+		_statusCode = 400;
+		return;
+	}
+	else
+		_contentLength = atoi(rawContentLength.c_str());
+	if (_contentType[0] == "multipart/form-data" && _contentType.size() > 1)
+	{
+		size_t pose;
+		_boundary = _contentType[1];
+		pose = _boundary.find("boundary=", 0);
+		_boundary = string(_boundary.begin()  + pose + strlen("boundary="), _boundary.end());
+		if (_boundary.empty())
+		{
+			_state = R_ERROR;
+			_statusCode = 400;
+			return;
+		}
+	}
+	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
+	printTimeDebug(DEBUG_REQUEST, "content-length", itoa(_contentLength));
 	_state = R_BODY;
 }
 
@@ -222,6 +276,7 @@ void Request::_handleBody(void)
 	for (; it != ite; it++)
 	{
 		_fs << *it;
+		_contentLength--;
 	}
 	_fs.flush();
 	_rawRequest.clear();
@@ -332,7 +387,7 @@ int	Request::handleRequest(void)
 		_handleBody();
 	if (ret == 0)
 		_state = R_ZERO_READ;
-	else if (ret < READ_BUFFER_SIZE && _state == R_BODY)
+	if ( _contentLength <= 0 && _state == R_BODY)
 		_state = R_END;	
 
 	//if (DEBUG_REQUEST)																
