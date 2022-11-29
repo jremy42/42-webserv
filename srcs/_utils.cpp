@@ -236,7 +236,10 @@ std::string _tmpFileName(const std::string path)
 		if (access(fileName.c_str(), F_OK) == -1)
 			return fileName;
 		else
+		{
 			fileName.clear();
+			fileName += path;
+		}
 	}
 	return (NULL);
 }
