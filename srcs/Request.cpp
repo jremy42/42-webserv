@@ -6,8 +6,8 @@ std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept
 
 std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
-std::string	Request::_stateStr[8] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_SET_CONFIG\x1b[0m",
-"\x1b[35mR_INIT_BODY_FILE\x1b[0m", "\x1b[35mR_BODY\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
+std::string	Request::_stateStr[9] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_SET_CONFIG\x1b[0m",
+"\x1b[35mR_INIT_BODY_FILE\x1b[0m", "\x1b[35mR_BODY\x1b[0m", "\x1b[35mR_BOUNDARY_HEADER\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
 
 Request::Request(void)
 {
@@ -51,6 +51,65 @@ Request	&Request::operator=(const Request &rhs)
 	_rawRequest = rhs._rawRequest;
 	_readRet = rhs._readRet;
 	return (*this);
+}
+
+int Request::getState(void) const
+{
+	return (_state);
+}
+
+std::string &Request::getStateStr(void) const
+{
+	return( _stateStr[_state]);
+}
+
+std::string Request::getMethod(void) const
+{
+	if(_requestLine.find("method") == _requestLine.end())
+		return ("GET");
+	return (_requestLine.find("method")->second);
+}
+
+std::string Request::getTarget(void) const
+{
+	if (_requestLine.find("request_target") == _requestLine.end())
+		return ("/");
+	return (_requestLine.find("request_target")->second);
+}
+
+
+std::string Request::getProtocol(void) const
+{
+	if(_requestLine.find("http_version") == _requestLine.end())
+		return ("HTTP/1.1");
+	return (_requestLine.find("http_version")->second);
+}
+
+int	Request::getStatusCode(void) const
+{
+	return _statusCode;
+}
+
+std::string	Request::getHost(void) const
+{
+	if (_header.find("Host") == _header.end())
+		return ("");
+	return (_header.find("Host")->second);
+}
+
+void Request::reset(void)
+{
+	*this = Request(_clientFd, _configList);
+}
+
+void	Request::setClientMaxBodySize(int clientMaxBodySize)
+{
+	_clientMaxBodySize = clientMaxBodySize;
+}
+
+void	Request::setState(int state)
+{
+	_state = state;
 }
 
 int Request::checkRequestLine(void)
@@ -194,6 +253,7 @@ void Request::_handleHeader(void)
 			return ;
 		}
 	} 
+
 }
 
 void Request::_parseContentType(string rawContentType)
@@ -216,7 +276,7 @@ void Request::_initBodyFile(void)
 
 	_nameBodyFile = _tmpFileName("./tmp/webserv");
 	printTimeDebug(DEBUG_REQUEST, "initBodyfile with file", _nameBodyFile);
-	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
+	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app | std::ifstream::in);
 	if (_fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
@@ -257,7 +317,7 @@ void Request::_initBodyFile(void)
 		}
 	}
 	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
-	printTimeDebug(DEBUG_REQUEST, "content-length", itoa(_contentLength));
+	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));
 	_state = R_BODY;
 }
 
@@ -309,65 +369,79 @@ int Request::readClientRequest(void)
 	return read_ret;
 }
 
-int Request::getState(void) const
+void Request::_extractFileFromBody(void)
 {
-	return (_state);
+	string				bufExtract;
+	string				header_key;
+	string				header_value;
+	std::size_t			colonPos;
+	string				newBodyFile;
+	std::fstream		fsNewBodyFile;
+
+	newBodyFile = _tmpFileName("./tmp/webservNewBodyFile");
+	fsNewBodyFile.open(newBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
+	if (fsNewBodyFile.good())
+		std::cout << "Successfully opened new body file "<< std::endl;
+	else
+		throw(std::runtime_error(std::string("Failed to open tmpfile body") + strerror(errno)));
+	while(getline(_fs, bufExtract, '\n'))
+	{
+		if (bufExtract == (string("--" + _boundary + "\r")))
+		{
+			std::cout << "coutinue" << std::endl;
+			continue;
+		}
+		if (bufExtract == "\r")
+			break;
+		colonPos = bufExtract.find(':');
+		if (colonPos == std::string::npos
+				|| colonPos == bufExtract.length() - 1
+				|| colonPos == 1)
+		{
+			_statusCode = 400;
+			_state = R_ERROR;
+			std::cout << "[" << string("--" + _boundary) << "]" << std::endl;
+			std::cout << "[" << bufExtract << "]" << std::endl;
+			std::cout << "bad request ici" << std::endl;
+			exit(1) ;
+		}
+		header_key = string(bufExtract.begin(), bufExtract.begin() + colonPos);
+		header_value = string(bufExtract.begin() + colonPos + 1, bufExtract.end());
+		header_key = strtrim(header_key, "\f\t\n\r\v ");
+		header_value = strtrim(header_value, "\f\t\n\r\v ");
+		_boundaryHeader.insert(std::pair<string, string>(header_key, header_value));
+		std::cout << "Inserted :" << " new header key-value in Boundary header : [" << header_key << "][" << header_value << "]" << std::endl;
+
+	}
+	while (getline(_fs, bufExtract, '\n'))
+	{
+		if (bufExtract == string("--" + _boundary + "--" + "\r"))
+			break;		
+		bufExtract += "\n";
+		std::cout << "inserty[" << bufExtract << std::endl;
+		fsNewBodyFile << bufExtract;
+	}
+	fsNewBodyFile.unget();
+	fsNewBodyFile.ignore(1,'\n');
+	fsNewBodyFile.flush();
+	fsNewBodyFile.close();
+	//unlink(_nameBodyFile.c_str());
+	_nameBodyFile = newBodyFile;
+	printTimeDebug(1, "boundary header:", "");
+	std::cout << _boundaryHeader << std::endl;
 }
 
-std::string &Request::getStateStr(void) const
+void Request::_handleBoundary(void)
 {
-	return( _stateStr[_state]);
+	_fs.seekg(0);
+	while(_fs.tellg() > 0)
+	{
+		std::cout << _fs.tellg() << std::endl;
+		_extractFileFromBody();
+	}
+	_fs.close();
+	exit(1);
 }
-
-std::string Request::getMethod(void) const
-{
-	if(_requestLine.find("method") == _requestLine.end())
-		return ("GET");
-	return (_requestLine.find("method")->second);
-}
-
-std::string Request::getTarget(void) const
-{
-	if (_requestLine.find("request_target") == _requestLine.end())
-		return ("/");
-	return (_requestLine.find("request_target")->second);
-}
-
-
-std::string Request::getProtocol(void) const
-{
-	if(_requestLine.find("http_version") == _requestLine.end())
-		return ("HTTP/1.1");
-	return (_requestLine.find("http_version")->second);
-}
-
-int	Request::getStatusCode(void) const
-{
-	return _statusCode;
-}
-
-std::string	Request::getHost(void) const
-{
-	if (_header.find("Host") == _header.end())
-		return ("");
-	return (_header.find("Host")->second);
-}
-
-void Request::reset(void)
-{
-	*this = Request(_clientFd, _configList);
-}
-
-void	Request::setClientMaxBodySize(int clientMaxBodySize)
-{
-	_clientMaxBodySize = clientMaxBodySize;
-}
-
-void	Request::setState(int state)
-{
-	_state = state;
-}
-
 
 int	Request::handleRequest(void)
 {
@@ -387,6 +461,8 @@ int	Request::handleRequest(void)
 		_handleBody();
 	if (ret == 0)
 		_state = R_ZERO_READ;
+	if (_contentLength <= 0 && _state == R_BODY && _boundary.size() > 0)
+		_handleBoundary();
 	if ( _contentLength <= 0 && _state == R_BODY)
 		_state = R_END;	
 
