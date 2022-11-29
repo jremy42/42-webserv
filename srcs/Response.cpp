@@ -14,6 +14,77 @@ Response::m_is Response::_initStatusCodeMessage()
 	return ret;
 }
 
+Response::m_ss Response::_initCgiMetaVar()
+{
+	m_ss ret;
+	ret["AUTH_TYPE"] = "";
+	ret["CONTENT_LENGTH"] = "";
+	ret["CONTENT_TYPE"] = "";
+	ret["GATEWAY_INTERFACE"] = "";
+	ret["PATH_INFO"] = "";
+	ret["PATH_TRANSLATED"] = "";
+	ret["QUERY_STRING"] = "";
+	ret["REMOTE_ADDR"] = "";
+	ret["REMOTE_HOST"] = "";
+	ret["REMOTE_IDENT"] = "";
+	ret["REMOTE_USER"] = "";
+	ret["REQUEST_METHOD"] = "";
+	ret["SCRIPT_NAME"] = "";
+	ret["SERVER_NAME"] = "";
+	ret["SERVER_PORT"] = "";
+	ret["SERVER_PROTOCOL"] = "";
+	ret["SERVER_SOFTWARE"] = "";
+	return ret;
+}
+
+void	Response::_setCgiMetaVar(void)
+{
+	_cgiMetaVar["PATH_INFO"] = _PATH_INFO;
+	_cgiMetaVar["QUERY_STRING"] = _QUERY_STRING;
+}
+
+char	**Response::_createEnvArray(void)
+{
+	int				size = 0;
+	char 			**env;
+	m_ss::iterator	ite = _cgiMetaVar.end();
+
+	for (m_ss::iterator it = _cgiMetaVar.begin(); it != ite ; it++)
+	{
+		if (DEBUG_RESPONSE)
+			std::cerr << "Checking : [" << it->first << "] -> [" << it->second << "]" << std::endl;
+		if (it->second != "")
+			++size;
+	}
+	if (DEBUG_RESPONSE)
+		std::cerr << "Env Array non-empty values : [" << size << "]" << std::endl;
+	env = new char *[size + 1];
+	env[size] = NULL;
+	for (m_ss::iterator it = _cgiMetaVar.begin(); it != ite ; it++)
+	{
+		if (it->second != "")
+		{
+			*env = new char[it->first.size() + it->second.size() + 2];
+			memset(*env, 0, it->first.size() + it->second.size() + 2);
+			strcpy(*env, it->first.c_str());
+			strcat(*env, "=");
+			strcat(*env, it->second.c_str());
+			++env;
+		}
+	}
+	env -= size;
+	if (DEBUG_RESPONSE)
+	{
+		int i = 0;
+		while (env[i])
+		{
+			std::cout << "\e[31mEnv Array[" << i << "] : [" << env[i] << "]\e[0m" << std::endl;
+			++i;
+		}
+	}
+	return (env);
+}
+
 std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>";
 std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>";
 
@@ -80,8 +151,8 @@ Response &Response::operator=(const Response &rhs)
 	_requestedTargetRoot = rhs._requestedTargetRoot;
 	_rawActualTarget = rhs._rawActualTarget;
 	_actualTarget = rhs._actualTarget;
-	_queryString = rhs._queryString;
-	_pathInfo = rhs._pathInfo;
+	_QUERY_STRING = rhs._QUERY_STRING;
+	_PATH_INFO = rhs._PATH_INFO;
 	_targetStatus = rhs._targetStatus;
 	_cgiExecutable = rhs._cgiExecutable;
 	_targetExtension = rhs._targetExtension;
@@ -155,11 +226,11 @@ void	Response::_parseRawRequestTarget(void)
 	if (fileExist(testFile) && !isDir(testFile))
 	{
 		_actualTarget = testFile;
-		_pathInfo = _rawActualTarget.substr(posLastSlash, posLastQuestionMark - posLastSlash);   
+		_PATH_INFO = _rawActualTarget.substr(posLastSlash, posLastQuestionMark - posLastSlash);   
 	}
 	if (posLastQuestionMark != std::string::npos)
 	{
-		_queryString = _rawActualTarget.substr(posLastQuestionMark + 1);	
+		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);	
 		_actualTarget = _actualTarget.substr(0, posLastQuestionMark);
 	}
 	std::size_t	posLastDot = _actualTarget.find_last_of(".");
@@ -168,16 +239,16 @@ void	Response::_parseRawRequestTarget(void)
 		_targetExtension = _actualTarget.substr(posLastDot);
 		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
-	_urlDecodeString(_pathInfo);
-	_urlDecodeString(_queryString);
+	_urlDecodeString(_PATH_INFO);
+	_urlDecodeString(_QUERY_STRING);
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
 		std::cout << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
 		std::cout << "_rawActualTarget : [" << _rawActualTarget << "]" << std::endl;
 		std::cout << "_actualTarget : [" << _actualTarget << "]" << std::endl;
-		std::cout << "_queryString : [" << _queryString << "]" << std::endl;
-		std::cout << "_pathInfo : [" << _pathInfo << "]" << std::endl;
+		std::cout << "_QUERY_STRING : [" << _QUERY_STRING << "]" << std::endl;
+		std::cout << "_PATH_INFO : [" << _PATH_INFO << "]" << std::endl;
 		std::cout << "_targetExtension : [" << _targetExtension << "]" << std::endl;
 		std::cout << "_cgiExecutable : [" << _cgiExecutable << "]" << std::endl;
 		if (!fileExist(_actualTarget))
@@ -380,13 +451,15 @@ void Response::_initCGIfile(void)
 			throw(std::runtime_error(std::string("Child DUP2 error 0") + strerror(errno)));
 		if (dup2(_outChild, STDOUT_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
+		_cgiMetaVar = _initCgiMetaVar();
+		_setCgiMetaVar();
 		char *arg[3];
 		arg[0] = const_cast<char *>(_cgiExecutable.c_str());
 		arg[1] = const_cast<char *>(_actualTarget.c_str());
 		arg[2] = NULL;
 		if (DEBUG_RESPONSE)
 			std::cerr << "actual Target : [" << _actualTarget << "] CGI-executable : [" << _cgiExecutable << "]" << std::endl;
-		execve(_cgiExecutable.c_str(), arg, NULL);
+		execve(_cgiExecutable.c_str(), arg, _createEnvArray());
 		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
 	}
 }
