@@ -29,7 +29,7 @@
 #  define DEBUG_REQUEST 1
 # endif
 
-enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_END, R_ERROR, R_ZERO_READ};
+enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_BOUNDARY_HEADER,R_END, R_ERROR, R_ZERO_READ};
 
 class Config;
 
@@ -82,6 +82,7 @@ class Request
 		v_c				_rawRequest;
 		string			_rawRequestString;
 		string			_boundary;
+		m_ss			_boundaryHeader;
 		int				_contentLength;
 		int				_readRet;
 		string			_rawRequestLine;
@@ -91,7 +92,7 @@ class Request
 		static string	_requestLineField[3];
 		static string	_headerField[3];
 		static string	_validRequest[3];
-		static string	_stateStr[8];
+		static string	_stateStr[9];
 
 		void	_handleRequestLine(void);
 		void	_handleHeader(void);
@@ -101,6 +102,8 @@ class Request
 		int		checkRequestLine(void);
 		int		checkHeader(void);
 		void	_setConfig(void);
+		void	_extractFileFromBody(void);
+
 
 		//handle body
 		void _initBodyFile(void);
@@ -108,7 +111,9 @@ class Request
 		//int	 _bodyFile;
 		int  _bodyFileSize;
 		std::fstream _fs;
+		std::fstream _newBodyFile;
 		void _parseContentType(string  rawContentType);
+		void	_handleBoundary(void);
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);
