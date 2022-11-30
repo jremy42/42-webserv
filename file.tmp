@@ -1,0 +1,224 @@
+create event listener
+create event listener
+fd max 1024
+Successfully opened config file : 'conf/default.config'
+Config list :
+-----Start Config-----
+server {
+root ./www;
+listen	       					5002;
+server_name				lala lili git toto.fr;
+client_max_body_size	21m;
+location / {
+root ./www;
+allowed_method GET DELETE POST;
+autoindex on;
+index hello.txt fredo.txt tutu.html index3.html;
+error_page 400 titi;
+error_page 400 toto;
+error_page 401 lala;
+error_page 404 404.html;
+cgi .php /usr/bin/php-cgi;
+}
+location /tata/photo.jpg {
+return 301 http://google.fr;
+}
+}
+------End Config------
+insert error page with value[error_page] : [0][400], [1][titi]
+key [400] value:[titi]
+
+insert error page with value[error_page] : [0][400], [1][toto]
+key [400] value:[titi]
+
+insert error page with value[error_page] : [0][401], [1][lala]
+key [400] value:[titi]
+key [401] value:[lala]
+
+insert error page with value[error_page] : [0][404], [1][404.html]
+key [400] value:[titi]
+key [401] value:[lala]
+key [404] value:[404.html]
+
+insert cgi executable with value[cgi] : [0][.php], [1][/usr/bin/php-cgi]
+key [.php] value:[/usr/bin/php-cgi]
+
+------------Done Creating the serverInfoMap-------------
+[allowed_method] : [0][GET]
+[autoindex] : [0][off]
+[client_max_body_size] : [0][21m]
+[index] : [0][index.html]
+[listen] : [0][5002]
+[return] : [0][1]
+[root] : [0][./www]
+[server_name] : [0][lala], [1][lili], [2][git], [3][toto.fr]
+[upload] : 
+--------------------------------------------------------
+[32mlisten[0] :*[0m
+[32mlisten[1] :5002[0m
+[32mPushing back a new config in the PortConfigList[0m
+port :[5002]
+[35mFound Wildcard for port : [5002][0m
+Before WildCard Clean
+v_config[0]
+[allowed_method] : [0][GET]
+[autoindex] : [0][off]
+[client_max_body_size] : [0][22020096]
+[index] : [0][index.html]
+[listen] : [0][*], [1][5002]
+[return] : [0][1]
+[root] : [0][./www]
+[server_name] : [0][lala], [1][lili], [2][git], [3][toto.fr]
+[upload] : 
+
+key: [/]
+-------------------Location Printer Start-------------------
+[allowed_method] : [0][GET], [1][DELETE], [2][POST]
+[autoindex] : [0][on]
+[cgi] : 
+[error_page] : 
+[index] : [0][hello.txt], [1][fredo.txt], [2][tutu.html], [3][index3.html]
+[return] : [0][1]
+[root] : [0][./www]
+[upload] : [0][./www]
+####################Location ErrorPage Start################
+key [400] value:[titi]
+key [401] value:[lala]
+key [404] value:[404.html]
+####################Location ErrorPage end################
+####################Location CGI Start################
+key [.php] value:[/usr/bin/php-cgi]
+####################Location CGI end################
+--------------------Location Printer End--------------------
+
+key: [/tata/photo.jpg]
+-------------------Location Printer Start-------------------
+[allowed_method] : [0][GET]
+[autoindex] : [0][off]
+[cgi] : 
+[error_page] : 
+[index] : [0][index.html]
+[return] : [0][301], [1][http://google.fr]
+[root] : [0][./www]
+[upload] : [0][./www]
+####################Location ErrorPage Start################
+####################Location ErrorPage end################
+####################Location CGI Start################
+####################Location CGI end################
+--------------------Location Printer End--------------------
+
+
+
+After WildCard Clean
+v_config[0]
+[allowed_method] : [0][GET]
+[autoindex] : [0][off]
+[client_max_body_size] : [0][22020096]
+[index] : [0][index.html]
+[listen] : [0][*], [1][5002]
+[return] : [0][1]
+[root] : [0][./www]
+[server_name] : [0][lala], [1][lili], [2][git], [3][toto.fr]
+[upload] : 
+
+key: [/]
+-------------------Location Printer Start-------------------
+[allowed_method] : [0][GET], [1][DELETE], [2][POST]
+[autoindex] : [0][on]
+[cgi] : 
+[error_page] : 
+[index] : [0][hello.txt], [1][fredo.txt], [2][tutu.html], [3][index3.html]
+[return] : [0][1]
+[root] : [0][./www]
+[upload] : [0][./www]
+####################Location ErrorPage Start################
+key [400] value:[titi]
+key [401] value:[lala]
+key [404] value:[404.html]
+####################Location ErrorPage end################
+####################Location CGI Start################
+key [.php] value:[/usr/bin/php-cgi]
+####################Location CGI end################
+--------------------Location Printer End--------------------
+
+key: [/tata/photo.jpg]
+-------------------Location Printer Start-------------------
+[allowed_method] : [0][GET]
+[autoindex] : [0][off]
+[cgi] : 
+[error_page] : 
+[index] : [0][index.html]
+[return] : [0][301], [1][http://google.fr]
+[root] : [0][./www]
+[upload] : [0][./www]
+####################Location ErrorPage Start################
+####################Location ErrorPage end################
+####################Location CGI Start################
+####################Location CGI end################
+--------------------Location Printer End--------------------
+
+
+
+createPassiveSocketWithHost [0.0.0.0]
+##########################################
+inet_ntop[0.0.0.0]
+##########################################
+SOCKET OK
+bind:0
+fd:5
+inet_ntop[0.0.0.0]
+ listen socket address with host [0]
+______________________CREATING SERVER________________________________
+serverFD : [5]
+Create server listen port :5002
+------------configList 0------------------
+[allowed_method] : [0][GET]
+[autoindex] : [0][off]
+[client_max_body_size] : [0][22020096]
+[index] : [0][index.html]
+[listen] : [0][*], [1][5002]
+[return] : [0][1]
+[root] : [0][./www]
+[server_name] : [0][lala], [1][lili], [2][git], [3][toto.fr]
+[upload] : 
+
+key: [/]
+-------------------Location Printer Start-------------------
+[allowed_method] : [0][GET], [1][DELETE], [2][POST]
+[autoindex] : [0][on]
+[cgi] : 
+[error_page] : 
+[index] : [0][hello.txt], [1][fredo.txt], [2][tutu.html], [3][index3.html]
+[return] : [0][1]
+[root] : [0][./www]
+[upload] : [0][./www]
+####################Location ErrorPage Start################
+key [400] value:[titi]
+key [401] value:[lala]
+key [404] value:[404.html]
+####################Location ErrorPage end################
+####################Location CGI Start################
+key [.php] value:[/usr/bin/php-cgi]
+####################Location CGI end################
+--------------------Location Printer End--------------------
+
+key: [/tata/photo.jpg]
+-------------------Location Printer Start-------------------
+[allowed_method] : [0][GET]
+[autoindex] : [0][off]
+[cgi] : 
+[error_page] : 
+[index] : [0][index.html]
+[return] : [0][301], [1][http://google.fr]
+[root] : [0][./www]
+[upload] : [0][./www]
+####################Location ErrorPage Start################
+####################Location ErrorPage end################
+####################Location CGI Start################
+####################Location CGI end################
+--------------------Location Printer End--------------------
+
+
+--------------------------------z-------------------- 
+___________________________________________________________________
+Server destruction

@@ -136,10 +136,16 @@ int Client::executeAction()
 	}
 	else if ((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
-		if (_response->handleResponse() == 0) // 0 si ok et j'ai ecrit, donc je prolonge le timeout
+		int retHandleResponse = _response->handleResponse();
+		if (retHandleResponse == 0) // 0 si ok et j'ai ecrit, donc je prolonge le timeout
 		{
 			_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 			_state = S_OVER;
+		}
+		else if ( retHandleResponse < 0)
+		{
+			delete _response;
+			_state = S_CLOSE_FD;
 		}
 	}
 	if(_state == S_OVER)

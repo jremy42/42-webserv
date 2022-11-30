@@ -82,7 +82,6 @@ class Request
 		v_c				_rawRequest;
 		string			_rawRequestString;
 		string			_boundary;
-		m_ss			_boundaryHeader;
 		int				_contentLength;
 		int				_readRet;
 		string			_rawRequestLine;
@@ -102,8 +101,9 @@ class Request
 		int		checkRequestLine(void);
 		int		checkHeader(void);
 		void	_setConfig(void);
-		void	_extractFileFromBody(void);
-
+		// check_header
+		int	_checkAutorizationForMethod(void);
+		int _parseHeaderForMultiPart(void);
 
 		//handle body
 		void _initBodyFile(void);
@@ -113,7 +113,6 @@ class Request
 		std::fstream _fs;
 		std::fstream _newBodyFile;
 		void _parseContentType(string  rawContentType);
-		void	_handleBoundary(void);
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);

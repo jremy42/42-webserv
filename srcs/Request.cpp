@@ -270,10 +270,6 @@ void Request::_parseContentType(string rawContentType)
 
 void Request::_initBodyFile(void)
 {
-	string rawContentType;
-	string rawContentLength;
-
-
 	_nameBodyFile = _tmpFileName("./tmp/webserv");
 	printTimeDebug(DEBUG_REQUEST, "initBodyfile with file", _nameBodyFile);
 	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app | std::ifstream::in);
@@ -283,13 +279,23 @@ void Request::_initBodyFile(void)
 	{
 		throw(std::runtime_error(std::string("Failed to open tmpfile body") + strerror(errno)));
 	}
+	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
+	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));
+	_state = R_BODY;
+}
+
+int Request::_parseHeaderForMultiPart(void)
+{
+	string rawContentType;
+	string rawContentLength;
+
 	if (_header.find("Content-Type") != _header.end())
 		rawContentType = _header.find("Content-Type")->second;
 	if (rawContentType.empty())
 	{
 		_state = R_ERROR;
 		_statusCode = 400;
-		return;
+		return 0;
 	}
 	else
 		_parseContentType(rawContentType);
@@ -299,10 +305,16 @@ void Request::_initBodyFile(void)
 	{
 		_state = R_ERROR;
 		_statusCode = 400;
-		return;
+		return 0;
 	}
 	else
 		_contentLength = atoi(rawContentLength.c_str());
+	if (_contentLength > _clientMaxBodySize)
+	{
+		_statusCode = 413;
+		_state = R_ERROR;
+		return 0;
+	}
 	if (_contentType[0] == "multipart/form-data" && _contentType.size() > 1)
 	{
 		size_t pose;
@@ -313,12 +325,15 @@ void Request::_initBodyFile(void)
 		{
 			_state = R_ERROR;
 			_statusCode = 400;
-			return;
+			return 0;
 		}
+		return 1;
 	}
-	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
-	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));
-	_state = R_BODY;
+	else
+	{
+		_state = R_END;
+		return 0;
+	}
 }
 
 void Request::_handleBody(void)
@@ -332,7 +347,11 @@ void Request::_handleBody(void)
 		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
 	}
 	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
-		throw(std::runtime_error("webserv: request : Body exceeds client_max_body_size"));
+	{
+		_statusCode = 413;
+		_state = R_ERROR;
+		return;
+	}
 	for (; it != ite; it++)
 	{
 		_fs << *it;
@@ -361,86 +380,12 @@ int Request::readClientRequest(void)
 		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
 		<< "]\x1b[0m" << std::endl << buf << std::endl
 		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
-	} 
+	}
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
 	_readRet = read_ret;
 	_maxRead += read_ret;
 	return read_ret;
-}
-
-void Request::_extractFileFromBody(void)
-{
-	string				bufExtract;
-	string				header_key;
-	string				header_value;
-	std::size_t			colonPos;
-	string				newBodyFile;
-	std::fstream		fsNewBodyFile;
-
-	newBodyFile = _tmpFileName("./tmp/webservNewBodyFile");
-	fsNewBodyFile.open(newBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
-	if (fsNewBodyFile.good())
-		std::cout << "Successfully opened new body file "<< std::endl;
-	else
-		throw(std::runtime_error(std::string("Failed to open tmpfile body") + strerror(errno)));
-	while(getline(_fs, bufExtract, '\n'))
-	{
-		if (bufExtract == (string("--" + _boundary + "\r")))
-		{
-			std::cout << "coutinue" << std::endl;
-			continue;
-		}
-		if (bufExtract == "\r")
-			break;
-		colonPos = bufExtract.find(':');
-		if (colonPos == std::string::npos
-				|| colonPos == bufExtract.length() - 1
-				|| colonPos == 1)
-		{
-			_statusCode = 400;
-			_state = R_ERROR;
-			std::cout << "[" << string("--" + _boundary) << "]" << std::endl;
-			std::cout << "[" << bufExtract << "]" << std::endl;
-			std::cout << "bad request ici" << std::endl;
-			exit(1) ;
-		}
-		header_key = string(bufExtract.begin(), bufExtract.begin() + colonPos);
-		header_value = string(bufExtract.begin() + colonPos + 1, bufExtract.end());
-		header_key = strtrim(header_key, "\f\t\n\r\v ");
-		header_value = strtrim(header_value, "\f\t\n\r\v ");
-		_boundaryHeader.insert(std::pair<string, string>(header_key, header_value));
-		std::cout << "Inserted :" << " new header key-value in Boundary header : [" << header_key << "][" << header_value << "]" << std::endl;
-
-	}
-	while (getline(_fs, bufExtract, '\n'))
-	{
-		if (bufExtract == string("--" + _boundary + "--" + "\r"))
-			break;		
-		bufExtract += "\n";
-		std::cout << "inserty[" << bufExtract << std::endl;
-		fsNewBodyFile << bufExtract;
-	}
-	fsNewBodyFile.unget();
-	fsNewBodyFile.ignore(1,'\n');
-	fsNewBodyFile.flush();
-	fsNewBodyFile.close();
-	//unlink(_nameBodyFile.c_str());
-	_nameBodyFile = newBodyFile;
-	printTimeDebug(1, "boundary header:", "");
-	std::cout << _boundaryHeader << std::endl;
-}
-
-void Request::_handleBoundary(void)
-{
-	_fs.seekg(0);
-	while(_fs.tellg() > 0)
-	{
-		std::cout << _fs.tellg() << std::endl;
-		_extractFileFromBody();
-	}
-	_fs.close();
-	exit(1);
 }
 
 int	Request::handleRequest(void)
@@ -461,8 +406,6 @@ int	Request::handleRequest(void)
 		_handleBody();
 	if (ret == 0)
 		_state = R_ZERO_READ;
-	if (_contentLength <= 0 && _state == R_BODY && _boundary.size() > 0)
-		_handleBoundary();
 	if ( _contentLength <= 0 && _state == R_BODY)
 		_state = R_END;	
 
@@ -479,15 +422,33 @@ const Config	*Request::getRequestConfig(void) const
 	return _config;
 }
 
+int Request::_checkAutorizationForMethod(void)
+{
+	string requestTarget = this->getTarget();
+	std::vector<string> allowedMethod = _config->getParamByLocation(requestTarget, "allowed_method");
+
+	if (find(allowedMethod.begin(), allowedMethod.end(), this->getMethod()) == allowedMethod.end())
+	{
+		_statusCode = 405;
+		return 0;
+	}
+	return 1;
+}
 
 void Request::_setConfig(void)
 {
 	_config = getMatchingConfig();
 	_clientMaxBodySize = atoi(_config->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
-	if (_requestLine.find("method")->second == "POST")
-		_state = R_INIT_BODY_FILE;
-	else
-		_state = R_END;
+	if (_checkAutorizationForMethod())
+	{
+		if (_requestLine.find("method") != _requestLine.end() 
+		&& _requestLine.find("method")->second == "POST" && _parseHeaderForMultiPart())
+		{
+			_state = R_INIT_BODY_FILE;
+			return;
+		}
+	}
+	_state = R_END;
 }
 
 const Config *Request::getConfig(void) const
