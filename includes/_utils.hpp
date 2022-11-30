@@ -52,4 +52,9 @@ float	ft_get_time_sec(void);
 unsigned int			getipbyhost(const char *host, const char *service);
 void                    printTimeDebug(int debug,std::string quote, std::string arg);
 void                    printAvailableAction(int debug, int _clientFd, int _availableActions);
+
+std::string								getClientAddrFromSocket(int acceptSysCallReturnedFd);
+std::string								getRequestedAddrFromSocket(int acceptSysCallReturnedFd);
+std::pair<std::string, std::string>		getClientHostnameAndService(int acceptSysCallReturnedFd);
+
 #endif

@@ -243,3 +243,55 @@ std::string _tmpFileName(const std::string path)
 	}
 	return (NULL);
 }
+
+std::string		getClientAddrFromSocket(int acceptSysCallReturnedFd)
+{
+	struct sockaddr_in	clientAddr;
+	socklen_t addrlen = sizeof(clientAddr);
+	char buf[INET_ADDRSTRLEN + 1];
+	std::string result;
+
+	if (getpeername(acceptSysCallReturnedFd, (struct sockaddr *)&clientAddr, &addrlen))
+		return ("getClientAddrFromSocket ERROR");
+	memset(buf, 0, sizeof(buf));
+	inet_ntop(AF_INET, &clientAddr.sin_addr, buf, sizeof(buf));
+
+	result = std::string(buf);
+	return (result);
+}
+
+std::string		getRequestedAddrFromSocket(int acceptSysCallReturnedFd)
+{
+	struct sockaddr_in	requestedAddr;
+	socklen_t addrlen = sizeof(requestedAddr);
+	char buf[INET_ADDRSTRLEN + 1];
+	std::string result;
+
+	if (getsockname(acceptSysCallReturnedFd, (struct sockaddr *)&requestedAddr, &addrlen))
+		return ("getRequestedAddrFromSocket ERROR");
+	memset(buf, 0, sizeof(buf));
+	inet_ntop(AF_INET, &requestedAddr.sin_addr, buf, sizeof(buf));
+
+	result = std::string(buf);
+	return (result);
+}
+
+std::pair<std::string, std::string>		getClientHostnameAndService(int acceptSysCallReturnedFd)
+{
+	struct sockaddr_in	clientAddr;
+	socklen_t addrlen = sizeof(clientAddr);
+	char host[NI_MAXHOST];
+	std::size_t hostlen = sizeof(host);
+	char service[NI_MAXSERV];
+	std::size_t servicelen = sizeof(host);
+	std::pair<std::string, std::string>  result;
+
+	if (getpeername(acceptSysCallReturnedFd, (struct sockaddr *)&clientAddr, &addrlen))
+		return (std::make_pair("getClientHostNameFromSocket : getpeername ERROR", ""));
+	memset(host, 0, sizeof(host));
+	memset(host, 0, sizeof(service));
+	if (getnameinfo((struct sockaddr *)&clientAddr, addrlen, host, hostlen, service, servicelen, 0))
+		return (std::make_pair("getClientHostNameFromSocket : getnameinfo ERROR", ""));
+	result = std::pair<std::string, std::string>(host, service);
+	return (result);
+}

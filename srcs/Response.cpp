@@ -49,6 +49,8 @@ void	Response::_setCgiMetaVar(void)
 	_cgiMetaVar["PATH_INFO"] = _PATH_INFO;
 	_cgiMetaVar["PATH_TRANSLATED"] = _requestedTargetRoot + _PATH_INFO;
 	_cgiMetaVar["QUERY_STRING"] = _QUERY_STRING;
+	_cgiMetaVar["REMOTE_ADDR"] = getClientAddrFromSocket(_clientFd);
+	_cgiMetaVar["REMOTE_HOST"] = getClientHostnameAndService(_clientFd).first;
 }
 
 char	**Response::_createEnvArray(void)
@@ -248,7 +250,7 @@ void	Response::_parseRawRequestTarget(void)
 		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
 	_urlDecodeString(_PATH_INFO);
-	_urlDecodeString(_QUERY_STRING);
+	//_urlDecodeString(_QUERY_STRING);
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
