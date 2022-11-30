@@ -20,6 +20,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include "Config.hpp"
+# include "Multipart.hpp"
 
 # define VALID_REQUEST_N 3
 # define HEADER_FIELD 3
@@ -29,9 +30,10 @@
 #  define DEBUG_REQUEST 1
 # endif
 
-enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_BOUNDARY_HEADER,R_END, R_ERROR, R_ZERO_READ};
+enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY_CHUNKED,R_BODY, R_BOUNDARY_HEADER,R_END, R_ERROR, R_ZERO_READ};
 
 class Config;
+class Multipart;
 
 class Request
 {
@@ -69,10 +71,14 @@ class Request
 		const Config		*getRequestConfig(void) const;
 		const Config		*getConfig(void) const;
 		m_ss				getHeader(void) const;
+		string 				getBoundaryDelim(void);
+		string 				getUploadDir(void);
+		string 				getBodyFile(void);
 
 	private:
-
 		int				_state;
+		int				_chunked;
+		int				_nextChunkSize;
 		int				_clientFd;
 		int				_statusCode;
 		int				_maxRead;
@@ -91,11 +97,12 @@ class Request
 		static string	_requestLineField[3];
 		static string	_headerField[3];
 		static string	_validRequest[3];
-		static string	_stateStr[9];
+		static string	_stateStr[10];
 
 		void	_handleRequestLine(void);
 		void	_handleHeader(void);
 		void	_handleBody(void);
+		void	_handleBodyChunked(void);
 		int		parseRequestLine(string rawRequestLine);
 		int		parseHeader(string rawRequestLine);
 		int		checkRequestLine(void);
@@ -103,7 +110,8 @@ class Request
 		void	_setConfig(void);
 		// check_header
 		int	_checkAutorizationForMethod(void);
-		int _parseHeaderForMultiPart(void);
+		int _parseHeaderForBody(void);
+		int	_getNextChunkedSize(void);
 
 		//handle body
 		void _initBodyFile(void);

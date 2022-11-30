@@ -6,8 +6,8 @@ std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept
 
 std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
-std::string	Request::_stateStr[9] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_SET_CONFIG\x1b[0m",
-"\x1b[35mR_INIT_BODY_FILE\x1b[0m", "\x1b[35mR_BODY\x1b[0m", "\x1b[35mR_BOUNDARY_HEADER\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
+std::string	Request::_stateStr[10] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_SET_CONFIG\x1b[0m",
+"\x1b[35mR_INIT_BODY_FILE\x1b[0m","\x1b[35mR_BODY_CHUNKED``\x1b[0m" ,"\x1b[35mR_BODY\x1b[0m", "\x1b[35mR_BOUNDARY_HEADER\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
 
 Request::Request(void)
 {
@@ -282,13 +282,15 @@ void Request::_initBodyFile(void)
 	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
 	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));
 	_state = R_BODY;
+	if (_chunked == true)
+		_state = R_BODY_CHUNKED;
 }
 
-int Request::_parseHeaderForMultiPart(void)
+int Request::_parseHeaderForBody(void)
 {
 	string rawContentType;
 	string rawContentLength;
-
+	string rawTransferEncoding;
 	if (_header.find("Content-Type") != _header.end())
 		rawContentType = _header.find("Content-Type")->second;
 	if (rawContentType.empty())
@@ -299,6 +301,15 @@ int Request::_parseHeaderForMultiPart(void)
 	}
 	else
 		_parseContentType(rawContentType);
+	if (_header.find("Transfer-Encoding") != _header.end())
+	{
+		rawTransferEncoding = _header.find("Transfer-Encoding")->second;
+		if (rawTransferEncoding == "chunked")
+		{
+			_chunked = true;
+			return 1;
+		}
+	}
 	if (_header.find("Content-Length") != _header.end())
 		rawContentLength = _header.find("Content-Length")->second;
 	if (rawContentLength.empty())
@@ -315,6 +326,7 @@ int Request::_parseHeaderForMultiPart(void)
 		_state = R_ERROR;
 		return 0;
 	}
+
 	if (_contentType[0] == "multipart/form-data" && _contentType.size() > 1)
 	{
 		size_t pose;
@@ -356,6 +368,70 @@ void Request::_handleBody(void)
 	{
 		_fs << *it;
 		_contentLength--;
+	}
+	_fs.flush();
+	_rawRequest.clear();
+}
+
+int Request::_getNextChunkedSize(void)
+{
+	v_c_it ite = _rawRequest.end();
+	v_c_it it = _rawRequest.begin();
+	if (_nextChunkSize == -1)
+	{
+		if (DEBUG_REQUEST)
+			std::cout << "getNextSize" << std::endl;
+		for (; it != ite; it++)
+		{
+			if (*it == '\r'
+				&& it + 1 != ite && *(it + 1) == '\n')
+			{
+				string rawChunkSize(_rawRequest.begin(), it);
+				_nextChunkSize = strtol(rawChunkSize.c_str(), NULL, 16);
+				if (_nextChunkSize == 0)
+				{
+					_state = R_END;
+					return 0;
+				}
+				_rawRequest.erase(_rawRequest.begin(), it + 2);
+				ite = _rawRequest.end();
+				it = _rawRequest.begin();
+				break;
+			}
+		}
+	}
+	return 1;
+}
+
+void Request::_handleBodyChunked(void)
+{
+	v_c_it ite = _rawRequest.end();
+	v_c_it it = _rawRequest.begin();
+
+	if (DEBUG_REQUEST)
+	{
+		std::cout << "Handle body" << std::endl;
+		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
+	}
+	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
+	{
+		_statusCode = 413;
+		_state = R_ERROR;
+		return;
+	}
+	for (; it != ite; it++)
+	{
+		if (!_getNextChunkedSize())
+			break;
+		else
+		{
+			it = _rawRequest.begin();
+			ite = _rawRequest.end();
+		}
+		_fs << *it;
+		_rawRequest.erase(_rawRequest.begin(), it + 1);
+		_contentLength--;
+		_nextChunkSize--;
 	}
 	_fs.flush();
 	_rawRequest.clear();
@@ -404,11 +480,12 @@ int	Request::handleRequest(void)
 		_initBodyFile();
 	if (_state == R_BODY)
 		_handleBody();
+	if(_state == R_BODY_CHUNKED)
+		_handleBodyChunked();
 	if (ret == 0)
 		_state = R_ZERO_READ;
-	if ( _contentLength <= 0 && _state == R_BODY)
-		_state = R_END;	
-
+	if ( _contentLength <= 0 && _state == R_BODY && _chunked == false)
+		_state = R_END;
 	//if (DEBUG_REQUEST)																
 	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
 			<< "]" << std::endl;
@@ -437,12 +514,13 @@ int Request::_checkAutorizationForMethod(void)
 
 void Request::_setConfig(void)
 {
+	std::cerr << _header << std::endl;
 	_config = getMatchingConfig();
 	_clientMaxBodySize = atoi(_config->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
 	if (_checkAutorizationForMethod())
 	{
 		if (_requestLine.find("method") != _requestLine.end() 
-		&& _requestLine.find("method")->second == "POST" && _parseHeaderForMultiPart())
+		&& _requestLine.find("method")->second == "POST" && _parseHeaderForBody())
 		{
 			_state = R_INIT_BODY_FILE;
 			return;
@@ -489,4 +567,20 @@ const Config	*Request::getMatchingConfig(void) const
 Request::m_ss Request::getHeader(void) const
 {
 	return _header;
+}
+
+Request::string Request::getBoundaryDelim(void)
+{
+	return _boundary;
+}
+
+Request::string Request::getUploadDir(void)
+{
+	string requestTarget = this->getTarget();
+	return _config->getParamByLocation(requestTarget, "upload")[0];
+}
+
+Request::string Request::getBodyFile(void)
+{
+	return _nameBodyFile;
 }

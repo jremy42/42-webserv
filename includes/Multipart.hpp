@@ -19,13 +19,14 @@
 # include <fstream>
 # include <stdlib.h>
 # include <string.h>
+# include "_utils.hpp"
 
 # define VALID_Multipart_N 3
 # define HEADER_FIELD 3
 # define MULTIPART_LINE_FIELD 3
 
 # ifndef DEBUG_MULTIPART
-#  define DEBUG_MULTIPART 1
+#  define DEBUG_MULTIPART 0
 # endif
 
 
@@ -40,7 +41,7 @@ class Multipart
 	public:
 
 		Multipart(void);
-		Multipart(string bodyFile);
+		Multipart(string bodyFile, string boundaryDelim, string uploadDir);
 		Multipart(const Multipart &src);
 		Multipart &operator=(const Multipart &rhs);
 		~Multipart(void);
@@ -51,10 +52,11 @@ class Multipart
 		string 			_boundaryDelim;
 		string			_uploadDir;
 		std::fstream	_fs;
+		std::fstream	_fsNewFile;
 		m_ss			_boundaryHeader;
-		void	_extractFileFromBody(void);
-		void	_createFileFormHeader(void);
-		void 	_extractHeader(void);
+		int		_extractFileFromBody(void);
+		int		_createFileFromHeader(void);
+		int 	_extractHeader(void);
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);

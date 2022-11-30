@@ -15,7 +15,7 @@
 # include "Server.hpp"
 
 # ifndef DEBUG_CLIENT
-#  define DEBUG_CLIENT 1
+#  define DEBUG_CLIENT 0
 # endif
 
 # define TIMEOUT_REQUEST 30000

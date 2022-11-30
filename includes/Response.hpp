@@ -26,7 +26,7 @@
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
-#  define DEBUG_RESPONSE 1
+#  define DEBUG_RESPONSE 0
 # endif
 
 enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};

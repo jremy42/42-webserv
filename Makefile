@@ -1,7 +1,7 @@
 NAME		:=	webserv
 SRC_DIR     :=	srcs/
 SRCS		:=	Client.cpp Config.cpp EventListener.cpp main.cpp Server.cpp Webserv.cpp\
-				Request.cpp Response.cpp Location.cpp _utils.cpp
+				Request.cpp Response.cpp Location.cpp _utils.cpp Multipart.cpp
 SRCS        := $(SRCS:%=$(SRC_DIR)/%)
 BUILD_DIR	:= .build
 OBJS        := $(subst .cpp,.o,$(SRCS))
