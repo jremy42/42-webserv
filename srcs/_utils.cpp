@@ -260,6 +260,20 @@ std::string		getClientAddrFromSocket(int acceptSysCallReturnedFd)
 	return (result);
 }
 
+std::string		getClientPortFromSocket(int acceptSysCallReturnedFd)
+{
+	struct sockaddr_in	clientAddr;
+	socklen_t addrlen = sizeof(clientAddr);
+	std::string result;
+
+	memset(&clientAddr, 0, addrlen);
+	if (getpeername(acceptSysCallReturnedFd, (struct sockaddr *)&clientAddr, &addrlen))
+		return ("getClientPortFromSocket ERROR");
+
+	result = std::string(itoa(ntohs(clientAddr.sin_port)));
+	return (result);
+}
+
 std::string		getRequestedAddrFromSocket(int acceptSysCallReturnedFd)
 {
 	struct sockaddr_in	requestedAddr;
@@ -273,6 +287,20 @@ std::string		getRequestedAddrFromSocket(int acceptSysCallReturnedFd)
 	inet_ntop(AF_INET, &requestedAddr.sin_addr, buf, sizeof(buf));
 
 	result = std::string(buf);
+	return (result);
+}
+
+std::string		getRequestedPortFromSocket(int acceptSysCallReturnedFd)
+{
+	struct sockaddr_in	requestedAddr;
+	socklen_t addrlen = sizeof(requestedAddr);
+	std::string result;
+
+	memset(&requestedAddr, 0, addrlen);
+	if (getsockname(acceptSysCallReturnedFd, (struct sockaddr *)&requestedAddr, &addrlen))
+		return ("getRequestedPortFromSocket ERROR");
+
+	result = std::string(itoa(ntohs(requestedAddr.sin_port)));
 	return (result);
 }
 
@@ -294,4 +322,20 @@ std::pair<std::string, std::string>		getClientHostnameAndService(int acceptSysCa
 		return (std::make_pair("getClientHostNameFromSocket : getnameinfo ERROR", ""));
 	result = std::pair<std::string, std::string>(host, service);
 	return (result);
+}
+
+std::string								subStringBeforeFirstDelim(std::string &str, char delim)
+{
+	std::size_t	pos;
+
+	pos = str.find_first_of(delim);
+	return (str.substr(0, pos));
+}
+
+std::string								subStringAfterFirstDelim(std::string &str, char delim)
+{
+	std::size_t	pos;
+
+	pos = str.find_first_of(delim);
+	return (str.substr(pos + 1));
 }

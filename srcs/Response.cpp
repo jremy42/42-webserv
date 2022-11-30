@@ -39,18 +39,28 @@ Response::m_ss Response::_initCgiMetaVar()
 
 void	Response::_setCgiMetaVar(void)
 {
+	// IDENT ???
 	m_ss				requestHeader = _request->getHeader();
 	m_ss::iterator		it;
 
-	_cgiMetaVar["AUTH_TYPE"] = (it = requestHeader.find("Authorization")) != requestHeader.end() ? it->second : "";
+	_cgiMetaVar["REDIRECT_STATUS"] = "true";
+	_cgiMetaVar["AUTH_TYPE"] = (it = requestHeader.find("Authorization")) != requestHeader.end() ? subStringBeforeFirstDelim(it->second, ' ') : "";
 	_cgiMetaVar["CONTENT_LENGTH"] = (_requestBodyFileSize != 0) ? ltoa(_requestBodyFileSize) : "";
 	_cgiMetaVar["CONTENT_TYPE"] = (it = requestHeader.find("Content-Type")) != requestHeader.end() ? it->second : "";
-	//_cgiMetaVar["GATEWAY_INTERFACE"] = "CGI/1.1";
+	_cgiMetaVar["GATEWAY_INTERFACE"] = "CGI/1.1";
 	_cgiMetaVar["PATH_INFO"] = _PATH_INFO;
 	_cgiMetaVar["PATH_TRANSLATED"] = _requestedTargetRoot + _PATH_INFO;
 	_cgiMetaVar["QUERY_STRING"] = _QUERY_STRING;
 	_cgiMetaVar["REMOTE_ADDR"] = getClientAddrFromSocket(_clientFd);
 	_cgiMetaVar["REMOTE_HOST"] = getClientHostnameAndService(_clientFd).first;
+	_cgiMetaVar["REMOTE_USER"] = (it = requestHeader.find("Authorization")) != requestHeader.end() ? subStringAfterFirstDelim(it->second, ' ') : "";
+	_cgiMetaVar["REQUEST_METHOD"] = _request->getMethod();
+	_cgiMetaVar["SCRIPT_NAME"] = _actualTarget != "" ? _actualTarget : "/"; // retirer le root TODO
+	_cgiMetaVar["SCRIPT_FILENAME"] = _actualTarget != "" ? _actualTarget : "/";
+	_cgiMetaVar["SERVER_NAME"] = _request->getHost();
+	_cgiMetaVar["SERVER_PORT"] = getRequestedPortFromSocket(_clientFd);
+	_cgiMetaVar["SERVER_PROTOCOL"] = _request->getProtocol();
+	_cgiMetaVar["SERVER_SOFTWARE"] = "WeBsErV";
 }
 
 char	**Response::_createEnvArray(void)
@@ -88,7 +98,7 @@ char	**Response::_createEnvArray(void)
 		int i = 0;
 		while (env[i])
 		{
-			std::cout << "\e[31mEnv Array[" << i << "] : [" << env[i] << "]\e[0m" << std::endl;
+			std::cerr << "\e[31mEnv Array[" << i << "] : [" << env[i] << "]\e[0m" << std::endl;
 			++i;
 		}
 	}

@@ -54,7 +54,11 @@ void                    printTimeDebug(int debug,std::string quote, std::string 
 void                    printAvailableAction(int debug, int _clientFd, int _availableActions);
 
 std::string								getClientAddrFromSocket(int acceptSysCallReturnedFd);
+std::string								getClientPortFromSocket(int acceptSysCallReturnedFd);
 std::string								getRequestedAddrFromSocket(int acceptSysCallReturnedFd);
+std::string								getRequestedPortFromSocket(int acceptSysCallReturnedFd);
 std::pair<std::string, std::string>		getClientHostnameAndService(int acceptSysCallReturnedFd);
+std::string								subStringBeforeFirstDelim(std::string &str, char delim);
+std::string								subStringAfterFirstDelim(std::string &str, char delim);
 
 #endif
