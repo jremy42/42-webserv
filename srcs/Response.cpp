@@ -529,7 +529,7 @@ int Response::handleResponse(void)
 		std::cout << "handleResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER)
 		return (0);
-	else if (_state == R_OVER && _statusCode > 400)
+	else if (_state == R_OVER && _statusCode >= 400)
 		return (-1);
 	else
 		return (1);

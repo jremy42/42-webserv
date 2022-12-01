@@ -78,6 +78,7 @@ int Multipart::_extractHeader(void)
 				|| colonPos == bufExtract.length() - 1
 				|| colonPos == 1)
 		{
+
 			std::cerr<<"ERRRROOOOOORRRR" << std::endl;
 			std::cout << "[" << string("--" + _boundaryDelim) << "]" << std::endl;
 			std::cout << "[" << bufExtract << "]" << std::endl;

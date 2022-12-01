@@ -24,6 +24,7 @@ Request::Request(int clientFd, v_config* configList )
 	_statusCode = 200;
 	_configList = configList;
 	_maxRead = 0;
+	_nameBodyFile = "";
 }
 
 Request::Request(const Request &src)
@@ -33,7 +34,16 @@ Request::Request(const Request &src)
 
 Request::~Request(void)
 {
-	unlink(_nameBodyFile.c_str());
+	if (_nameBodyFile.size() > 0)
+	{
+		_fs.close();
+		if (unlink(_nameBodyFile.c_str()) == -1)
+		{
+		std::cerr << "unlink error" << std::endl;
+		std::cerr << "errno: " << strerror(errno) << std::endl;
+		exit(1);
+		}
+	}
 }
 
 Request	&Request::operator=(const Request &rhs)
@@ -282,52 +292,30 @@ void Request::_initBodyFile(void)
 	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
 	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));
 	_state = R_BODY;
-	if (_chunked == true)
-		_state = R_BODY_CHUNKED;
 }
 
 int Request::_parseHeaderForBody(void)
 {
-	string rawContentType;
-	string rawContentLength;
-	string rawTransferEncoding;
-	if (_header.find("Content-Type") != _header.end())
-		rawContentType = _header.find("Content-Type")->second;
-	if (rawContentType.empty())
+
+	string rawContentType = _header.find("Content-Type") != _header.end() ? _header.find("Content-Type")->second : "";
+	string rawContentLength = _header.find("Content-Length") != _header.end() ? _header.find("Content-Length")->second : "";
+	string rawTransferEncoding = _header.find("Transfer-Encoding") != _header.end() ? _header.find("Transfer-Encoding")->second : "";
+
+	if (rawContentType.empty() || rawTransferEncoding == "chunked" || rawContentLength.empty())
 	{
 		_state = R_ERROR;
 		_statusCode = 400;
 		return 0;
 	}
-	else
-		_parseContentType(rawContentType);
-	if (_header.find("Transfer-Encoding") != _header.end())
-	{
-		rawTransferEncoding = _header.find("Transfer-Encoding")->second;
-		if (rawTransferEncoding == "chunked")
-		{
-			_chunked = true;
-			return 1;
-		}
-	}
-	if (_header.find("Content-Length") != _header.end())
-		rawContentLength = _header.find("Content-Length")->second;
-	if (rawContentLength.empty())
-	{
-		_state = R_ERROR;
-		_statusCode = 400;
-		return 0;
-	}
-	else
-		_contentLength = atoi(rawContentLength.c_str());
+	_parseContentType(rawContentType);
+	_contentLength = atoi(rawContentLength.c_str());
 	if (_contentLength > _clientMaxBodySize)
 	{
 		_statusCode = 413;
 		_state = R_ERROR;
 		return 0;
 	}
-
-	if (_contentType[0] == "multipart/form-data" && _contentType.size() > 1)
+	if (!_contentType.empty() &&_contentType[0] == "multipart/form-data" && _contentType.size() > 1)
 	{
 		size_t pose;
 		_boundary = _contentType[1];
@@ -373,69 +361,6 @@ void Request::_handleBody(void)
 	_rawRequest.clear();
 }
 
-int Request::_getNextChunkedSize(void)
-{
-	v_c_it ite = _rawRequest.end();
-	v_c_it it = _rawRequest.begin();
-	if (_nextChunkSize == -1)
-	{
-		if (DEBUG_REQUEST)
-			std::cout << "getNextSize" << std::endl;
-		for (; it != ite; it++)
-		{
-			if (*it == '\r'
-				&& it + 1 != ite && *(it + 1) == '\n')
-			{
-				string rawChunkSize(_rawRequest.begin(), it);
-				_nextChunkSize = strtol(rawChunkSize.c_str(), NULL, 16);
-				if (_nextChunkSize == 0)
-				{
-					_state = R_END;
-					return 0;
-				}
-				_rawRequest.erase(_rawRequest.begin(), it + 2);
-				ite = _rawRequest.end();
-				it = _rawRequest.begin();
-				break;
-			}
-		}
-	}
-	return 1;
-}
-
-void Request::_handleBodyChunked(void)
-{
-	v_c_it ite = _rawRequest.end();
-	v_c_it it = _rawRequest.begin();
-
-	if (DEBUG_REQUEST)
-	{
-		std::cout << "Handle body" << std::endl;
-		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
-	}
-	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
-	{
-		_statusCode = 413;
-		_state = R_ERROR;
-		return;
-	}
-	for (; it != ite; it++)
-	{
-		if (!_getNextChunkedSize())
-			break;
-		else
-		{
-			it = _rawRequest.begin();
-			ite = _rawRequest.end();
-		}
-		_fs << *it;
-		_rawRequest.erase(_rawRequest.begin(), it + 1);
-		_contentLength--;
-		_nextChunkSize--;
-	}
-	_fs.flush();
-	_rawRequest.clear();
-}
 
 int Request::readClientRequest(void)
 {
@@ -448,8 +373,8 @@ int Request::readClientRequest(void)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
-	if (read_ret == -1)
-			throw (std::runtime_error(strerror(errno)));
+	if (read_ret == -1)	
+		throw (std::runtime_error(strerror(errno)));
 	std::cout << "read ret[" << read_ret << "]" << std::endl;
 	if (DEBUG_REQUEST)
 	{
@@ -480,16 +405,15 @@ int	Request::handleRequest(void)
 		_initBodyFile();
 	if (_state == R_BODY)
 		_handleBody();
-	if(_state == R_BODY_CHUNKED)
-		_handleBodyChunked();
 	if (ret == 0)
 		_state = R_ZERO_READ;
-	if ( _contentLength <= 0 && _state == R_BODY && _chunked == false)
+	if ( _contentLength <= 0 && _state == R_BODY)
 		_state = R_END;
-	//if (DEBUG_REQUEST)																
-	std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr()
-			<< "]" << std::endl;
-	std::cout << "Max read = [" << _maxRead << "]" << std::endl;
+	if (DEBUG_REQUEST)
+	{															
+		std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr() << "]" << std::endl;
+		std::cout << "Max read = [" << _maxRead << "]" << std::endl;
+	}
 	return (_state);
 
 }
@@ -515,6 +439,14 @@ int Request::_checkAutorizationForMethod(void)
 void Request::_setConfig(void)
 {
 	std::cerr << _header << std::endl;
+	if (_header.find("Host") == _header.end())
+	{
+		std::cout << "No host" << std::endl;
+		_statusCode = 400;
+		_header.insert(std::pair<string, string>("Host", ""));
+		_state = R_ERROR;
+		return;
+	}
 	_config = getMatchingConfig();
 	_clientMaxBodySize = atoi(_config->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
 	if (_checkAutorizationForMethod())
@@ -542,12 +474,10 @@ std::string Request::getTmpBodyFile(void) const
 
 const Config	*Request::getMatchingConfig(void) const
 {
-	v_config::const_iterator	it = _configList->begin();
-	v_config::const_iterator	ite = _configList->end();
+	v_config::const_iterator					it = _configList->begin();
+	v_config::const_iterator					ite = _configList->end();
 	std::vector<std::string>::const_iterator	match;
 	std::vector<std::string>					currentCheckedConfig;
-
-	printTimeDebug(DEBUG_REQUEST, "host", _header.find("Host")->second);
 	for (; it != ite; it++)
 	{
 		currentCheckedConfig = it->getServerName();
@@ -584,3 +514,58 @@ Request::string Request::getBodyFile(void)
 {
 	return _nameBodyFile;
 }
+
+
+
+/* void Request::_handleBodyChunked(void)
+{
+	v_c_it ite = _rawRequest.end();
+	v_c_it it = _rawRequest.begin();
+
+	if (DEBUG_REQUEST)
+	{
+		std::cout << "Handle body" << std::endl;
+		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
+	}
+	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
+	{
+		_statusCode = 413;
+		_state = R_ERROR;
+		return;
+	}
+	std::cout << "NextChunkSize:" << _nextChunkSize << std::endl;
+	for (; it != ite; it++)
+	{
+		if (_nextChunkSize == -1 )
+		{
+			if (DEBUG_REQUEST)
+				std::cout << "getNextSize" << std::endl;
+			for (; it + 1 != ite; it++)
+			{
+				if (*it == '\r' && *(it + 1) == '\n')
+				{
+					std::cout << "rawChunkSize: [" << _rawChunkedSize << "]" << std::endl;
+					_nextChunkSize = strtol(_rawChunkedSize.c_str(), NULL, 16);
+					_rawChunkedSize.clear();
+					std::cout << "_nextChunkSize: [" << _nextChunkSize << "]" << std::endl;
+					if (_nextChunkSize == 0)
+					{
+						_state = R_END;
+						_fs.flush();
+						_rawRequest.clear();
+						return;
+					}
+					it += 1;
+				break;
+				}
+				else
+					_rawChunkedSize.push_back(*it);
+			}
+			continue;
+		}
+		_fs << *it;
+		_nextChunkSize--;
+	}
+	_fs.flush();
+	_rawRequest.clear();
+} */

@@ -54,19 +54,19 @@ class Request
 		Request &operator=(const Request &rhs);
 		~Request(void);
 
-		int			readClientRequest(void);
-		int			getState(void) const;
-		string		&getStateStr(void) const;
-		string		getMethod(void) const;
-		string		getProtocol(void) const;
-		string		getTarget(void) const;
-		int			getStatusCode(void) const;
-		void 		reset(void);
-		string		getHost(void) const;
-		string		getTmpBodyFile(void) const;
-		void		setClientMaxBodySize(int clientMaxBodySize);
-		void		setState(int state);
-		int			handleRequest(void);
+		int					readClientRequest(void);
+		int					getState(void) const;
+		string				&getStateStr(void) const;
+		string				getMethod(void) const;
+		string				getProtocol(void) const;
+		string				getTarget(void) const;
+		int					getStatusCode(void) const;
+		void 				reset(void);
+		string				getHost(void) const;
+		string				getTmpBodyFile(void) const;
+		void				setClientMaxBodySize(int clientMaxBodySize);
+		void				setState(int state);
+		int					handleRequest(void);
 		const Config		*getMatchingConfig(void) const;
 		const Config		*getRequestConfig(void) const;
 		const Config		*getConfig(void) const;
@@ -77,8 +77,6 @@ class Request
 
 	private:
 		int				_state;
-		int				_chunked;
-		int				_nextChunkSize;
 		int				_clientFd;
 		int				_statusCode;
 		int				_maxRead;
@@ -93,7 +91,7 @@ class Request
 		string			_rawRequestLine;
 		int				_clientMaxBodySize;
 		v_config		*_configList;
-		const Config			*_config;
+		const Config	*_config;
 		static string	_requestLineField[3];
 		static string	_headerField[3];
 		static string	_validRequest[3];
@@ -110,17 +108,18 @@ class Request
 		void	_setConfig(void);
 		// check_header
 		int	_checkAutorizationForMethod(void);
-		int _parseHeaderForBody(void);
-		int	_getNextChunkedSize(void);
 
 		//handle body
-		void _initBodyFile(void);
-		string _nameBodyFile;
-		//int	 _bodyFile;
-		int  _bodyFileSize;
-		std::fstream _fs;
-		std::fstream _newBodyFile;
-		void _parseContentType(string  rawContentType);
+		void 			_initBodyFile(void);
+		string			_nameBodyFile;
+		int  			_bodyFileSize;
+		std::fstream	_fs;
+		void 			_parseContentType(string  rawContentType);
+		int				_parseHeaderForBody(void);
+
+		//std::string _rawChunkedSize;
+		//int				_chunked;
+		//int				_nextChunkSize;
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);
