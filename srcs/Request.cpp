@@ -43,7 +43,6 @@ Request::~Request(void)
 		{
 		std::cerr << "unlink error" << std::endl;
 		std::cerr << "errno: " << strerror(errno) << std::endl;
-		exit(1);
 		}
 	}
 }

@@ -154,7 +154,7 @@ int Client::executeAction()
 		delete _response;
 		_state = S_INIT;
 	}
-	else if(_state == S_CLOSE_FD)
+	if(_state == S_CLOSE_FD)
 	{
 		delete _request;
 		_state = S_CLOSE_FD;

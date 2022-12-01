@@ -581,9 +581,9 @@ int Response::handleResponse(void)
 	
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 		std::cerr << "handleResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	if (_state == R_OVER)
+	if (_state == R_OVER && _statusCode < 400)
 		return (0);
-	else if (_state == R_OVER && _statusCode >= 400)
+	else if (_state == R_OVER)
 		return (-1);
 	else
 		return (1);
@@ -694,7 +694,7 @@ void Response::_sendBodyToClient(void)
 		std::cerr << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 	if (_bodyLength == 0)
 	{
-		std::cerr << "No more body data to read on body fd. Closing fd" << std::endl;
+		std::cerr << "No more body data to read on body fd. Attempt to Close fd" << std::endl;
 		try
 		{
 			std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream); 
