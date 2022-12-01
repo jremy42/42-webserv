@@ -1,7 +1,7 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-#define READ_BUFFER_SIZE 512
+#define READ_BUFFER_SIZE 1024
 # define MAX_REQUESTLINE_SIZE 4096
 # define MAX_HEADER_SIZE 4096
 
@@ -20,6 +20,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include "Config.hpp"
+# include "Multipart.hpp"
 
 # define VALID_REQUEST_N 3
 # define HEADER_FIELD 3
@@ -32,6 +33,7 @@
 enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_BOUNDARY_HEADER,R_END, R_ERROR, R_ZERO_READ};
 
 class Config;
+class Multipart;
 
 class Request
 {
@@ -52,68 +54,72 @@ class Request
 		Request &operator=(const Request &rhs);
 		~Request(void);
 
-		int			readClientRequest(void);
-		int			getState(void) const;
-		string		&getStateStr(void) const;
-		string		getMethod(void) const;
-		string		getProtocol(void) const;
-		string		getTarget(void) const;
-		int			getStatusCode(void) const;
-		void 		reset(void);
-		string		getHost(void) const;
-		string		getTmpBodyFile(void) const;
-		void		setClientMaxBodySize(int clientMaxBodySize);
-		void		setState(int state);
-		int			handleRequest(void);
+		int					readClientRequest(void);
+		int					getState(void) const;
+		string				&getStateStr(void) const;
+		string				getMethod(void) const;
+		string				getProtocol(void) const;
+		string				getTarget(void) const;
+		int					getStatusCode(void) const;
+		void 				reset(void);
+		string				getHost(void) const;
+		string				getTmpBodyFile(void) const;
+		void				setClientMaxBodySize(int clientMaxBodySize);
+		void				setState(int state);
+		int					handleRequest(void);
 		const Config		*getMatchingConfig(void) const;
 		const Config		*getRequestConfig(void) const;
 		const Config		*getConfig(void) const;
 		m_ss				getHeader(void) const;
+		string 				getBoundaryDelim(void);
+		string 				getUploadDir(void);
+		string 				getBodyFile(void);
 
 	private:
-
 		int				_state;
 		int				_clientFd;
 		int				_statusCode;
-		int				_maxRead;
+		int				_totalRead;
 		m_ss			_requestLine;
 		m_ss			_header;
 		v_s				_contentType;
 		v_c				_rawRequest;
 		string			_rawRequestString;
 		string			_boundary;
-		m_ss			_boundaryHeader;
 		int				_contentLength;
 		int				_readRet;
 		string			_rawRequestLine;
 		int				_clientMaxBodySize;
 		v_config		*_configList;
-		const Config			*_config;
+		const Config	*_config;
 		static string	_requestLineField[3];
 		static string	_headerField[3];
 		static string	_validRequest[3];
-		static string	_stateStr[9];
+		static string	_stateStr[10];
 
 		void	_handleRequestLine(void);
 		void	_handleHeader(void);
 		void	_handleBody(void);
+		void	_handleBodyChunked(void);
 		int		parseRequestLine(string rawRequestLine);
 		int		parseHeader(string rawRequestLine);
 		int		checkRequestLine(void);
 		int		checkHeader(void);
 		void	_setConfig(void);
-		void	_extractFileFromBody(void);
-
+		// check_header
+		int	_checkAutorizationForMethod(void);
 
 		//handle body
-		void _initBodyFile(void);
-		string _nameBodyFile;
-		//int	 _bodyFile;
-		int  _bodyFileSize;
-		std::fstream _fs;
-		std::fstream _newBodyFile;
-		void _parseContentType(string  rawContentType);
-		void	_handleBoundary(void);
+		void 			_initBodyFile(void);
+		string			_nameBodyFile;
+		int  			_bodyFileSize;
+		std::fstream	_fs;
+		void 			_parseContentType(string  rawContentType);
+		int				_parseHeaderForBody(void);
+
+		//std::string _rawChunkedSize;
+		//int				_chunked;
+		//int				_nextChunkSize;
 };
 
 std::string	&strtrim(std::string &str, const std::string &charset);

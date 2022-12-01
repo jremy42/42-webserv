@@ -29,7 +29,7 @@ void	Location::_initLocationInfoMap(void)
 	//_locationInfoMap.find("client_max_body_size")->second.push_back("12m");
 	_locationInfoMap.find("index")->second.push_back("index.html");
 	_locationInfoMap.find("return")->second.push_back("1");
-	_locationInfoMap.find("upload")->second.push_back("./www");	
+	_locationInfoMap.find("upload")->second.push_back("./upload");	
 	//_locationInfoMap.find("error_page")->second.push_back("999");
 	_locationInfoMap.find("autoindex")->second.push_back("off");	
 
