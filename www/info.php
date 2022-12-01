@@ -5,6 +5,6 @@ phpinfo();
 
 // Affiche uniquement le module d'information.
 // phpinfo(8) fournirait les mêmes informations.
-phpinfo(INFO_MODULES);
+//phpinfo(INFO_MODULES);
 
 ?>

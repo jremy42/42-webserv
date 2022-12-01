@@ -202,6 +202,8 @@ int	Request::parseHeader(string rawHeader)
 		header_key = strtrim(header_key, "\f\t\n\r\v ");
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
 		//std::cout << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
+		if (header_key == "Host" && _header.find("Host")->second == "no host")
+			_header.erase("Host");
 		_header.insert(std::pair<string, string>(header_key, header_value));
 		std::cout << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
 	}
@@ -498,12 +500,12 @@ Request::m_ss Request::getHeader(void) const
 	return _header;
 }
 
-Request::string Request::getBoundaryDelim(void)
+Request::string Request::getBoundaryDelim(void) const
 {
 	return _boundary;
 }
 
-Request::string Request::getUploadDir(void)
+Request::string Request::getUploadDir(void) const
 {
 	string requestTarget = this->getTarget();
 	return _config->getParamByLocation(requestTarget, "upload")[0];

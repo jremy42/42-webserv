@@ -23,6 +23,7 @@
 # include <iomanip>
 # include <sys/wait.h>
 # include <cctype>
+# include "Multipart.hpp"
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
@@ -32,6 +33,7 @@
 enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};
 
 class Config;
+class Multipart;
 
 class Response
 {

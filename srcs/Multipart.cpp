@@ -7,6 +7,8 @@ Multipart::Multipart(void)
 Multipart::Multipart(string bodyFile, string boundaryDelim, string uploadDir)
 {
 	_bodyFile = bodyFile;
+	_globalError = false;
+	_currentFileError = false;
 	_boundaryDelim = boundaryDelim;
 	_uploadDir = uploadDir;
 	printTimeDebug(1, "create Multipart with tmpfile", _bodyFile);
@@ -45,13 +47,26 @@ int Multipart::_extractFileFromBody(void)
 		if (bufExtract == string("--" + _boundaryDelim + "\r"))
 			break;
 		if (bufExtract == string("--" + _boundaryDelim + "--" + "\r"))
-			return (_fsNewFile.flush(), _fsNewFile.close(), 0);
+		{
+			if(!_currentFileError)
+				_returnMessage += _fileName + ": File successfully uploaded\n";
+			else
+				_returnMessage += _fileName + ": Failed \n";
+			_fsNewFile.flush();
+			_fsNewFile.close();
+			return (0);
+		}
 		if (bufExtract == string("\r"))
 			continue;
 		bufExtract += "\n";
 		std::cout << "bufExtract: [" << bufExtract << "]" << std::endl;
 		_fsNewFile << bufExtract;
 	}
+	if(!_currentFileError)
+		_returnMessage += _fileName + ": File successfully uploaded\n";
+	else
+		_returnMessage += _fileName + ": Failed \n";
+	_currentFileError = false;
 	_fsNewFile.flush();
 	_fsNewFile.close();
 	return (1);	
@@ -79,7 +94,6 @@ int Multipart::_extractHeader(void)
 				|| colonPos == 1)
 		{
 
-			std::cerr<<"ERRRROOOOOORRRR" << std::endl;
 			std::cout << "[" << string("--" + _boundaryDelim) << "]" << std::endl;
 			std::cout << "[" << bufExtract << "]" << std::endl;
 		}
@@ -98,17 +112,20 @@ int Multipart::_extractHeader(void)
 int 	Multipart::_createFileFromHeader(void)
 {
 	string rawContentType = _boundaryHeader["Content-Disposition"];
-	string filename = rawContentType.find("filename=") != std::string::npos ? rawContentType.substr(rawContentType.find("filename=") + 9) : "";
-	filename = strtrim(filename, "\"");
-	if (filename.empty())
+	_fileName = rawContentType.find("filename=") != std::string::npos ? rawContentType.substr(rawContentType.find("filename=") + 9) : "";
+	_fileName = strtrim(_fileName, "\"");
+	if (_fileName.empty())
 		return 0;
-	filename = _uploadDir + "/" + filename;
-	std::cout << "Creating new file : " << filename << std::endl;
-	_fsNewFile.open(filename.c_str(), std::ofstream::binary | std::ifstream::out);
-	if (_fsNewFile.good())
-		std::cout << "Successfully opened new file "<< std::endl;
-	else
-		throw(std::runtime_error(std::string("Failed to open new file in multipart") + strerror(errno)));
+	_fileName = _uploadDir + "/" + _fileName;
+	std::cout << "Creating new file : " << _fileName << std::endl;
+	_fsNewFile.open(_fileName.c_str(), std::ofstream::binary | std::ifstream::out | std::ifstream::trunc);
+	if (!_fsNewFile.good())
+	{
+		_currentFileError = true;
+		_globalError = true;
+		_fsNewFile.open("/dev/null", std::ofstream::binary | std::ifstream::out);
+	}
+
 	return 1;
 }
 
@@ -125,4 +142,14 @@ int Multipart::createFilesFromBody(void)
 			_boundaryHeader.clear();
 		}
 	return 1;
+}
+
+std::string Multipart::getReturnMessage(void)
+{
+	return _returnMessage;
+}
+
+bool Multipart::getError(void)
+{
+	return _globalError;
 }

@@ -6,13 +6,22 @@ Response::m_is Response::_initStatusCodeMessage()
 {
 	m_is ret;
 	ret[200] = "OK";
+	ret[201] = "Created";
+	ret[202] = "Accepted";
+	ret[204] = "No Content";
+	ret[206] = "Partial Content";
 	ret[301] = "Moved Permanently";
 	ret[400] = "Bad Request";
 	ret[404] = "Not Found";
 	ret[405] = "Method Not Allowed";
 	ret[408] = "Request Timeout";
+	ret[413] = "Payload Too Large";
+	ret[403] = "Forbidden";
 	return ret;
 }
+
+std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>";
+std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>";
 
 Response::m_ss Response::_initCgiMetaVar()
 {
@@ -119,9 +128,6 @@ char	**Response::_createEnvArray(void)
 	}
 	return (env);
 }
-
-std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>";
-std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>";
 
 Response::Response()
 {
@@ -414,6 +420,15 @@ void Response::_methodGET(void)
 
 void Response::_methodPOST(void)
 {
+	Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
+	multipart.createFilesFromBody();
+	_state = R_FILE_READY;
+	_ss << multipart.getReturnMessage();
+	_bodyLength = multipart.getReturnMessage().size();
+	if (multipart.getError())
+		_statusCode = 206;
+	else
+		_statusCode = 201;
 	//access sur le fichier droit d'ecriture 
 	//if file existe append ?
 	// else create file
@@ -586,7 +601,7 @@ int Response::_createResponse(void)
 		_checkRedirect();
 		_checkAutorizationForMethod();
 	}
-	if (_statusCode > 200 && _state == R_INIT)
+	if (_statusCode > 300 && _state == R_INIT)
 	{
 		_createErrorMessageBody();
 		_state = R_FILE_READY;
@@ -599,7 +614,7 @@ int Response::_createResponse(void)
 	}
 	else if (_state < R_FILE_READY && _request->getMethod() == "POST")
 	{
-		//POST a implementer !!!
+		_methodPOST();
 	}
 	if (_state == R_FILE_READY)
 	{

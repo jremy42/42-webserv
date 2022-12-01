@@ -71,8 +71,8 @@ class Request
 		const Config		*getRequestConfig(void) const;
 		const Config		*getConfig(void) const;
 		m_ss				getHeader(void) const;
-		string 				getBoundaryDelim(void);
-		string 				getUploadDir(void);
+		string 				getBoundaryDelim(void) const;
+		string 				getUploadDir(void) const;
 		string 				getBodyFile(void);
 
 	private:

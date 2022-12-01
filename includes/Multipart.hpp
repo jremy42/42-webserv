@@ -41,14 +41,20 @@ class Multipart
 		Multipart &operator=(const Multipart &rhs);
 		~Multipart(void);
 		int createFilesFromBody(void);
+		string getReturnMessage(void);
+		bool	getError(void);
 
 	private:
+		bool 			_currentFileError;
+		bool			_globalError;
 		string			_bodyFile;
 		string 			_boundaryDelim;
 		string			_uploadDir;
+		string			_fileName;
 		std::fstream	_fs;
 		std::fstream	_fsNewFile;
 		m_ss			_boundaryHeader;
+		string			_returnMessage;
 		int		_extractFileFromBody(void);
 		int		_createFileFromHeader(void);
 		int 	_extractHeader(void);
