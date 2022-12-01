@@ -111,14 +111,11 @@ char	**Response::_createEnvArray(void)
 		}
 	}
 	env -= size;
-	if (DEBUG_RESPONSE)
+	int i = 0;
+	while (env[i])
 	{
-		int i = 0;
-		while (env[i])
-		{
-			std::cerr << "\e[31mEnv Array[" << i << "] : [" << env[i] << "]\e[0m" << std::endl;
-			++i;
-		}
+		std::cerr << "CGI Env[" << i << "] : [" << env[i] << "]m" << std::endl;
+		++i;
 	}
 	return (env);
 }
@@ -129,13 +126,13 @@ std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /tit
 Response::Response()
 {
 	if (DEBUG_RESPONSE)
-		std::cout << "Response : Default Constructor called" << std::endl; 
+		std::cerr << "Response : Default Constructor called" << std::endl; 
 }
 
 Response::Response(int clientFd, Request *request, const Config *config, int statusCode)
 {
 	if (DEBUG_RESPONSE)
-		std::cout << "Response : Parametric Constructor called" << std::endl; 
+		std::cerr << "Response : Parametric Constructor called" << std::endl; 
 	_clientFd = clientFd;
 	_request = request;
 	_config = config;
@@ -143,10 +140,10 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	_state = R_INIT;
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
-		std::cout << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
-		std::cout << *_config;
-		std::cout << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
+		std::cerr << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
+		std::cerr << "\e[31m--------------------Start of Config used for creation--------------------" << std::endl;
+		std::cerr << *_config;
+		std::cerr << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
 	}
 	_selectActualTarget();
 	memset(_nameOut, 0, 32);::
@@ -159,14 +156,14 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 Response::Response(const Response &src)
 {
 	if (DEBUG_RESPONSE)
-		std::cout << "Response : Copy Constructor called" << std::endl; 
+		std::cerr << "Response : Copy Constructor called" << std::endl; 
 	*this = src;
 }
 
 Response::~Response(void)
 {
 	if (DEBUG_RESPONSE)
-		std::cout << "Response : Default Destructor called" << std::endl; 
+		std::cerr << "Response : Default Destructor called" << std::endl; 
 	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
 		unlink(_nameOut);
 }
@@ -175,6 +172,7 @@ Response &Response::operator=(const Response &rhs)
 {
 	_clientFd = rhs._clientFd;
 	_statusCode = rhs._statusCode;
+	_state = rhs._state;
 	_lineStatus = rhs._lineStatus;
 	_header = rhs._header;
 	_body = rhs._body;
@@ -182,18 +180,27 @@ Response &Response::operator=(const Response &rhs)
 	_defaultErrorBodyToSend = rhs._defaultErrorBodyToSend;
 	_request = rhs._request;
 	_config = rhs._config;
-	_state = rhs._state;
 	_bodyLength = rhs._bodyLength;
 
 	_rawRequestedTarget = rhs._rawRequestedTarget;
 	_requestedTargetRoot = rhs._requestedTargetRoot;
 	_rawActualTarget = rhs._rawActualTarget;
 	_actualTarget = rhs._actualTarget;
-	_QUERY_STRING = rhs._QUERY_STRING;
-	_PATH_INFO = rhs._PATH_INFO;
+	_targetExtension = rhs._targetExtension;
 	_targetStatus = rhs._targetStatus;
 	_cgiExecutable = rhs._cgiExecutable;
-	_targetExtension = rhs._targetExtension;
+
+	_PATH_INFO = rhs._PATH_INFO;
+	_QUERY_STRING = rhs._QUERY_STRING;
+	_cgiMetaVar = rhs._cgiMetaVar;
+
+	_requestBodyFile = rhs._requestBodyFile;
+	_requestBodyFileSize = rhs._requestBodyFileSize;
+
+	_pid = rhs._pid;
+	_nameOut[32] = rhs._nameOut[32];
+	_inChild = rhs._inChild;
+	_outChild = rhs._outChild;
 	return (*this);
 }
 
@@ -206,23 +213,23 @@ void Response::_createErrorMessageBody(void)
 
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "_createErrorMessageBody start" << std::endl;
-		std::cout << "requestTarget : [" << requestTarget << "]" << std::endl;
-		std::cout << "customErrorPage : [" << customErrorPage << "]" << std::endl;
-		std::cout << "matchingLocationRoot : [" << matchingLocationRoot << "]" << std::endl;
-		std::cout << "errorPageFile : [" << errorPageFile << "]" << std::endl;
+		std::cerr << "_createErrorMessageBody start" << std::endl;
+		std::cerr << "requestTarget : [" << requestTarget << "]" << std::endl;
+		std::cerr << "customErrorPage : [" << customErrorPage << "]" << std::endl;
+		std::cerr << "matchingLocationRoot : [" << matchingLocationRoot << "]" << std::endl;
+		std::cerr << "errorPageFile : [" << errorPageFile << "]" << std::endl;
 	}
 	if (customErrorPage != "" && fileExist(errorPageFile) && !isDir(errorPageFile))
 	{
 		if (DEBUG_RESPONSE)
-			std::cout << "An error page is specified for this error and location" << std::endl; 
+			std::cerr << "An error page is specified for this error and location" << std::endl; 
 		_createFileStreamFromFile(errorPageFile);
 		return ;
 	}
 	else
 	{
 		if (DEBUG_RESPONSE)
-			std::cout << "No error page is specified for this error and location -> Building Body from _defaultErrorBodyToSend" << std::endl; 
+			std::cerr << "No error page is specified for this error and location -> Building Body from _defaultErrorBodyToSend" << std::endl; 
 		string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
 		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
@@ -272,9 +279,7 @@ void	Response::_parseRawRequestTarget(void)
 		posFirstSlash = _rawActualTarget.find_first_of("/", posFirstSlash + 1);
 	}
 	if (posLastQuestionMark != std::string::npos)
-	{
 		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);	
-	}
 	std::size_t	posLastDot = _actualTarget.find_last_of(".");
 	if (posLastDot != std::string::npos)
 	{
@@ -282,22 +287,22 @@ void	Response::_parseRawRequestTarget(void)
 		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
 	_urlDecodeString(_PATH_INFO);
+		std::cerr << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
+		std::cerr << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
+		std::cerr << "_rawActualTarget : [" << _rawActualTarget << "]" << std::endl;
+		std::cerr << "_actualTarget : [" << _actualTarget << "]" << std::endl;
+		std::cerr << "_QUERY_STRING : [" << _QUERY_STRING << "]" << std::endl;
+		std::cerr << "_PATH_INFO : [" << _PATH_INFO << "]" << std::endl;
+		std::cerr << "_targetExtension : [" << _targetExtension << "]" << std::endl;
+		std::cerr << "_cgiExecutable : [" << _cgiExecutable << "]" << std::endl;
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
-		std::cout << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
-		std::cout << "_rawActualTarget : [" << _rawActualTarget << "]" << std::endl;
-		std::cout << "_actualTarget : [" << _actualTarget << "]" << std::endl;
-		std::cout << "_QUERY_STRING : [" << _QUERY_STRING << "]" << std::endl;
-		std::cout << "_PATH_INFO : [" << _PATH_INFO << "]" << std::endl;
-		std::cout << "_targetExtension : [" << _targetExtension << "]" << std::endl;
-		std::cout << "_cgiExecutable : [" << _cgiExecutable << "]" << std::endl;
 		if (!fileExist(_actualTarget))
-			std::cout << "actual Target does not exists" << std::endl;
+			std::cerr << "actual Target does not exists" << std::endl;
 		if (fileExist(_actualTarget) && isDir(_actualTarget))
-			std::cout << "actual Target exist and is a Directory" << std::endl;
+			std::cerr << "actual Target exist and is a Directory" << std::endl;
 		else if (fileExist(_actualTarget) && !isDir(_actualTarget))
-			std::cout << "actual Target exist and is a regular file" << std::endl;
+			std::cerr << "actual Target exist and is a regular file" << std::endl;
 	}
 }
 
@@ -307,20 +312,20 @@ void	Response::_selectActualTarget(void)
 	if (fileExist(_actualTarget) && !isDir(_actualTarget))
 	{
 		if (DEBUG_RESPONSE)
-			std::cout << "Requested file is standard" << std::endl;
+			std::cerr << "Requested file is standard" << std::endl;
 		_targetStatus = "File_ok";
 	}
 	else if (fileExist(_actualTarget) && isDir(_actualTarget))
 	{
 		std::vector<string> indexTryFiles = _config->getParamByLocation(_rawRequestedTarget, "index");
 		if (DEBUG_RESPONSE)
-			std::cout << "Trying files in indexTryFiles :" << indexTryFiles << std::endl;
+			std::cerr << "Trying files in indexTryFiles :" << indexTryFiles << std::endl;
 		std::vector<string>::iterator it = indexTryFiles.begin();
 		for (;it != indexTryFiles.end(); it++)
 		{
 			std::string	testedIndexFile = _requestedTargetRoot + _rawRequestedTarget + "/" + *it;
 			if (DEBUG_RESPONSE)
-				std::cout << "Testing index file :" << testedIndexFile << std::endl;
+				std::cerr << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
 			{
 				_actualTarget = testedIndexFile;
@@ -330,36 +335,36 @@ void	Response::_selectActualTarget(void)
 		if (it != indexTryFiles.end())
 		{
 			if (DEBUG_RESPONSE)
-				std::cout << "Found a suitable index file : [" << *it << "]" << std::endl;
+				std::cerr << "Found a suitable index file : [" << *it << "]" << std::endl;
 			_targetStatus = "Index_file_ok";
 		}
 		else if (_config->getParamByLocation(_rawRequestedTarget, "autoindex").at(0) == "on")
 		{
 			if (DEBUG_RESPONSE)
-				std::cout << "No suitable index file but autoindex is on. Returning Listing of directory" << std::endl;
+				std::cerr << "No suitable index file but autoindex is on. Returning Listing of directory" << std::endl;
 			_targetStatus = "Do_listing";
 		}
 		else
 		{
 			if (DEBUG_RESPONSE)
-				std::cout << "No suitable index file and autoindex is off" << std::endl;
+				std::cerr << "No suitable index file and autoindex is off" << std::endl;
 			_targetStatus = "Index_file_nok";
 		}
 	}
 	else
 	{
 		if (DEBUG_RESPONSE)
-			std::cout << "No such file or directory" << std::endl;
+			std::cerr << "No such file or directory" << std::endl;
 		_targetStatus = "File_nok";
 	}
 }
 
 void Response::_createFileStreamFromFile(string actualTarget) // set le header avec taille qui va bien et open le Body
 {
-	std::cout << "createFsfrom file : open " << actualTarget << std::endl;
+	std::cerr << "createFsfrom file : open " << actualTarget << std::endl;
 	_fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (_fs.good())
-		std::cout << "Successfully opened body file "<< std::endl;
+		std::cerr << "Successfully opened body file "<< std::endl;
 	else
 	{
 		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
@@ -371,7 +376,7 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
 	_bodyLength = _fs.tellg();
 	_fs.seekg(0, _fs.beg);
 	if (DEBUG_RESPONSE)
-		std::cout << "Body length: [" << _bodyLength << "]\n";
+		std::cerr << "Body length: [" << _bodyLength << "]\n";
 }
 
 void Response::_methodGET(void)
@@ -387,7 +392,7 @@ void Response::_methodGET(void)
 		if (_cgiExecutable != "")
 		{
 			if (DEBUG_RESPONSE && _state == R_INIT)
-				std::cout << "\e[33mCGI\e[0m" << std::endl;
+				std::cerr << "\e[33mCGI\e[0m" << std::endl;
 			if (_state == R_INIT)
 				_initCGIfile();
 			if (_state == R_WAIT_CGI_EXEC)
@@ -428,7 +433,7 @@ void Response::_extractHeaderFromCgiOutputFile(void)
 	}
 	_bodyLength -= 2;
 	if (DEBUG_RESPONSE)
-		std::cout << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
+		std::cerr << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
 }
 
 void Response::_waitCGIfile(void)
@@ -439,13 +444,13 @@ void Response::_waitCGIfile(void)
 	if (waitpid(_pid, &status, WNOHANG) == 0)
 	{
 		if (DEBUG_RESPONSE > 1)
-			std::cout << "A child is still working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+			std::cerr << "A child is still working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		return ;
 	}
 	else
 	{
 		if (DEBUG_RESPONSE)
-			std::cout << "A child is done working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+			std::cerr << "A child is done working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		if (WIFEXITED(status) > 0)
 			ret = (WEXITSTATUS(status));
 		if (WIFSIGNALED(status) > 0)
@@ -467,10 +472,10 @@ void Response::_initCGIfile(void)
 		throw(std::runtime_error(std::string("_nameOut mkstemp error") + strerror(errno)));
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "nameOut: [" << _nameOut << "]" << std::endl;
-		std::cout << "inchild fd: [" << _inChild << "]" << std::endl;
-		std::cout << "outchild fd: [" << _outChild << "]" << std::endl;
-		std::cout << "open " << _actualTarget << std::endl;
+		std::cerr << "nameOut: [" << _nameOut << "]" << std::endl;
+		std::cerr << "inchild fd: [" << _inChild << "]" << std::endl;
+		std::cerr << "outchild fd: [" << _outChild << "]" << std::endl;
+		std::cerr << "open " << _actualTarget << std::endl;
 	}
 	if (_requestBodyFileSize != 0)
 	{
@@ -482,7 +487,7 @@ void Response::_initCGIfile(void)
 	if (_pid != 0)
 	{
 		if (DEBUG_RESPONSE)
-			std::cout << "A child is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+			std::cerr << "A child is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		_state = R_WAIT_CGI_EXEC;
 		return ;
 	}
@@ -513,7 +518,7 @@ void Response::_createFullHeader(void)
 	_fullHeader.insert(_fullHeader.end(), _header.begin(), _header.end());
 	_fullHeader.push_back('\n');
 	if (DEBUG_RESPONSE)
-		std::cout << "Full Header size : [" << _fullHeader.size() << "]" << std::endl;
+		std::cerr << "Full Header size : [" << _fullHeader.size() << "]" << std::endl;
 }
 
 void Response::_checkAutorizationForMethod(void)
@@ -532,7 +537,7 @@ void Response::_checkRedirect(void)
 		return;
 	else
 	{
-		std::cout << "REDIRECT\n";
+		std::cerr << "REDIRECT\n";
 		_statusCode = atoi(_config->getParamByLocation(requestTarget, "return")[0].c_str());
 		_header += "location: " + _config->getParamByLocation(requestTarget, "return")[1] + "\n";
 	}
@@ -542,25 +547,25 @@ int Response::handleResponse(void)
 {
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 	{
-		std::cout << "handleResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-		std::cout << "Handle response start. Status [" << _state << "]" << std::endl;
+		std::cerr << "handleResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+		std::cerr << "Handle response start. Status [" << _state << "]" << std::endl;
 	}
 	if (_state != R_WRITE)
 	{
 		if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
-			std::cout << "Calling _createResponse" << std::endl;
+			std::cerr << "Calling _createResponse" << std::endl;
 		_createResponse();
 	}
 	if (_state == R_WRITE)
 	{
-		std::cout << "Calling _writeClientResponse" << std::endl;
+		std::cerr << "Calling _writeClientResponse" << std::endl;
 		_writeClientResponse();
 	}
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
-		std::cout << "Handle response end. Status [" << _state << "]" << std::endl;
+		std::cerr << "Handle response end. Status [" << _state << "]" << std::endl;
 	
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
-		std::cout << "handleResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+		std::cerr << "handleResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER)
 		return (0);
 	else
@@ -572,7 +577,7 @@ int Response::_createResponse(void)
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
 	//check methode
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
-		std::cout << "createResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+		std::cerr << "createResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 
 	if (_state == R_INIT)
 	{
@@ -587,7 +592,7 @@ int Response::_createResponse(void)
 	if (_state < R_FILE_READY && _request->getMethod() == "GET")
 	{
 		if (DEBUG_RESPONSE > 2)
-			std::cout << "GET METHOD" << std::endl;
+			std::cerr << "GET METHOD" << std::endl;
 		_methodGET(); // va set le status en R_FILE_READY a la fin du CGI ou directement si regular file
 	}
 	else if (_state < R_FILE_READY && _request->getMethod() == "POST")
@@ -601,7 +606,7 @@ int Response::_createResponse(void)
 		_state = R_WRITE;
 	}
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
-		std::cout << "createResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+		std::cerr << "createResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return (_state);
 }
 
@@ -612,12 +617,12 @@ std::istream *Response::_selectBodySourceBetweenFileAndStringStream(void)
 	if (_fs.is_open())
 	{
 		bodyStreamPtr = &_fs;
-		std::cout << "Body is a regular fs" << std::endl;
+		std::cerr << "Body is a regular fs" << std::endl;
 	}
 	else
 	{
 		bodyStreamPtr = &_ss;
-		std::cout << "Body is an error string stream" << std::endl;
+		std::cerr << "Body is an error string stream" << std::endl;
 	}
 	return (bodyStreamPtr);
 }
@@ -629,20 +634,20 @@ void Response::_sendHeaderToClient(void)
 	char	*buff;
 	int		i = 0;
 
-	std::cout << "Header not empty -> sending it first" << std::endl;
+	std::cerr << "Header not empty -> sending it first" << std::endl;
 	buff = new char[_fullHeader.size()];
 	buff_size = _fullHeader.size();
 	v_c::iterator ite = _fullHeader.end();
 	for (v_c::iterator it = _fullHeader.begin(); i < buff_size && it != ite; i++, it++)
 		buff[i] = *it;
-	std::cout << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
+	std::cerr << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, 0);
 	if (ret == -1)
 		std::cerr << "Error in writeClientResponse" << std::endl;
 	else
 	{
 		_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
-		std::cout << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
+		std::cerr << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
 	}
 	delete [] buff;
 }
@@ -655,36 +660,34 @@ void Response::_sendBodyToClient(void)
 	std::istream	*bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
 	std::istream	&bodyStream = *bodyStreamPtr;
 
-	std::cout << "Header IS empty -> sending Body" << std::endl;
+	std::cerr << "Header IS empty -> sending Body" << std::endl;
 	if (_bodyLength < WRITE_BUFFER_SIZE)
 		buff_size = _bodyLength;
 	else
 		buff_size = WRITE_BUFFER_SIZE;
 	bufBody = new char[buff_size];
 	bodyStream.read(bufBody, buff_size);
-	std::cout << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
-	std::cout << "Sending chunk of body to client" << std::endl;
+	std::cerr << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
+	std::cerr << "Sending chunk of body to client" << std::endl;
 	ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
 	_bodyLength -= ret;
 	if (ret == -1)
 		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
 	if (ret != bodyStream.gcount())
-	{
-		std::cout << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
-	}
+		std::cerr << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 	if (_bodyLength == 0)
 	{
-		std::cout << "No more body data to read on body fd. Closing fd" << std::endl;
+		std::cerr << "No more body data to read on body fd. Closing fd" << std::endl;
 		try
 		{
 			std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream); 
-			std::cout << "Closing fs" << std::endl;
+			std::cerr << "Closing fs" << std::endl;
 			fsForClose.close();
 		}
 		catch (std::exception &e)
 		{
 			(void)e;
-			std::cout << "No need to close filestream : Body is default error body" << std::endl;
+			std::cerr << "No need to close filestream : Body is default error body" << std::endl;
 		}
 		_state = R_OVER;
 	}
@@ -697,14 +700,14 @@ int Response::_writeClientResponse(void)
 {
 
 	if (DEBUG_RESPONSE)
-		std::cout << "write	Response IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	std::cout << "Begin of Write Client response function" << std::endl;
+		std::cerr << "write	Response IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	std::cerr << "Begin of Write Client response function" << std::endl;
 	if (_fullHeader.size())
 		_sendHeaderToClient();
 	else if (_fullHeader.empty())
 		_sendBodyToClient();
 	if (DEBUG_RESPONSE)
-		std::cout << "writeResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+		std::cerr << "writeResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return 1;
 }
 
@@ -788,7 +791,7 @@ int Response::_createAutoIndex(const string &pathToDir)
 	{	
 		if (it->second == DT_DIR)
 		{	
-			std::cout << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
+			std::cerr << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();
 			HTMLbody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n");
@@ -797,9 +800,9 @@ int Response::_createAutoIndex(const string &pathToDir)
 	//Ajout des dossiers
 	if (DEBUG_RESPONSE)
 	{
-		std::cout << "\e[33m-----------Autoindex BODY-----------" << std::endl;
-		std::cout << HTMLbody << std::endl;
-		std::cout << "-----------Autoindex BODY-----------\e[0m" << std::endl;
+		std::cerr << "\e[33m-----------Autoindex BODY-----------" << std::endl;
+		std::cerr << HTMLbody << std::endl;
+		std::cerr << "-----------Autoindex BODY-----------\e[0m" << std::endl;
 	}
 	_ss << HTMLbody;
 	_bodyLength = HTMLbody.size();

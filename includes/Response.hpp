@@ -26,10 +26,11 @@
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
-#  define DEBUG_RESPONSE 1
+#  define DEBUG_RESPONSE 0
 # endif
 
 enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};
+
 class Config;
 
 class Response
@@ -63,26 +64,26 @@ class Response
 		std::ifstream					_fs;
 		int								_bodyLength;
 		std::stringstream				_ss; // is in fact defautlErrorbodytoSendStringStream;
-
+		//Target
 		string							_rawRequestedTarget;
 		string							_requestedTargetRoot;
-		//_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget
 		string							_rawActualTarget;
-		//From _rawActualTarget
 		string							_actualTarget;
 		string							_targetExtension;
-		//From _rawActualTarget
-		string							_targetStatus; // retour de actual target
-		string							_cgiExecutable; // Empty si la target est un regular file
-
+		string							_targetStatus;
+		string							_cgiExecutable;// Empty si la target est un regular file
 		//Meta-var for CGI
 		string							_PATH_INFO;
 		string							_QUERY_STRING;
 		m_ss							_cgiMetaVar;
-
 		//From request
 		string							_requestBodyFile;
 		long							_requestBodyFileSize;
+		//CGI
+		pid_t							_pid;
+		char							_nameOut[32];
+		int								_inChild;
+		int								_outChild;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;
@@ -90,10 +91,6 @@ class Response
 		static m_is						_initStatusCodeMessage(void);
 		static m_ss						_initCgiMetaVar(void);
 
-		void							_setCgiMetaVar(void);
-		void							_setProtocolSpecificMetavar(void);
-		char							**_createEnvArray(void);
-		int								_urlDecodeString(string &strToDecode);
 		void							_parseRawRequestTarget(void);
 		void							_selectActualTarget(void);
 		void							_createErrorMessageBody(void);
@@ -116,13 +113,13 @@ class Response
 // POST
 		void							_methodPOST(void);
 // CGI
-		pid_t	_pid;
-		char _nameOut[32];
-		int	_inChild;
-		int _outChild;
-		void	_initCGIfile(void);
-		void 	_waitCGIfile(void);
-		void 	_extractHeaderFromCgiOutputFile(void);
+		void							_setCgiMetaVar(void);
+		void							_setProtocolSpecificMetavar(void);
+		char							**_createEnvArray(void);
+		int								_urlDecodeString(string &strToDecode);
+		void							_initCGIfile(void);
+		void							_waitCGIfile(void);
+		void							_extractHeaderFromCgiOutputFile(void);
 };
 
 #endif
