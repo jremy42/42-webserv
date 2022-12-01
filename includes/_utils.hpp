@@ -60,5 +60,7 @@ std::string								getRequestedPortFromSocket(int acceptSysCallReturnedFd);
 std::pair<std::string, std::string>		getClientHostnameAndService(int acceptSysCallReturnedFd);
 std::string								subStringBeforeFirstDelim(std::string &str, char delim);
 std::string								subStringAfterFirstDelim(std::string &str, char delim);
+std::string								subStringBeforeLastDelim(std::string &str, char delim);
+std::string								subStringAfterLastDelim(std::string &str, char delim);
 
 #endif

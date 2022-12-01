@@ -339,3 +339,19 @@ std::string								subStringAfterFirstDelim(std::string &str, char delim)
 	pos = str.find_first_of(delim);
 	return (str.substr(pos + 1));
 }
+
+std::string								subStringBeforeLastDelim(std::string &str, char delim)
+{
+	std::size_t	pos;
+
+	pos = str.find_last_of(delim);
+	return (str.substr(0, pos));
+}
+
+std::string								subStringAfterLastDelim(std::string &str, char delim)
+{
+	std::size_t	pos;
+
+	pos = str.find_last_of(delim);
+	return (str.substr(pos + 1));
+}

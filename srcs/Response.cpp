@@ -37,9 +37,27 @@ Response::m_ss Response::_initCgiMetaVar()
 	return ret;
 }
 
+void	Response::_setProtocolSpecificMetavar(void)
+{
+	m_ss				requestHeader = _request->getHeader();
+	m_ss::iterator		it = requestHeader.begin();
+	m_ss::iterator		ite = requestHeader.end();
+
+	for (; it != ite; it++)
+	{
+		if (it->first != "Authorization" && it->first != "Content-Length" && it->first != "Content-Type")
+		{
+			std::string	key = it->first;
+			for (std::size_t i = 0; i < key.size(); i++)
+				key[i] = (key[i] == '-') ? '_' : toupper(key[i]);
+			key = "HTTP_" + key;
+			_cgiMetaVar[key] = it->second;
+		}
+	}
+}
+
 void	Response::_setCgiMetaVar(void)
 {
-	// IDENT ???
 	m_ss				requestHeader = _request->getHeader();
 	m_ss::iterator		it;
 
@@ -55,12 +73,12 @@ void	Response::_setCgiMetaVar(void)
 	_cgiMetaVar["REMOTE_HOST"] = getClientHostnameAndService(_clientFd).first;
 	_cgiMetaVar["REMOTE_USER"] = (it = requestHeader.find("Authorization")) != requestHeader.end() ? subStringAfterFirstDelim(it->second, ' ') : "";
 	_cgiMetaVar["REQUEST_METHOD"] = _request->getMethod();
-	_cgiMetaVar["SCRIPT_NAME"] = _actualTarget != "" ? _actualTarget : "/"; // retirer le root TODO
+	_cgiMetaVar["SCRIPT_NAME"] = subStringAfterLastDelim(_actualTarget, '/');
 	_cgiMetaVar["SCRIPT_FILENAME"] = _actualTarget != "" ? _actualTarget : "/";
 	_cgiMetaVar["SERVER_NAME"] = _request->getHost();
 	_cgiMetaVar["SERVER_PORT"] = getRequestedPortFromSocket(_clientFd);
 	_cgiMetaVar["SERVER_PROTOCOL"] = _request->getProtocol();
-	_cgiMetaVar["SERVER_SOFTWARE"] = "WeBsErV";
+	_cgiMetaVar["SERVER_SOFTWARE"] = "Jhonny's and Fredo's WeBsErV";
 }
 
 char	**Response::_createEnvArray(void)
@@ -240,18 +258,22 @@ void	Response::_parseRawRequestTarget(void)
 	_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget;
 	_actualTarget = _rawActualTarget;
 
-	std::size_t	posLastSlash = _rawActualTarget.find_last_of("/");
+	std::size_t	posFirstSlash = _rawActualTarget.find_first_of("/", _requestedTargetRoot.size());
 	std::size_t	posLastQuestionMark = _rawActualTarget.find_last_of("?");
-	std::string testFile = _rawActualTarget.substr(0, posLastSlash);
-	if (fileExist(testFile) && !isDir(testFile))
+	while (posFirstSlash != std::string::npos)
 	{
-		_actualTarget = testFile;
-		_PATH_INFO = _rawActualTarget.substr(posLastSlash, posLastQuestionMark - posLastSlash);   
+		std::string testFile = _rawActualTarget.substr(0, posFirstSlash);
+		if (fileExist(testFile) && !isDir(testFile))
+		{
+			_actualTarget = testFile;
+			_PATH_INFO = _rawActualTarget.substr(posFirstSlash, posLastQuestionMark - posFirstSlash);   
+			break;
+		}
+		posFirstSlash = _rawActualTarget.find_first_of("/", posFirstSlash + 1);
 	}
 	if (posLastQuestionMark != std::string::npos)
 	{
 		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);	
-		_actualTarget = _actualTarget.substr(0, posLastQuestionMark);
 	}
 	std::size_t	posLastDot = _actualTarget.find_last_of(".");
 	if (posLastDot != std::string::npos)
@@ -260,7 +282,6 @@ void	Response::_parseRawRequestTarget(void)
 		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
 	_urlDecodeString(_PATH_INFO);
-	//_urlDecodeString(_QUERY_STRING);
 	if (DEBUG_RESPONSE)
 	{
 		std::cout << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
@@ -473,6 +494,7 @@ void Response::_initCGIfile(void)
 			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
 		_cgiMetaVar = _initCgiMetaVar();
 		_setCgiMetaVar();
+		_setProtocolSpecificMetavar();
 		char *arg[3];
 		arg[0] = const_cast<char *>(_cgiExecutable.c_str());
 		arg[1] = const_cast<char *>(_actualTarget.c_str());

@@ -91,6 +91,7 @@ class Response
 		static m_ss						_initCgiMetaVar(void);
 
 		void							_setCgiMetaVar(void);
+		void							_setProtocolSpecificMetavar(void);
 		char							**_createEnvArray(void);
 		int								_urlDecodeString(string &strToDecode);
 		void							_parseRawRequestTarget(void);
