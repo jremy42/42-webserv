@@ -1,7 +1,6 @@
 #ifndef MULTIPART_HPP
 #define MULTIPART_HPP
 
-# define READ_BUFFER_SIZE 512
 # define MAX_MULTIPARTLINE_SIZE 4096
 # define MAX_HEADER_SIZE 4096
 
@@ -20,10 +19,6 @@
 # include <stdlib.h>
 # include <string.h>
 # include "_utils.hpp"
-
-# define VALID_Multipart_N 3
-# define HEADER_FIELD 3
-# define MULTIPART_LINE_FIELD 3
 
 # ifndef DEBUG_MULTIPART
 #  define DEBUG_MULTIPART 0

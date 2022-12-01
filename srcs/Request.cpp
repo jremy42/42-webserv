@@ -7,14 +7,14 @@ std::string Request::_headerField[HEADER_FIELD] = {"Host", "User-Agent", "Accept
 std::string Request::_validRequest[VALID_REQUEST_N] = {"GET", "POST", "DELETE"};
 
 std::string	Request::_stateStr[10] = {"\x1b[32m R_REQUESTLINE\x1b[0m", "\x1b[34m R_HEADER\x1b[0m", "\x1b[34m R_SET_CONFIG\x1b[0m",
-"\x1b[35mR_INIT_BODY_FILE\x1b[0m","\x1b[35mR_BODY_CHUNKED``\x1b[0m" ,"\x1b[35mR_BODY\x1b[0m", "\x1b[35mR_BOUNDARY_HEADER\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
+"\x1b[35mR_INIT_BODY_FILE\x1b[0m" ,"\x1b[35mR_BODY\x1b[0m", "\x1b[35mR_BOUNDARY_HEADER\x1b[0m", "\x1b[31mR_END\x1b[0m", "\x1b[31mR_ERROR\x1b[0m", "\x1b[31mR_ZERO_READ\x1b[0m"};
 
 Request::Request(void)
 {
 	_state = R_REQUESTLINE;
 	_clientFd = -1;
 	_statusCode = 200;
-	_maxRead = 0;
+	_totalRead= 0;
 }
 
 Request::Request(int clientFd, v_config* configList )
@@ -23,8 +23,10 @@ Request::Request(int clientFd, v_config* configList )
 	_clientFd = clientFd;
 	_statusCode = 200;
 	_configList = configList;
-	_maxRead = 0;
+	_totalRead= 0;
 	_nameBodyFile = "";
+	_header.insert(std::pair<string, string>("Host", "no host"));
+
 }
 
 Request::Request(const Request &src)
@@ -56,7 +58,7 @@ Request	&Request::operator=(const Request &rhs)
 	_bodyFileSize = rhs._bodyFileSize;
 	_nameBodyFile = rhs._nameBodyFile;
 	_config = rhs._config;
-	_maxRead = rhs._maxRead;
+	_totalRead= rhs._totalRead;
 	_rawRequestString = rhs._rawRequestString;
 	_rawRequest = rhs._rawRequest;
 	_readRet = rhs._readRet;
@@ -170,8 +172,7 @@ int	Request::parseRequestLine(string rawRequestLine)
 int Request::checkHeader()
 {
 	if (_requestLine.find("http_version")->second == "HTTP/1.1"
-	&& ( _header.find("host") != _header.end()
-	|| _header.find("host")->second == ""))
+	&& (_header.find("host")->second == "no host"))
 		return -1;
 	return 0;
 }
@@ -207,6 +208,7 @@ int	Request::parseHeader(string rawHeader)
 	if (checkHeader() == -1)
 	{
 		_statusCode = 400;
+		_state = R_ERROR;
 		return -1;
 	}
 	return (0);
@@ -220,14 +222,21 @@ void Request::_handleRequestLine(void)
 	if (DEBUG_REQUEST)
 		std::cout << "Handle Request Line" << std::endl;
 	if (_rawRequest.size() > MAX_REQUESTLINE_SIZE)
-		throw(std::runtime_error("webserv: request : Request Line is too long"));
+	{
+				_state = R_ERROR;
+				_statusCode = 400;
+				return ;
+	}
 	for (; it != ite; it++)
 	{
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
 		{
 			string rawRequestLine(_rawRequest.begin(), it);
 			if(this->parseRequestLine(rawRequestLine) == -1)
+			{
 				_state = R_ERROR;
+				_statusCode = 400;
+			}
 			if (_state == R_ERROR)
 				return;
 			_rawRequest.erase(_rawRequest.begin(), it + 2);
@@ -366,8 +375,6 @@ int Request::readClientRequest(void)
 {
 	char		buf[READ_BUFFER_SIZE];
 	int			read_ret = 0;
-	//char		*next_nl;
-	//char		*headerStart;
 
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
@@ -385,7 +392,7 @@ int Request::readClientRequest(void)
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
 	_readRet = read_ret;
-	_maxRead += read_ret;
+	_totalRead+= read_ret;
 	return read_ret;
 }
 
@@ -412,7 +419,7 @@ int	Request::handleRequest(void)
 	if (DEBUG_REQUEST)
 	{															
 		std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr() << "]" << std::endl;
-		std::cout << "Max read = [" << _maxRead << "]" << std::endl;
+		std::cout << "Max read = [" << _totalRead<< "]" << std::endl;
 	}
 	return (_state);
 
@@ -439,14 +446,6 @@ int Request::_checkAutorizationForMethod(void)
 void Request::_setConfig(void)
 {
 	std::cerr << _header << std::endl;
-	if (_header.find("Host") == _header.end())
-	{
-		std::cout << "No host" << std::endl;
-		_statusCode = 400;
-		_header.insert(std::pair<string, string>("Host", ""));
-		_state = R_ERROR;
-		return;
-	}
 	_config = getMatchingConfig();
 	_clientMaxBodySize = atoi(_config->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
 	if (_checkAutorizationForMethod())

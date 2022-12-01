@@ -1,7 +1,7 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-#define READ_BUFFER_SIZE 512
+#define READ_BUFFER_SIZE 1024
 # define MAX_REQUESTLINE_SIZE 4096
 # define MAX_HEADER_SIZE 4096
 
@@ -30,7 +30,7 @@
 #  define DEBUG_REQUEST 1
 # endif
 
-enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY_CHUNKED,R_BODY, R_BOUNDARY_HEADER,R_END, R_ERROR, R_ZERO_READ};
+enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_BOUNDARY_HEADER,R_END, R_ERROR, R_ZERO_READ};
 
 class Config;
 class Multipart;
@@ -79,7 +79,7 @@ class Request
 		int				_state;
 		int				_clientFd;
 		int				_statusCode;
-		int				_maxRead;
+		int				_totalRead;
 		m_ss			_requestLine;
 		m_ss			_header;
 		v_s				_contentType;
