@@ -213,7 +213,8 @@ Response &Response::operator=(const Response &rhs)
 
 std::string Response::getlineStatus(void)
 {
-	return _lineStatus;
+	string lineStatusTrim = strtrim(_lineStatus, "\n\r");
+	return lineStatusTrim;
 }
 void Response::_createErrorMessageBody(void)
 {
@@ -430,15 +431,27 @@ void Response::_methodGET(void)
 
 void Response::_methodPOST(void)
 {
-	Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
-	multipart.createFilesFromBody();
-	_state = R_FILE_READY;
-	_ss << multipart.getReturnMessage();
-	_bodyLength = multipart.getReturnMessage().size();
-	if (multipart.getError())
-		_statusCode = 206;
-	else
-		_statusCode = 201;
+
+	if (_cgiExecutable != "")
+		{
+			if (DEBUG_RESPONSE && _state == R_INIT)
+				std::cerr << "\e[33mCGI\e[0m" << std::endl;
+			if (_state == R_INIT)
+				_initCGIfile();
+			if (_state == R_WAIT_CGI_EXEC)
+				_waitCGIfile();
+		}
+	else {
+		Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
+		multipart.createFilesFromBody();
+		_state = R_FILE_READY;
+		_ss << multipart.getReturnMessage();
+		_bodyLength = multipart.getReturnMessage().size();
+		if (multipart.getError())
+			_statusCode = 206;
+		else
+			_statusCode = 201;
+	}
 	//access sur le fichier droit d'ecriture 
 	//if file existe append ?
 	// else create file
