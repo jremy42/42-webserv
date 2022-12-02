@@ -100,7 +100,7 @@ std::string ltoa(long statusCode)
 
 long getFileSize(std::string filename)
 {
-	std::cout << "getFileSize FILENAME:" << filename << std::endl; 
+	//std::cout << "getFileSize FILENAME:" << filename << std::endl; 
     FILE *fp = fopen(filename.c_str(), "r");
 
     if (fp == NULL)
@@ -117,7 +117,7 @@ long getFileSize(std::string filename)
 
 std::string getFileSizeStr(std::string filename)
 {
-	std::cout << "getFileSize FILENAME:" << filename << std::endl; 
+	//std::cout << "getFileSize FILENAME:" << filename << std::endl; 
     FILE *fp = fopen(filename.c_str(), "r");
 
     if (fp == NULL)
@@ -184,7 +184,7 @@ unsigned int			getipbyhost(const char *host, const char *service)
 	int	g_error;
 	in_addr_t ret;
 
-	std::cout << "get ip by host [" << host << "][" << service << "]" << std::endl;
+	//std::cout << "get ip by host [" << host << "][" << service << "]" << std::endl;
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_family = AF_INET;
@@ -193,7 +193,7 @@ unsigned int			getipbyhost(const char *host, const char *service)
 		throw(std::runtime_error(gai_strerror(g_error)));
 	ret = ((struct sockaddr_in*)(result->ai_addr))->sin_addr.s_addr;
 	freeaddrinfo(result);
-	std::cout << "ret : [" << ret << "]" << std::endl;
+	//std::cout << "ret : [" << ret << "]" << std::endl;
 	return ret;
 }
 
@@ -354,4 +354,28 @@ std::string								subStringAfterLastDelim(std::string &str, char delim)
 
 	pos = str.find_last_of(delim);
 	return (str.substr(pos + 1));
+}
+
+void printLog(int log, int fd, int nb, ...)
+{
+    va_list args;
+    va_start(args, nb);
+
+	if (log)
+	{
+		std::cerr << "[\e[32m" << ft_get_time_sec() << "\e[0m] ";
+		if (fd)
+			std::cerr << "host :" << getClientHostnameAndService(fd).first  << "| client: " << getClientAddrFromSocket(fd) << " | " ;
+		while (nb)
+		{
+			char * toPrintc = va_arg(args, char *);
+			if (toPrintc == NULL)
+				break;
+			else
+            	std::cerr << " " << toPrintc << " ";
+			nb--;
+		}
+	}
+	std::cerr << std::endl;
+    va_end(args);
 }

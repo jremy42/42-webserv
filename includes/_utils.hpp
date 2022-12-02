@@ -20,6 +20,8 @@
 # include <time.h>
 # include <cstdlib>
 # include <unistd.h>
+#include <iostream>
+#include <cstdarg>
 
 
 # define MAX_FILENAME 6
@@ -52,6 +54,7 @@ float	ft_get_time_sec(void);
 unsigned int			getipbyhost(const char *host, const char *service);
 void                    printTimeDebug(int debug,std::string quote, std::string arg);
 void                    printAvailableAction(int debug, int _clientFd, int _availableActions);
+void                 printLog(int log, int fd, int nb, ...);
 
 std::string								getClientAddrFromSocket(int acceptSysCallReturnedFd);
 std::string								getClientPortFromSocket(int acceptSysCallReturnedFd);

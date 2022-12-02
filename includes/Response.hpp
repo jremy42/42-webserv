@@ -50,6 +50,7 @@ class Response
 		Response &operator=(const Response &rhs);
 		~Response(void);
 		int handleResponse(void);
+		string getlineStatus(void);
 
 	private:
 
