@@ -18,21 +18,23 @@ Server::Server(v_config configList)
 		std::cerr << e.what() << std::endl;
 		throw(std::runtime_error("Server creation failure"));
 	}
-
-	std::cout << "______________________CREATING SERVER________________________________\n";
-	std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
-	std::cout << "Create server listen port :" << _port << std::endl;
-	v_config::iterator ite = configList.end();
-	int i = 0;
-	for (v_config::iterator it = configList.begin(); it != ite; it++)
+	if (DEBUG_SERVER)
 	{
-		std::cout << "------------configList " << i << "------------------"<< std::endl;
-		std::cout << *it << std::endl;
-		std::cout << "--------------------------------z-------------------- " << std::endl;
+		std::cout << "______________________CREATING SERVER________________________________\n";
+		std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
+		std::cout << "Create server listen port :" << _port << std::endl;
+		v_config::iterator ite = configList.end();
+		int i = 0;
+		for (v_config::iterator it = configList.begin(); it != ite; it++)
+		{
+			std::cout << "------------configList " << i << "------------------"<< std::endl;
+			std::cout << *it << std::endl;
+			std::cout << "--------------------------------z-------------------- " << std::endl;
 
-		i++;
+			i++;
+		}
+		std::cout << "___________________________________________________________________\n";
 	}
-	std::cout << "___________________________________________________________________\n";
 
 };
 
@@ -45,7 +47,8 @@ Server::~Server()
 {
 	
 	for_each(_clientListFd.begin(), _clientListFd.end(), _delete_second );
-	std::cout << "Server destruction" << std::endl;
+	if(DEBUG_SERVER)
+		std::cerr << "Server destruction" << std::endl;
 };
 
 Server::Server(const Server & src)
@@ -80,7 +83,8 @@ Server::v_config	Server::_matchingConfigListByHost(unsigned int host)
 	{
 		if (it->getHost() == host)
 		{
-			std::cout << " add new config by host" << std::endl;
+			if(DEBUG_SERVER)
+				std::cout << " add new config by host" << std::endl;
 			ret.push_back(*it);
 		}
 	}
@@ -90,7 +94,8 @@ Server::v_config	Server::_matchingConfigListByHost(unsigned int host)
 		{
 			if (it->getHost() == 0)
 			{
-				std::cout << " add new config for wildcard" << std::endl;
+				if(DEBUG_SERVER)
+					std::cout << " add new config for wildcard" << std::endl;
 				ret.push_back(*it);
 			}
 		}
@@ -118,7 +123,8 @@ int Server::acceptNewClient(void)
 		getsockname(clientFd, (struct sockaddr *)&requestedServerIp, &serverIpAddrlen);
 		char buf[INET_ADDRSTRLEN + 1];
 		memset(buf, 0, sizeof(buf));
-		std:: cout << "\e[35mRequested Server IP : [" << inet_ntop(AF_INET, &requestedServerIp.sin_addr, buf, sizeof(buf)) << "]\e[0m" << std::endl;
+		if(DEBUG_SERVER)
+			std::cerr << "\e[35mRequested Server IP : [" << inet_ntop(AF_INET, &requestedServerIp.sin_addr, buf, sizeof(buf)) << "]\e[0m" << std::endl;
 		_clientAddressPrint((struct sockaddr *)& claddr);
 		Client *newClient = new Client(clientFd, &_configList, this, (unsigned int)requestedServerIp.sin_addr.s_addr);
 		_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient));
@@ -135,7 +141,9 @@ int Server::execClientAction(int fd, int availableAction ) // mode naif activate
 	{
 		if (currentCli->getState() == S_CLOSE_FD)
 		{
-			std::cout << "Closing and removing Client with read return = 0" << std::endl;
+			if (DEBUG_SERVER)
+				std::cerr << "Closing and removing Client with read return = 0" << std::endl;
+			printLog(1, currentCli->getClientFd(), 1, " connection close");
 			close(currentCli->getClientFd());
 			_clientListFd.erase(currentCli->getClientFd());
 			delete currentCli;
@@ -154,28 +162,30 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 	int optval = 1;
 	int g_error;
 
-	std::cout << "createPassiveSocketWithHost [" << (host != NULL ? host : "NULL HOST") << "]" << std::endl;
+	if(DEBUG_SERVER)
+		std::cerr << "createPassiveSocketWithHost [" << (host != NULL ? host : "NULL HOST") << "]" << std::endl;
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	if ((g_error = getaddrinfo(host, service, &hints, &result )) != 0)
 		throw(std::runtime_error(gai_strerror(g_error)));
-	std::cout << "##########################################" << std::endl;
+	//std::cout << "##########################################" << std::endl;
 	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
 	{
 		char buff[INET_ADDRSTRLEN];
 		memset(buff, 0, INET_ADDRSTRLEN);
 		inet_ntop(AF_INET, &((struct sockaddr_in*)(result_it->ai_addr))->sin_addr, buff, INET_ADDRSTRLEN);
-		std::cout << "inet_ntop["<< buff<< "]" << std::endl;
+		if(DEBUG_SERVER)
+			std::cout << "inet_ntop["<< buff<< "]" << std::endl;
 	}
-	std::cout << "##########################################" << std::endl;
+	//std::cout << "##########################################" << std::endl;
 	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
 	{
 		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
 		if (_serverFd == -1)
 			continue;
-		std::cout << "SOCKET OK" << std::endl;
+		//std::cerr << "SOCKET OK" << std::endl;
 		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
 		{
 				close(_serverFd);
@@ -184,15 +194,18 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 
 		}
 		unsigned int uaddr = ((struct sockaddr_in*)(result_it->ai_addr))->sin_addr.s_addr;
-		std::cout << "bind:" << uaddr << std::endl;
-		std::cout << "fd:" << _serverFd << std::endl;
+		if (DEBUG_SERVER)
+		{
+			std::cerr << "bind:" << uaddr << std::endl;
+			std::cerr << "fd:" << _serverFd << std::endl;
+		}
 		char buff[INET_ADDRSTRLEN];
 		memset(buff, 0, INET_ADDRSTRLEN);
 		inet_ntop(AF_INET, &((struct sockaddr_in*)(result_it->ai_addr))->sin_addr, buff, INET_ADDRSTRLEN);
-		std::cout << "inet_ntop["<< buff<< "]" << std::endl;
+		if (DEBUG_SERVER)
+			std::cerr << "inet_ntop["<< buff<< "]" << std::endl;
 		if (bind(_serverFd, result_it->ai_addr, result_it->ai_addrlen) == 0)
 			break;
-		std::cout << std::string("Bind error ") + strerror(errno) << std::endl;
 		close(_serverFd);
 	}
 	if (!result_it)
@@ -203,7 +216,8 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		freeaddrinfo(result);
 		throw(std::runtime_error(strerror(errno)));
 	}
-	std::cout << " listen socket address with host [" << _listenSockaddr.sin_addr.s_addr << "]"<< std::endl;
+	if (DEBUG_SERVER)
+		std::cerr << " listen socket address with host [" << _listenSockaddr.sin_addr.s_addr << "]"<< std::endl;
 	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
 	freeaddrinfo(result);
 }

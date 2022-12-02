@@ -123,7 +123,8 @@ char	**Response::_createEnvArray(void)
 	int i = 0;
 	while (env[i])
 	{
-		std::cerr << "CGI Env[" << i << "] : [" << env[i] << "]m" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "CGI Env[" << i << "] : [" << env[i] << "]m" << std::endl;
 		++i;
 	}
 	return (env);
@@ -210,6 +211,10 @@ Response &Response::operator=(const Response &rhs)
 	return (*this);
 }
 
+std::string Response::getlineStatus(void)
+{
+	return _lineStatus;
+}
 void Response::_createErrorMessageBody(void)
 {
 	string	requestTarget = _request->getTarget();
@@ -293,6 +298,8 @@ void	Response::_parseRawRequestTarget(void)
 		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
 	_urlDecodeString(_PATH_INFO);
+	if (DEBUG_RESPONSE)
+	{
 		std::cerr << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
 		std::cerr << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
 		std::cerr << "_rawActualTarget : [" << _rawActualTarget << "]" << std::endl;
@@ -301,8 +308,6 @@ void	Response::_parseRawRequestTarget(void)
 		std::cerr << "_PATH_INFO : [" << _PATH_INFO << "]" << std::endl;
 		std::cerr << "_targetExtension : [" << _targetExtension << "]" << std::endl;
 		std::cerr << "_cgiExecutable : [" << _cgiExecutable << "]" << std::endl;
-	if (DEBUG_RESPONSE)
-	{
 		if (!fileExist(_actualTarget))
 			std::cerr << "actual Target does not exists" << std::endl;
 		if (fileExist(_actualTarget) && isDir(_actualTarget))
@@ -367,13 +372,18 @@ void	Response::_selectActualTarget(void)
 
 void Response::_createFileStreamFromFile(string actualTarget) // set le header avec taille qui va bien et open le Body
 {
-	std::cerr << "createFsfrom file : open " << actualTarget << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cerr << "createFsfrom file : open " << actualTarget << std::endl;
 	_fs.open(actualTarget.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (_fs.good())
-		std::cerr << "Successfully opened body file "<< std::endl;
+	{
+		if (DEBUG_RESPONSE)
+			std::cerr << "Successfully opened body file "<< std::endl;
+	}
 	else
 	{
-		std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
 		_statusCode = 404;
 		_fs.close();
 		return;
@@ -470,7 +480,8 @@ void Response::_waitCGIfile(void)
 			ret = (WEXITSTATUS(status));
 		if (WIFSIGNALED(status) > 0)
 			ret = (WTERMSIG(status) + 128);
-		std::cerr << "ret : [" << ret << "]" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "ret : [" << ret << "]" << std::endl;
 		if (_requestBodyFileSize != 0 && close(_inChild))
 			throw(std::runtime_error("Close error inChild" ));
 		if (close(_outChild))
@@ -552,7 +563,8 @@ void Response::_checkRedirect(void)
 		return;
 	else
 	{
-		std::cerr << "REDIRECT\n";
+		if (DEBUG_RESPONSE)
+			std::cerr << "REDIRECT\n";
 		_statusCode = atoi(_config->getParamByLocation(requestTarget, "return")[0].c_str());
 		_header += "location: " + _config->getParamByLocation(requestTarget, "return")[1] + "\n";
 	}
@@ -573,7 +585,8 @@ int Response::handleResponse(void)
 	}
 	if (_state == R_WRITE)
 	{
-		std::cerr << "Calling _writeClientResponse" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "Calling _writeClientResponse" << std::endl;
 		_writeClientResponse();
 	}
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
@@ -634,12 +647,14 @@ std::istream *Response::_selectBodySourceBetweenFileAndStringStream(void)
 	if (_fs.is_open())
 	{
 		bodyStreamPtr = &_fs;
-		std::cerr << "Body is a regular fs" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "Body is a regular fs" << std::endl;
 	}
 	else
 	{
 		bodyStreamPtr = &_ss;
-		std::cerr << "Body is an error string stream" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "Body is an error string stream" << std::endl;
 	}
 	return (bodyStreamPtr);
 }
@@ -651,20 +666,26 @@ void Response::_sendHeaderToClient(void)
 	char	*buff;
 	int		i = 0;
 
-	std::cerr << "Header not empty -> sending it first" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cerr << "Header not empty -> sending it first" << std::endl;
 	buff = new char[_fullHeader.size()];
 	buff_size = _fullHeader.size();
 	v_c::iterator ite = _fullHeader.end();
 	for (v_c::iterator it = _fullHeader.begin(); i < buff_size && it != ite; i++, it++)
 		buff[i] = *it;
-	std::cerr << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cerr << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, 0);
 	if (ret == -1)
-		std::cerr << "Error in writeClientResponse" << std::endl;
+	{
+		if (DEBUG_RESPONSE)
+			std::cerr << "Error in writeClientResponse" << std::endl;
+	}
 	else
 	{
 		_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
-		std::cerr << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
 	}
 	delete [] buff;
 }
@@ -677,34 +698,41 @@ void Response::_sendBodyToClient(void)
 	std::istream	*bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
 	std::istream	&bodyStream = *bodyStreamPtr;
 
-	std::cerr << "Header IS empty -> sending Body" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cerr << "Header IS empty -> sending Body" << std::endl;
 	if (_bodyLength < WRITE_BUFFER_SIZE)
 		buff_size = _bodyLength;
 	else
 		buff_size = WRITE_BUFFER_SIZE;
 	bufBody = new char[buff_size];
 	bodyStream.read(bufBody, buff_size);
-	std::cerr << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
-	std::cerr << "Sending chunk of body to client" << std::endl;
+	if (DEBUG_RESPONSE)
+	{
+		std::cerr << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
+		std::cerr << "Sending chunk of body to client" << std::endl;
+	}
 	ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
 	_bodyLength -= ret;
-	if (ret == -1)
+	if (ret == -1 && DEBUG_RESPONSE)
 		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
-	if (ret != bodyStream.gcount())
+	if (ret != bodyStream.gcount() &&  DEBUG_RESPONSE)
 		std::cerr << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 	if (_bodyLength == 0)
 	{
-		std::cerr << "No more body data to read on body fd. Attempt to Close fd" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "No more body data to read on body fd. Attempt to Close fd" << std::endl;
 		try
 		{
-			std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream); 
-			std::cerr << "Closing fs" << std::endl;
+			std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream);
+			if (DEBUG_RESPONSE)
+				std::cerr << "Closing fs" << std::endl;
 			fsForClose.close();
 		}
 		catch (std::exception &e)
 		{
 			(void)e;
-			std::cerr << "No need to close filestream : Body is default error body" << std::endl;
+			if (DEBUG_RESPONSE)
+				std::cerr << "No need to close filestream : Body is default error body" << std::endl;
 		}
 		_state = R_OVER;
 	}
@@ -717,8 +745,8 @@ int Response::_writeClientResponse(void)
 {
 
 	if (DEBUG_RESPONSE)
-		std::cerr << "write	Response IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-	std::cerr << "Begin of Write Client response function" << std::endl;
+		std::cerr << "write	Response IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl 
+			<< "Begin of Write Client response function" << std::endl;
 	if (_fullHeader.size())
 		_sendHeaderToClient();
 	else if (_fullHeader.empty())
@@ -808,7 +836,8 @@ int Response::_createAutoIndex(const string &pathToDir)
 	{	
 		if (it->second == DT_DIR)
 		{	
-			std::cerr << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
+			if (DEBUG_RESPONSE)
+				std::cerr << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();
 			HTMLbody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n");

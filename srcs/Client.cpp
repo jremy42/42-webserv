@@ -10,7 +10,7 @@ Client::Client()
 	_state = S_INIT;
 	_timeoutRequest = 0;
 	_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
-	std::cout << "A Client is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
+	printTimeDebug(DEBUG_CLIENT, "A client is born", "");
 }
 
 Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host)
@@ -19,11 +19,17 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 	_request = NULL;
 	_response = NULL;\
 	_configList = _matchingConfigListByHost(config, host);
-	std::cout << "create client with fd :" << _clientFd << std::endl;
-	std::cout << "====================================================================================" << std::endl;
-	std::cout << "create client with configList:" << std::endl;
-	std::cout << _configList << std::endl;
-	std::cout << "====================================================================================" << std::endl;
+	printTimeDebug(DEBUG_CLIENT, "A client is born", "");
+	printLog(1, _clientFd, 1, "connection accepted");
+	//exit(1);
+	if (DEBUG_CLIENT)
+	{
+		std::cout << "create client with fd :" << _clientFd << std::endl;
+		std::cout << "====================================================================================" << std::endl;
+		std::cout << "create client with configList:" << std::endl;
+		std::cout << _configList << std::endl;
+		std::cout << "====================================================================================" << std::endl;
+	}
 	_state = S_INIT;
 	_myServ = myServ;
 	_timeoutRequest = 0;
@@ -32,7 +38,6 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 
 Client::~Client()
 {
-	std::cout << "A client is DEAD at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 }
 
 Client::Client(const Client & src)
@@ -74,7 +79,7 @@ Client::v_config	Client::_matchingConfigListByHost(v_config *configList, unsigne
 	{
 		if (it->getHost() == host)
 		{
-			std::cout << " add new config by host" << std::endl;
+			printTimeDebug(DEBUG_CLIENT, " add new config by host", "");
 			ret.push_back(*it);
 		}
 	}
@@ -84,16 +89,18 @@ Client::v_config	Client::_matchingConfigListByHost(v_config *configList, unsigne
 		{
 			if (it->getHost() == 0)
 			{
-				std::cout << " add new config for wildcard" << std::endl;
+				printTimeDebug(DEBUG_CLIENT, " add new config for wildcard", "");
 				ret.push_back(*it);
 			}
 		}
 	}
-	std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-	std::cout << "ret: \n";
-	std::cout << ret << std::endl;
-	std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-
+	if (DEBUG_CLIENT)
+	{
+		std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+		std::cout << "ret: \n";
+		std::cout << ret << std::endl;
+		std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+	}
 	return ret;
 }
 
@@ -125,6 +132,7 @@ int Client::executeAction()
 			std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)
 		{
+			printLog(1,_clientFd, 1, _request->getLog().c_str());
 			if (ft_get_time() > _timeoutRequest)
 				_response = new Response(_clientFd, _request, _request->getConfig(), 408); // passer la bonne config
 			else
@@ -144,12 +152,14 @@ int Client::executeAction()
 		}
 		else if ( retHandleResponse < 0)
 		{
+			printLog(1,_clientFd, 2, "RESPONSE :", _response->getlineStatus().c_str());
 			delete _response;
 			_state = S_CLOSE_FD;
 		}
 	}
 	if(_state == S_OVER)
 	{
+		printLog(1,_clientFd, 2, "RESPONSE :", _response->getlineStatus().c_str());
 		delete _request;
 		delete _response;
 		_state = S_INIT;

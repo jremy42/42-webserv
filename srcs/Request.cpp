@@ -41,8 +41,8 @@ Request::~Request(void)
 		_fs.close();
 		if (unlink(_nameBodyFile.c_str()) == -1)
 		{
-		std::cerr << "unlink error" << std::endl;
-		std::cerr << "errno: " << strerror(errno) << std::endl;
+			std::cerr << "unlink error" << std::endl;
+			std::cerr << "errno: " << strerror(errno) << std::endl;
 		}
 	}
 }
@@ -155,12 +155,14 @@ int	Request::parseRequestLine(string rawRequestLine)
 	string				bufExtract;
 	int					i = 0;
 
-	std::cout << "Parse Request Line" << std::endl;
 	while (std::getline(buf, bufExtract, ' ') && i < 3)
 	{
 		_requestLine.insert(std::pair<string, string>(_requestLineField[i], bufExtract));
-		std::cout << "[" << _requestLineField[i] << "]";
-		std::cout << "[" << _requestLine.find(_requestLineField[i])->second << "]" << std::endl;
+		if (DEBUG_REQUEST)
+		{
+			std::cout << "[" << _requestLineField[i] << "]";
+			std::cout << "[" << _requestLine.find(_requestLineField[i])->second << "]" << std::endl;
+		}
 		i++;
 	}
 	if (checkRequestLine() == -1)
@@ -184,7 +186,6 @@ int	Request::parseHeader(string rawHeader)
 	string				header_value;
 	std::size_t			colonPos;
 
-	std::cout << "Parse Header" << std::endl;
 	while (std::getline(buf, bufExtract, '\n'))
 	{
 		colonPos = bufExtract.find(':');
@@ -204,7 +205,8 @@ int	Request::parseHeader(string rawHeader)
 		if (header_key == "Host" && _header.find("Host")->second == "no host")
 			_header.erase("Host");
 		_header.insert(std::pair<string, string>(header_key, header_value));
-		std::cout << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
+		if (DEBUG_REQUEST)
+			std::cerr << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
 	}
 	if (checkHeader() == -1)
 	{
@@ -221,7 +223,7 @@ void Request::_handleRequestLine(void)
 	v_c_it it = _rawRequest.begin();
 
 	if (DEBUG_REQUEST)
-		std::cout << "Handle Request Line" << std::endl;
+		std::cerr << "Handle Request Line" << std::endl;
 	if (_rawRequest.size() > MAX_REQUESTLINE_SIZE)
 	{
 				_state = R_ERROR;
@@ -233,6 +235,7 @@ void Request::_handleRequestLine(void)
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
 		{
 			string rawRequestLine(_rawRequest.begin(), it);
+			_rawRequestLine = rawRequestLine;
 			if(this->parseRequestLine(rawRequestLine) == -1)
 			{
 				_state = R_ERROR;
@@ -255,7 +258,11 @@ void Request::_handleHeader(void)
 	if (DEBUG_REQUEST)
 		std::cout << "Handle header" << std::endl;
 	if (_rawRequest.size() > MAX_HEADER_SIZE)
-		throw(std::runtime_error("webserv: request : Header is too long"));
+	{
+		_state = R_ERROR;
+		_statusCode = 400;
+		return ;
+	}
 	for (; it != ite; it++)
 	{
 		if (*it == '\r'
@@ -325,6 +332,8 @@ int Request::_parseHeaderForBody(void)
 		_state = R_ERROR;
 		return 0;
 	}
+	if (!_contentType.empty() &&_contentType[0] !=  "multipart/form-data")
+		return (1);
 	if (!_contentType.empty() &&_contentType[0] == "multipart/form-data" && _contentType.size() > 1)
 	{
 		size_t pose;
@@ -383,7 +392,6 @@ int Request::readClientRequest(void)
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
 	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
-	std::cout << "read ret[" << read_ret << "]" << std::endl;
 	if (DEBUG_REQUEST)
 	{
 		std::cerr << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
@@ -480,7 +488,8 @@ int Request::_checkAutorizationForMethod(void)
 
 void Request::_setConfig(void)
 {
-	std::cerr << _header << std::endl;
+	if (DEBUG_REQUEST)
+		std::cerr << _header << std::endl;
 	_config = getMatchingConfig();
 	_clientMaxBodySize = atoi(_config->getServerInfoMap().find("client_max_body_size")->second[0].c_str());
 	if (_checkAutorizationForMethod())
@@ -549,7 +558,14 @@ Request::string Request::getBodyFile(void)
 	return _nameBodyFile;
 }
 
+std::string Request::getLog(void)
+{
+	std::string logRequest;
 
+	logRequest = "REQUEST :" + _rawRequestLine + "/ host:" + this->getHost();
+
+	return logRequest;
+}
 
 /* void Request::_handleBodyChunked(void)
 {
