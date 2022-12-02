@@ -383,7 +383,7 @@ void Request::_handleBody(void)
 
 int Request::readClientRequest(void)
 {
-	char		buf[READ_BUFFER_SIZE];
+	unsigned char		buf[READ_BUFFER_SIZE];
 	int			read_ret = 0;
 
 	if (DEBUG_REQUEST)
@@ -408,12 +408,24 @@ int Request::readClientRequest(void)
 		std::cerr << "\e[33mRaw char without decode start\e[0m" << std::endl;
 		for (int i = 0; i < read_ret; i++)
 		{
-			fprintf(stderr, "%4d", buf[i]);
+			if (isprint(buf[i]))
+				fprintf(stderr, "%4c", buf[i]);
+			else
+				fprintf(stderr, "%4u", buf[i]);
 			if (i % 16 == 0 && i > 0)
 				fprintf(stderr, "\n");
 		}
 		std::cerr << std::endl;
 		std::cerr << "\e[33mRaw char without decode end\e[0m" << std::endl;
+		std::cerr << "\e[34mRaw char without decode start HEXA\e[0m" << std::endl;
+		for (int i = 0; i < read_ret; i++)
+		{
+			fprintf(stderr, "%4X", buf[i]);
+			if (i % 16 == 0 && i > 0)
+				fprintf(stderr, "\n");
+		}
+		std::cerr << std::endl;
+		std::cerr << "\e[34mRaw char without decode end HEXA\e[0m" << std::endl;
 		std::cerr << "RAW PRINT OF BUFFER END" << std::endl;
 		std::cerr << "Before buffer print" << std::endl;
 		std::cerr << buf << std::endl;
