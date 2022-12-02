@@ -389,11 +389,23 @@ int Request::readClientRequest(void)
 		std::cerr << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
 		<< "]\x1b[0m" << std::endl;
 		std::cerr << "RAW PRINT OF BUFFER START" << std::endl;
+		std::cerr << "\e[32mAttempt char decode start\e[0m" << std::endl;
 		for (int i = 0; i < read_ret; i++)
 		{
 			if (buf[i] != '\r')
 				fprintf(stderr, "%1c", buf[i]);
 		}
+		std::cerr << std::endl;
+		std::cerr << "\e[32mAttempt char decode end\e[0m" << std::endl;
+		std::cerr << "\e[33mRaw char without decode start\e[0m" << std::endl;
+		for (int i = 0; i < read_ret; i++)
+		{
+			fprintf(stderr, "%4d", buf[i]);
+			if (i % 16 == 0 && i > 0)
+				fprintf(stderr, "\n");
+		}
+		std::cerr << std::endl;
+		std::cerr << "\e[33mRaw char without decode end\e[0m" << std::endl;
 		std::cerr << "RAW PRINT OF BUFFER END" << std::endl;
 		std::cerr << "Before buffer print" << std::endl;
 		std::cerr << buf << std::endl;
