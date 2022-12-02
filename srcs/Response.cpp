@@ -204,7 +204,7 @@ Response &Response::operator=(const Response &rhs)
 	_requestBodyFileSize = rhs._requestBodyFileSize;
 
 	_pid = rhs._pid;
-	_nameOut[32] = rhs._nameOut[32];
+	strcpy(_nameOut, rhs._nameOut);
 	_inChild = rhs._inChild;
 	_outChild = rhs._outChild;
 	return (*this);
