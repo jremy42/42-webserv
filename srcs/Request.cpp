@@ -390,14 +390,35 @@ int Request::readClientRequest(void)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
-	if (read_ret == -1)	
+	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
 	if (DEBUG_REQUEST)
 	{
-		std::cout << "read ret[" << read_ret << "]" << std::endl;
-		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
-		<< "]\x1b[0m" << std::endl << buf << std::endl
-		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+		std::cerr << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
+		<< "]\x1b[0m" << std::endl;
+		std::cerr << "RAW PRINT OF BUFFER START" << std::endl;
+		std::cerr << "\e[32mAttempt char decode start\e[0m" << std::endl;
+		for (int i = 0; i < read_ret; i++)
+		{
+			if (buf[i] != '\r')
+				fprintf(stderr, "%1c", buf[i]);
+		}
+		std::cerr << std::endl;
+		std::cerr << "\e[32mAttempt char decode end\e[0m" << std::endl;
+		std::cerr << "\e[33mRaw char without decode start\e[0m" << std::endl;
+		for (int i = 0; i < read_ret; i++)
+		{
+			fprintf(stderr, "%4d", buf[i]);
+			if (i % 16 == 0 && i > 0)
+				fprintf(stderr, "\n");
+		}
+		std::cerr << std::endl;
+		std::cerr << "\e[33mRaw char without decode end\e[0m" << std::endl;
+		std::cerr << "RAW PRINT OF BUFFER END" << std::endl;
+		std::cerr << "Before buffer print" << std::endl;
+		std::cerr << buf << std::endl;
+		std::cerr << "After buffer print" << std::endl;
+		std::cerr << "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
 	}
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
