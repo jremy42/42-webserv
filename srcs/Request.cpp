@@ -381,14 +381,24 @@ int Request::readClientRequest(void)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
-	if (read_ret == -1)	
+	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
 	std::cout << "read ret[" << read_ret << "]" << std::endl;
 	if (DEBUG_REQUEST)
 	{
-		std::cout << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
-		<< "]\x1b[0m" << std::endl << buf << std::endl
-		<< "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
+		std::cerr << "\x1b[33mREAD BUFFER START : [" << read_ret << "] bytes on fd [" << _clientFd
+		<< "]\x1b[0m" << std::endl;
+		std::cerr << "RAW PRINT OF BUFFER START" << std::endl;
+		for (int i = 0; i < read_ret; i++)
+		{
+			if (buf[i] != '\r')
+				fprintf(stderr, "%1c", buf[i]);
+		}
+		std::cerr << "RAW PRINT OF BUFFER END" << std::endl;
+		std::cerr << "Before buffer print" << std::endl;
+		std::cerr << buf << std::endl;
+		std::cerr << "After buffer print" << std::endl;
+		std::cerr << "\x1b[33mREAD BUFFER END\x1b[0m" << std::endl;
 	}
 	for (int i = 0; i < read_ret; i++)
 		_rawRequest.push_back(buf[i]);
