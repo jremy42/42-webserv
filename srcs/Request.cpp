@@ -389,7 +389,7 @@ int Request::readClientRequest(void)
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
-	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
+	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE - 1);
 	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
 	if (DEBUG_REQUEST)
