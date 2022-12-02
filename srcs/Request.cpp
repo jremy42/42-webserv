@@ -384,7 +384,7 @@ void Request::_handleBody(void)
 int Request::readClientRequest(void)
 {
 	unsigned char		buf[READ_BUFFER_SIZE];
-	int			read_ret = 0;
+	ssize_t				read_ret = 0;
 
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
