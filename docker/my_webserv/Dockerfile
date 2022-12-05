@@ -4,4 +4,5 @@ COPY ./docker/my_webserv/entrypoint.sh /
 RUN chmod a+x /entrypoint.sh
 WORKDIR /webserv
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["./webserv", "conf/default.config"]
+CMD [ "./test_config.sh" ]
+#CMD ["./webserv", "conf/default.config"]
