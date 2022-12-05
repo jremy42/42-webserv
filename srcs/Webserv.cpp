@@ -11,7 +11,6 @@ Webserv::Webserv()
 
 Webserv::Webserv(string fileName)
 {
-	int				viableConfig = 0;
 	_openFd = 0;
 	_maxFd = _getMaxFd();
 	if (_maxFd < 10)
@@ -23,10 +22,7 @@ Webserv::Webserv(string fileName)
 	{
 		std::cout << "Config list :" << std::endl;
 		for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
-		{
 			std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
-			viableConfig |= (*it != "");
-		}
 	}
 	return ;
 }
