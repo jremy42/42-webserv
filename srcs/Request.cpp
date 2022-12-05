@@ -143,7 +143,7 @@ int Request::checkRequestLine(void)
 
 	if (_requestLine.find("http_version")->second != "HTTP/1.1")
 	{
-		_statusCode = 400;
+		_statusCode = 505;
 		return -1;
 	}
 	return 0;
@@ -232,6 +232,13 @@ void Request::_handleRequestLine(void)
 	}
 	for (; it != ite; it++)
 	{
+		if (!isprint(*it) && (*it) != '\r' && (*it) != '\n')
+		{
+			std::cerr << "Request Line is not printable with char :["<< (int)(*it) << "]"<< std::endl;
+			_state = R_ERROR;
+			_statusCode = 501;
+			return ;
+		}
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
 		{
 			string rawRequestLine(_rawRequest.begin(), it);

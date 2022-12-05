@@ -115,6 +115,8 @@ class Response
 		std::istream					*_selectBodySourceBetweenFileAndStringStream(void);
 // POST
 		void							_methodPOST(void);
+// DELETE
+		void							_methodDELETE(void);
 // CGI
 		void							_setCgiMetaVar(void);
 		void							_setProtocolSpecificMetavar(void);

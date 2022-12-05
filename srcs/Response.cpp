@@ -17,6 +17,10 @@ Response::m_is Response::_initStatusCodeMessage()
 	ret[408] = "Request Timeout";
 	ret[413] = "Payload Too Large";
 	ret[403] = "Forbidden";
+	ret[500] = "Internal Server Error";
+	ret[501] = "Not Implemented";
+	ret[503] = "Service Unavailable";
+	ret[505] = "HTTP Version Not Supported";
 	return ret;
 }
 
@@ -46,17 +50,17 @@ Response::m_ss Response::_initCgiMetaVar()
 	return ret;
 }
 
-void	Response::_setProtocolSpecificMetavar(void)
+void Response::_setProtocolSpecificMetavar(void)
 {
-	m_ss				requestHeader = _request->getHeader();
-	m_ss::iterator		it = requestHeader.begin();
-	m_ss::iterator		ite = requestHeader.end();
+	m_ss requestHeader = _request->getHeader();
+	m_ss::iterator it = requestHeader.begin();
+	m_ss::iterator ite = requestHeader.end();
 
 	for (; it != ite; it++)
 	{
 		if (it->first != "Authorization" && it->first != "Content-Length" && it->first != "Content-Type")
 		{
-			std::string	key = it->first;
+			std::string key = it->first;
 			for (std::size_t i = 0; i < key.size(); i++)
 				key[i] = (key[i] == '-') ? '_' : toupper(key[i]);
 			key = "HTTP_" + key;
@@ -65,10 +69,10 @@ void	Response::_setProtocolSpecificMetavar(void)
 	}
 }
 
-void	Response::_setCgiMetaVar(void)
+void Response::_setCgiMetaVar(void)
 {
-	m_ss				requestHeader = _request->getHeader();
-	m_ss::iterator		it;
+	m_ss requestHeader = _request->getHeader();
+	m_ss::iterator it;
 
 	_cgiMetaVar["REDIRECT_STATUS"] = "true";
 	_cgiMetaVar["AUTH_TYPE"] = (it = requestHeader.find("Authorization")) != requestHeader.end() ? subStringBeforeFirstDelim(it->second, ' ') : "";
@@ -90,13 +94,13 @@ void	Response::_setCgiMetaVar(void)
 	_cgiMetaVar["SERVER_SOFTWARE"] = "Jhonny's and Fredo's WeBsErV";
 }
 
-char	**Response::_createEnvArray(void)
+char **Response::_createEnvArray(void)
 {
-	int				size = 0;
-	char 			**env;
-	m_ss::iterator	ite = _cgiMetaVar.end();
+	int size = 0;
+	char **env;
+	m_ss::iterator ite = _cgiMetaVar.end();
 
-	for (m_ss::iterator it = _cgiMetaVar.begin(); it != ite ; it++)
+	for (m_ss::iterator it = _cgiMetaVar.begin(); it != ite; it++)
 	{
 		if (DEBUG_RESPONSE)
 			std::cerr << "Checking : [" << it->first << "] -> [" << it->second << "]" << std::endl;
@@ -107,7 +111,7 @@ char	**Response::_createEnvArray(void)
 		std::cerr << "Env Array non-empty values : [" << size << "]" << std::endl;
 	env = new char *[size + 1];
 	env[size] = NULL;
-	for (m_ss::iterator it = _cgiMetaVar.begin(); it != ite ; it++)
+	for (m_ss::iterator it = _cgiMetaVar.begin(); it != ite; it++)
 	{
 		if (it->second != "")
 		{
@@ -133,13 +137,13 @@ char	**Response::_createEnvArray(void)
 Response::Response()
 {
 	if (DEBUG_RESPONSE)
-		std::cerr << "Response : Default Constructor called" << std::endl; 
+		std::cerr << "Response : Default Constructor called" << std::endl;
 }
 
 Response::Response(int clientFd, Request *request, const Config *config, int statusCode)
 {
 	if (DEBUG_RESPONSE)
-		std::cerr << "Response : Parametric Constructor called" << std::endl; 
+		std::cerr << "Response : Parametric Constructor called" << std::endl;
 	_clientFd = clientFd;
 	_request = request;
 	_config = config;
@@ -153,24 +157,24 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 		std::cerr << "---------------------End of Config used for creation---------------------\e[0m" << std::endl;
 	}
 	_selectActualTarget();
-	memset(_nameOut, 0, 32);::
-	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
+	memset(_nameOut, 0, 32);
+	::
+		strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
 	_requestBodyFile = _request->getTmpBodyFile();
-	_requestBodyFileSize = (_requestBodyFile != "" ) ? getFileSize(_requestBodyFile) : 0;
-
+	_requestBodyFileSize = (_requestBodyFile != "") ? getFileSize(_requestBodyFile) : 0;
 }
 
 Response::Response(const Response &src)
 {
 	if (DEBUG_RESPONSE)
-		std::cerr << "Response : Copy Constructor called" << std::endl; 
+		std::cerr << "Response : Copy Constructor called" << std::endl;
 	*this = src;
 }
 
 Response::~Response(void)
 {
 	if (DEBUG_RESPONSE)
-		std::cerr << "Response : Default Destructor called" << std::endl; 
+		std::cerr << "Response : Default Destructor called" << std::endl;
 	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
 		unlink(_nameOut);
 }
@@ -218,10 +222,10 @@ std::string Response::getlineStatus(void)
 }
 void Response::_createErrorMessageBody(void)
 {
-	string	requestTarget = _request->getTarget();
-	string	customErrorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
-	string  matchingLocationRoot = _config->getParamByLocation(requestTarget, "root").at(0);
-	string	errorPageFile = matchingLocationRoot + "/" + customErrorPage;
+	string requestTarget = _request->getTarget();
+	string customErrorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
+	string matchingLocationRoot = _config->getParamByLocation(requestTarget, "root").at(0);
+	string errorPageFile = matchingLocationRoot + "/" + customErrorPage;
 
 	if (DEBUG_RESPONSE)
 	{
@@ -234,14 +238,14 @@ void Response::_createErrorMessageBody(void)
 	if (customErrorPage != "" && fileExist(errorPageFile) && !isDir(errorPageFile))
 	{
 		if (DEBUG_RESPONSE)
-			std::cerr << "An error page is specified for this error and location" << std::endl; 
+			std::cerr << "An error page is specified for this error and location" << std::endl;
 		_createFileStreamFromFile(errorPageFile);
-		return ;
+		return;
 	}
 	else
 	{
 		if (DEBUG_RESPONSE)
-			std::cerr << "No error page is specified for this error and location -> Building Body from _defaultErrorBodyToSend" << std::endl; 
+			std::cerr << "No error page is specified for this error and location -> Building Body from _defaultErrorBodyToSend" << std::endl;
 		string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
 		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
@@ -250,26 +254,25 @@ void Response::_createErrorMessageBody(void)
 	}
 }
 
-int	Response::_urlDecodeString(string &strToDecode)
+int Response::_urlDecodeString(string &strToDecode)
 {
-	std::size_t	i = 0;
-	std::size_t	strSize = strToDecode.size();
-	std::string	base = "0123456789abcdef";
+	std::size_t i = 0;
+	std::size_t strSize = strToDecode.size();
+	std::string base = "0123456789abcdef";
 
 	for (; i + 2 < strSize; i++)
 	{
 		if (strToDecode[i] == '%' && isxdigit(strToDecode[i + 1]) && isxdigit(strToDecode[i + 2]))
 		{
-			char decodedChar = (base.find(tolower(strToDecode[i + 1])) << 4)
-				+ base.find(tolower(strToDecode[i + 2]));
+			char decodedChar = (base.find(tolower(strToDecode[i + 1])) << 4) + base.find(tolower(strToDecode[i + 2]));
 			strToDecode.erase(i, 3);
 			strToDecode.insert(strToDecode.begin() + i, decodedChar);
 		}
-	} 
+	}
 	return (1);
 }
 
-void	Response::_parseRawRequestTarget(void)
+void Response::_parseRawRequestTarget(void)
 {
 	_rawRequestedTarget = _request->getTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
@@ -277,22 +280,22 @@ void	Response::_parseRawRequestTarget(void)
 	_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget;
 	_actualTarget = _rawActualTarget;
 
-	std::size_t	posFirstSlash = _rawActualTarget.find_first_of("/", _requestedTargetRoot.size());
-	std::size_t	posLastQuestionMark = _rawActualTarget.find_last_of("?");
+	std::size_t posFirstSlash = _rawActualTarget.find_first_of("/", _requestedTargetRoot.size());
+	std::size_t posLastQuestionMark = _rawActualTarget.find_last_of("?");
 	while (posFirstSlash != std::string::npos)
 	{
 		std::string testFile = _rawActualTarget.substr(0, posFirstSlash);
 		if (fileExist(testFile) && !isDir(testFile))
 		{
 			_actualTarget = testFile;
-			_PATH_INFO = _rawActualTarget.substr(posFirstSlash, posLastQuestionMark - posFirstSlash);   
+			_PATH_INFO = _rawActualTarget.substr(posFirstSlash, posLastQuestionMark - posFirstSlash);
 			break;
 		}
 		posFirstSlash = _rawActualTarget.find_first_of("/", posFirstSlash + 1);
 	}
 	if (posLastQuestionMark != std::string::npos)
-		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);	
-	std::size_t	posLastDot = _actualTarget.find_last_of(".");
+		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);
+	std::size_t posLastDot = _actualTarget.find_last_of(".");
 	if (posLastDot != std::string::npos)
 	{
 		_targetExtension = _actualTarget.substr(posLastDot);
@@ -318,7 +321,7 @@ void	Response::_parseRawRequestTarget(void)
 	}
 }
 
-void	Response::_selectActualTarget(void)
+void Response::_selectActualTarget(void)
 {
 	_parseRawRequestTarget();
 	if (fileExist(_actualTarget) && !isDir(_actualTarget))
@@ -333,9 +336,9 @@ void	Response::_selectActualTarget(void)
 		if (DEBUG_RESPONSE)
 			std::cerr << "Trying files in indexTryFiles :" << indexTryFiles << std::endl;
 		std::vector<string>::iterator it = indexTryFiles.begin();
-		for (;it != indexTryFiles.end(); it++)
+		for (; it != indexTryFiles.end(); it++)
 		{
-			std::string	testedIndexFile = _requestedTargetRoot + _rawRequestedTarget + "/" + *it;
+			std::string testedIndexFile = _requestedTargetRoot + _rawRequestedTarget + "/" + *it;
 			if (DEBUG_RESPONSE)
 				std::cerr << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
@@ -379,7 +382,7 @@ void Response::_createFileStreamFromFile(string actualTarget) // set le header a
 	if (_fs.good())
 	{
 		if (DEBUG_RESPONSE)
-			std::cerr << "Successfully opened body file "<< std::endl;
+			std::cerr << "Successfully opened body file " << std::endl;
 	}
 	else
 	{
@@ -433,15 +436,16 @@ void Response::_methodPOST(void)
 {
 
 	if (_cgiExecutable != "")
-		{
-			if (DEBUG_RESPONSE && _state == R_INIT)
-				std::cerr << "\e[33mCGI\e[0m" << std::endl;
-			if (_state == R_INIT)
-				_initCGIfile();
-			if (_state == R_WAIT_CGI_EXEC)
-				_waitCGIfile();
-		}
-	else {
+	{
+		if (DEBUG_RESPONSE && _state == R_INIT)
+			std::cerr << "\e[33mCGI\e[0m" << std::endl;
+		if (_state == R_INIT)
+			_initCGIfile();
+		if (_state == R_WAIT_CGI_EXEC)
+			_waitCGIfile();
+	}
+	else
+	{
 		Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
 		multipart.createFilesFromBody();
 		_state = R_FILE_READY;
@@ -452,38 +456,76 @@ void Response::_methodPOST(void)
 		else
 			_statusCode = 201;
 	}
-	//access sur le fichier droit d'ecriture 
-	//if file existe append ?
-	// else create file
-	// create response
+	// access sur le fichier droit d'ecriture
+	// if file existe append ?
+	//  else create file
+	//  create response
+}
+
+void Response::_methodDELETE(void)
+{
+
+	int ret;
+
+	if (isDir(_actualTarget))
+		ret = rmdir(_actualTarget.c_str());
+	else if (_targetStatus == "File_ok")
+		ret = unlink(_actualTarget.c_str());
+	else
+	{
+		_statusCode = 404;
+		_createErrorMessageBody();
+		_state = R_FILE_READY;
+		return;
+	}	
+	if (ret == 0)
+	{
+		_statusCode = 200;
+		_ss << _actualTarget << " : Successfully deleted\n";
+	}
+	else
+	{
+		_statusCode = 500;
+		_ss << _actualTarget << " : " << strerror(errno) << std::endl;
+	}
+	_bodyLength = _ss.str().size();
+	_state = R_FILE_READY;
 }
 
 void Response::_extractHeaderFromCgiOutputFile(void)
 {
-	std::string extractedHeader; 
+	std::string extractedHeader;
 
 	getline(_fs, extractedHeader, '\n');
 	while (extractedHeader != "\r")
 	{
+		if (subStringBeforeFirstDelim(extractedHeader, ':') == "Status")
+		{
+			_statusCode = atoi(subStringAfterFirstDelim(extractedHeader, ':').c_str());
+			if (DEBUG_RESPONSE)
+				std::cerr << "Status code : " << _statusCode << std::endl;
+		}
 		_bodyLength -= (extractedHeader.size() + 1);
 		_header += extractedHeader + "\n";
-		getline(_fs, extractedHeader, '\n');
+		if (!getline(_fs, extractedHeader, '\n'))
+			return;
 	}
 	_bodyLength -= 2;
+
 	if (DEBUG_RESPONSE)
 		std::cerr << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
 }
 
 void Response::_waitCGIfile(void)
 {
-	int		status;
-	int		ret;
+	int status;
+	int ret;
 
 	if (waitpid(_pid, &status, WNOHANG) == 0)
 	{
 		if (DEBUG_RESPONSE > 1)
 			std::cerr << "A child is still working at [\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
-		return ;
+		return;
 	}
 	else
 	{
@@ -492,13 +534,19 @@ void Response::_waitCGIfile(void)
 		if (WIFEXITED(status) > 0)
 			ret = (WEXITSTATUS(status));
 		if (WIFSIGNALED(status) > 0)
-			ret = (WTERMSIG(status) + 128);
-		if (DEBUG_RESPONSE)
-			std::cerr << "ret : [" << ret << "]" << std::endl;
+			ret = (WTERMSIG(status));
+		// if (DEBUG_RESPONSE)
+		std::cerr << "ret : [" << ret << "]" << std::endl;
 		if (_requestBodyFileSize != 0 && close(_inChild))
-			throw(std::runtime_error("Close error inChild" ));
+			throw(std::runtime_error("Close error inChild"));
 		if (close(_outChild))
-			throw(std::runtime_error("close error outChild" ));
+			throw(std::runtime_error("close error outChild"));
+		if (ret > 0)
+		{
+			_statusCode = 500;
+			_state = R_INIT;
+			return;
+		}
 		_createFileStreamFromFile(_nameOut);
 		_extractHeaderFromCgiOutputFile();
 		_state = R_FILE_READY;
@@ -522,13 +570,13 @@ void Response::_initCGIfile(void)
 			throw(std::runtime_error(std::string("_open error request bodyfile") + strerror(errno)));
 	}
 	if ((_pid = fork()) == -1)
-		throw(std::runtime_error("Fork error" ));
+		throw(std::runtime_error("Fork error"));
 	if (_pid != 0)
 	{
 		if (DEBUG_RESPONSE)
 			std::cerr << "A child is born at [\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 		_state = R_WAIT_CGI_EXEC;
-		return ;
+		return;
 	}
 	else
 	{
@@ -546,7 +594,7 @@ void Response::_initCGIfile(void)
 		if (DEBUG_RESPONSE)
 			std::cerr << "actual Target : [" << _actualTarget << "] CGI-executable : [" << _cgiExecutable << "]" << std::endl;
 		execve(_cgiExecutable.c_str(), arg, _createEnvArray());
-		throw(std::runtime_error(std::string("Execve error") + strerror(errno)));
+		throw(std::runtime_error(std::string("Execve error ") + strerror(errno)));
 	}
 }
 
@@ -572,7 +620,7 @@ void Response::_checkAutorizationForMethod(void)
 void Response::_checkRedirect(void)
 {
 	string requestTarget = _request->getTarget();
-	if( _config->getParamByLocation(requestTarget, "return")[0] == "1")
+	if (_config->getParamByLocation(requestTarget, "return")[0] == "1")
 		return;
 	else
 	{
@@ -604,7 +652,7 @@ int Response::handleResponse(void)
 	}
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 		std::cerr << "Handle response end. Status [" << _state << "]" << std::endl;
-	
+
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 		std::cerr << "handleResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	if (_state == R_OVER && _statusCode < 400)
@@ -618,7 +666,7 @@ int Response::handleResponse(void)
 int Response::_createResponse(void)
 {
 	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
-	//check methode
+	// check methode
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 		std::cerr << "createResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 
@@ -642,6 +690,10 @@ int Response::_createResponse(void)
 	{
 		_methodPOST();
 	}
+	else if (_state < R_FILE_READY && _request->getMethod() == "DELETE")
+	{
+		_methodDELETE();
+	}
 	if (_state == R_FILE_READY)
 	{
 		_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
@@ -655,7 +707,7 @@ int Response::_createResponse(void)
 
 std::istream *Response::_selectBodySourceBetweenFileAndStringStream(void)
 {
-	std::istream	*bodyStreamPtr;
+	std::istream *bodyStreamPtr;
 
 	if (_fs.is_open())
 	{
@@ -674,10 +726,10 @@ std::istream *Response::_selectBodySourceBetweenFileAndStringStream(void)
 
 void Response::_sendHeaderToClient(void)
 {
-	int		ret;
-	int		buff_size;
-	char	*buff;
-	int		i = 0;
+	int ret;
+	int buff_size;
+	char *buff;
+	int i = 0;
 
 	if (DEBUG_RESPONSE)
 		std::cerr << "Header not empty -> sending it first" << std::endl;
@@ -687,7 +739,8 @@ void Response::_sendHeaderToClient(void)
 	for (v_c::iterator it = _fullHeader.begin(); i < buff_size && it != ite; i++, it++)
 		buff[i] = *it;
 	if (DEBUG_RESPONSE)
-		std::cerr << "buff_size [" << buff_size << "]" << "About to write client response on fd [" << _clientFd << "]" << std::endl;
+		std::cerr << "buff_size [" << buff_size << "]"
+				  << "About to write client response on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, 0);
 	if (ret == -1)
 	{
@@ -698,18 +751,18 @@ void Response::_sendHeaderToClient(void)
 	{
 		_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
 		if (DEBUG_RESPONSE)
-			std::cerr << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" <<std::endl;
+			std::cerr << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" << std::endl;
 	}
-	delete [] buff;
+	delete[] buff;
 }
 
 void Response::_sendBodyToClient(void)
 {
-	int		ret;
-	int		buff_size = 0;
-	char	*bufBody;
-	std::istream	*bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
-	std::istream	&bodyStream = *bodyStreamPtr;
+	int ret;
+	int buff_size = 0;
+	char *bufBody;
+	std::istream *bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
+	std::istream &bodyStream = *bodyStreamPtr;
 
 	if (DEBUG_RESPONSE)
 		std::cerr << "Header IS empty -> sending Body" << std::endl;
@@ -728,7 +781,7 @@ void Response::_sendBodyToClient(void)
 	_bodyLength -= ret;
 	if (ret == -1 && DEBUG_RESPONSE)
 		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
-	if (ret != bodyStream.gcount() &&  DEBUG_RESPONSE)
+	if (ret != bodyStream.gcount() && DEBUG_RESPONSE)
 		std::cerr << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 	if (_bodyLength == 0)
 	{
@@ -736,7 +789,7 @@ void Response::_sendBodyToClient(void)
 			std::cerr << "No more body data to read on body fd. Attempt to Close fd" << std::endl;
 		try
 		{
-			std::ifstream	&fsForClose = dynamic_cast<std::ifstream &>(bodyStream);
+			std::ifstream &fsForClose = dynamic_cast<std::ifstream &>(bodyStream);
 			if (DEBUG_RESPONSE)
 				std::cerr << "Closing fs" << std::endl;
 			fsForClose.close();
@@ -751,15 +804,15 @@ void Response::_sendBodyToClient(void)
 	}
 	else
 		bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
-	delete [] bufBody;
+	delete[] bufBody;
 }
 
 int Response::_writeClientResponse(void)
 {
 
 	if (DEBUG_RESPONSE)
-		std::cerr << "write	Response IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl 
-			<< "Begin of Write Client response function" << std::endl;
+		std::cerr << "write	Response IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl
+				  << "Begin of Write Client response function" << std::endl;
 	if (_fullHeader.size())
 		_sendHeaderToClient();
 	else if (_fullHeader.empty())
@@ -769,10 +822,10 @@ int Response::_writeClientResponse(void)
 	return 1;
 }
 
-std::map<std::string, unsigned int>	Response::_populateDirectoryMap(const char *path)
+std::map<std::string, unsigned int> Response::_populateDirectoryMap(const char *path)
 {
-	struct dirent	*currentDir;
-	DIR				*dp;
+	struct dirent *currentDir;
+	DIR *dp;
 	std::map<string, unsigned int> dirMap;
 
 	dp = opendir(path);
@@ -786,7 +839,7 @@ std::map<std::string, unsigned int>	Response::_populateDirectoryMap(const char *
 		{
 			if (currentDir->d_type == DT_DIR)
 				nextDirEntry += "/";
-			dirMap.insert(std::pair<string, unsigned int> (nextDirEntry, currentDir->d_type));
+			dirMap.insert(std::pair<string, unsigned int>(nextDirEntry, currentDir->d_type));
 		}
 		currentDir = readdir(dp);
 	}
@@ -794,7 +847,7 @@ std::map<std::string, unsigned int>	Response::_populateDirectoryMap(const char *
 	return (dirMap);
 }
 
-void	Response::_generateErrorBodyFromTemplate(std::string &errorMessage)
+void Response::_generateErrorBodyFromTemplate(std::string &errorMessage)
 {
 	_defaultErrorBodyToSend = _errorBodyTemplate;
 	for (int i = 0; i < 2; i++)
@@ -805,7 +858,7 @@ void	Response::_generateErrorBodyFromTemplate(std::string &errorMessage)
 	}
 }
 
-std::string	Response::_generateHTMLBodyWithPath(void)
+std::string Response::_generateHTMLBodyWithPath(void)
 {
 	string HTMLbody = _autoIndexBodyTemplate;
 	for (int i = 0; i < 2; i++)
@@ -819,15 +872,14 @@ std::string	Response::_generateHTMLBodyWithPath(void)
 
 int Response::_createAutoIndex(const string &pathToDir)
 {
-	const char 						*path = pathToDir.c_str();
-	std::map<string, unsigned int>	dirMap = _populateDirectoryMap(path);
-	string							HTMLbody = _generateHTMLBodyWithPath();
-	string							cleanTargetDir = _request->getTarget();
+	const char *path = pathToDir.c_str();
+	std::map<string, unsigned int> dirMap = _populateDirectoryMap(path);
+	string HTMLbody = _generateHTMLBodyWithPath();
+	string cleanTargetDir = _request->getTarget();
 	string cleanPathToDir = pathToDir + (pathToDir[pathToDir.size() - 1] != '/' ? "/" : "");
 
-
 	cleanTargetDir += cleanTargetDir[cleanTargetDir.size() - 1] != '/' ? "/" : "";
-	//Ajout des fichiers
+	// Ajout des fichiers
 	for (std::map<string, unsigned int>::reverse_iterator it = dirMap.rbegin(); it != dirMap.rend(); it++)
 	{
 		if (it->second != DT_DIR)
@@ -836,19 +888,19 @@ int Response::_createAutoIndex(const string &pathToDir)
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size())
 				<< "<a href=\"" + cleanTargetDir + it->first + "\">" + it->first + "</a>"
-				<< std::setw(40) <<  getFileSizeStr(cleanPathToDir + it->first) + " bytes" << std::endl;
+				<< std::setw(40) << getFileSizeStr(cleanPathToDir + it->first) + " bytes" << std::endl;
 			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();
 			HTMLbody.insert(pos, out.str());
 		}
 	}
-	//Ajout des fichiers
-	//Ajout des dossiers
+	// Ajout des fichiers
+	// Ajout des dossiers
 	for (std::map<string, unsigned int>::reverse_iterator it = dirMap.rbegin(); it != dirMap.rend(); it++)
-	{	
+	{
 		if (it->second == DT_DIR)
-		{	
+		{
 			if (DEBUG_RESPONSE)
 				std::cerr << "name:[" << it->first << "] type" << itoa(it->second) << "size:[" << std::endl;
 			size_t pos = HTMLbody.find("<pre>\n");
@@ -856,7 +908,7 @@ int Response::_createAutoIndex(const string &pathToDir)
 			HTMLbody.insert(pos, "<a href=\"" + it->first + "\">" + it->first + "</a>\n");
 		}
 	}
-	//Ajout des dossiers
+	// Ajout des dossiers
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "\e[33m-----------Autoindex BODY-----------" << std::endl;
