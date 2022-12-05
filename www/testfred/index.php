@@ -17,8 +17,11 @@
 		</form>
 		<p>Start of php</p>
 		<?php
-			$var = htmlspecialchars($_POST["user_name"]);
-			echo 'Hello' . $var . '!'
+			if(isset($_POST["user_name"]))
+				$var = $_POST["user_name"];
+			else
+				$var = "Default_user_name";
+			echo 'Hello ' . $var . '!'
 		?>
 	</body>
 </html>
