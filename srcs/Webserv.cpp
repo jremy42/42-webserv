@@ -8,50 +8,26 @@ extern int	g_rv;
 Webserv::Webserv()
 {};
 
-// Webserv::Webserv(char **av) : _configArray(av)
-// {
-// 	std::string		nextLine;
-// 	std::ifstream	fs;
-// 	int				viableConfig = 0;
-// 	int				i = 0;
-
-// 	++_configArray;
-// 	while (_configArray[i])
-// 	{
-// 		_loadFile(_configArray[i]);
-// 		i++;
-// 	}
-// 	std::cout << "Config list :" << std::endl;
-// 	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
-// 	{
-// 		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
-// 		viableConfig |= (*it != "");
-// 	}
-// 	if (viableConfig == 0)
-// 		throw NotEnoughValidConfigFilesException();
-// 	return ;
-// }
 
 Webserv::Webserv(string fileName)
 {
-	//_configArray = NULL;
-
 	int				viableConfig = 0;
 	_openFd = 0;
 	_maxFd = _getMaxFd();
 	if (_maxFd < 10)
-		throw(std::runtime_error("Webserv: not open enough file descriptor for run webserv" ));
-	std::cout << "fd max " << _maxFd << std::endl;
+		throw(std::runtime_error("Webserv: not enough available fd to run webserv" ));
+	if (DEBUG_WEBSERV)
+		std::cout << "Webserv: max fd available: " << _maxFd << std::endl;
 	_loadFile(fileName.c_str());
-	std::cout << "Config list :" << std::endl;
-	for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+	if (DEBUG_WEBSERV)
 	{
-		std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
-		viableConfig |= (*it != "");
+		std::cout << "Config list :" << std::endl;
+		for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
+		{
+			std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
+			viableConfig |= (*it != "");
+		}
 	}
-	if (viableConfig == 0)
-		throw NotEnoughValidConfigFilesException();
-
 	return ;
 }
 
@@ -87,12 +63,10 @@ void Webserv::_loadFile(const char * fileName)
 	std::ifstream	fs;
 
 	fs.open(fileName, std::ifstream::in);
-	if (fs.good())
-		std::cout << "Successfully opened config file : '" << fileName << "'" << std::endl;
-	else
+	if (!fs.good())
 	{
-		std::cerr << "Failure opening config file : '" << fileName << "' : " << strerror(errno) << std::endl;
 		fs.close();
+		throw std::runtime_error(std::string("webserv: Failure opening config file : '" ) + fileName + "' : " + strerror(errno));
 	}
 	_rawConfig.push_back("");
 	while (std::getline(fs, nextLine))
@@ -167,13 +141,8 @@ int		Webserv::parseRawConfig(void)
 
 	for (it = _rawConfig.begin(); it != _rawConfig.end(); it++)
 	{
-		//rawServerConf = getNextServerBlock(*it);
 		while (!(rawServerConf = getNextServerBlock(*it)).empty())
-		//while (!rawServerConf.empty())
 		{
-			// create Config constructor with rawServConf 
-			// try catch error;
-			// fonction wich verify if port or server name are the same.
 			try {
 				Config nextConfig(rawServerConf);
 				for (v_config::iterator it = _configList.begin(); it != _configList.end() ; it++)
@@ -186,10 +155,7 @@ int		Webserv::parseRawConfig(void)
 						+ nextConfig.getListenPortStr() + " with a server_name: " + conflictServerName + "\e[0m"));
 					}
 				}
-				//Constructeur de config a faire avec la map au lieu des 2 premiers fields!!!!
 				viableConfig |= 1;
-				//std::cout << "\e[32mPushing back a new config in the ConfigList\e[0m" << std::endl;
-				
 				if(_portIpConfigList.find(std::pair<int, int >(nextConfig.getListenPort(), nextConfig.getHost())) != _portIpConfigList.end())
 					_portIpConfigList.find(std::pair<int, int >(nextConfig.getListenPort(), nextConfig.getHost()))->second.push_back(nextConfig);
 				else
@@ -200,7 +166,6 @@ int		Webserv::parseRawConfig(void)
 					std::cout << "port :[" << nextConfig.getListenPort() << "]" << std::endl;
 					_portIpConfigList.insert(std::pair< std::pair<int, int> ,std::vector<Config> >(std::pair<int, int>(nextConfig.getListenPort(), nextConfig.getHost()), tmp));
 				}
-				//_configList.push_back(nextConfig);// a suppr
 			}
 			catch (const std::exception &e) 
 			{

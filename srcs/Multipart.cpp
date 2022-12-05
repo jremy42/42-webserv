@@ -16,7 +16,7 @@ Multipart::Multipart(string bodyFile, string boundaryDelim, string uploadDir)
 	if (_fs.good())
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
-		throw(std::runtime_error(std::string("Failed to open tmpfile body in multipart") + strerror(errno)));
+		throw(std::runtime_error(std::string("Failed to open tmpfile body in multipart: ") + strerror(errno)));
 }
 
 Multipart::Multipart(const Multipart &src)

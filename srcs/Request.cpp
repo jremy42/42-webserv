@@ -311,7 +311,7 @@ void Request::_initBodyFile(void)
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
 	{
-		throw(std::runtime_error(std::string("Failed to open tmpfile body") + strerror(errno)));
+		throw(std::runtime_error(std::string("Failed to open tmpfile body :") + strerror(errno)));
 	}
 	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
 	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));
