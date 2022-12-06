@@ -1,7 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#define WRITE_BUFFER_SIZE	1024*(32 - 1)
+#define WRITE_BUFFER_SIZE	1024*(32 - 16)
 
 # include "Request.hpp"
 # include <string>
@@ -24,10 +24,11 @@
 # include <sys/wait.h>
 # include <cctype>
 # include "Multipart.hpp"
+# include <stack>
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
-#  define DEBUG_RESPONSE 1
+#  define DEBUG_RESPONSE 0
 # endif
 
 enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};
@@ -95,6 +96,7 @@ class Response
 		static m_ss						_initCgiMetaVar(void);
 
 		void							_parseRawRequestTarget(void);
+		void							_cleanRawRequestTarget(void);
 		void							_selectActualTarget(void);
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);

@@ -158,8 +158,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	}
 	_selectActualTarget();
 	memset(_nameOut, 0, 32);
-	::
-		strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
+	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
 	_requestBodyFile = _request->getTmpBodyFile();
 	_requestBodyFileSize = (_requestBodyFile != "") ? getFileSize(_requestBodyFile) : 0;
 }
@@ -250,7 +249,6 @@ void Response::_createErrorMessageBody(void)
 		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
 		_bodyLength = _defaultErrorBodyToSend.size();
-		_header += "Content-length: " + itoa(_bodyLength) + "\n";
 	}
 }
 
@@ -272,9 +270,44 @@ int Response::_urlDecodeString(string &strToDecode)
 	return (1);
 }
 
+void Response::_cleanRawRequestTarget(void)
+{
+	std::stack<std::string>	targetParts;
+	std::stringstream		_rawRequestedTargetSteam(_rawRequestedTarget);
+	std::string				buf;
+
+	while (getline(_rawRequestedTargetSteam, buf, '/'))
+	{
+		if (buf == "..")
+		{
+			if (targetParts.empty())
+			{
+				_statusCode = 403;
+				return ;
+			}
+			else
+				targetParts.pop();
+		}
+		else
+			targetParts.push(buf);
+	}
+	_rawRequestedTarget.erase();
+	while (!targetParts.empty())
+	{
+		if (!_rawRequestedTarget.empty())
+			targetParts.top() += "/";
+		_rawRequestedTarget = targetParts.top() +  _rawRequestedTarget;
+		targetParts.pop();
+	}
+	if (_rawRequestedTarget.empty())
+		_rawRequestedTarget = "/";
+	std::cerr << "ICI [" << _rawRequestedTarget << "]" << std::endl;
+}
+
 void Response::_parseRawRequestTarget(void)
 {
 	_rawRequestedTarget = _request->getTarget();
+	_cleanRawRequestTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
 	_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
 	_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget;
@@ -541,8 +574,8 @@ void Response::_waitCGIfile(void)
 			ret = (WEXITSTATUS(status));
 		if (WIFSIGNALED(status) > 0)
 			ret = (WTERMSIG(status));
-		// if (DEBUG_RESPONSE)
-		std::cerr << "ret : [" << ret << "]" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "ret : [" << ret << "]" << std::endl;
 		if (_requestBodyFileSize != 0 && close(_inChild))
 			throw(std::runtime_error("Close error inChild"));
 		if (close(_outChild))
@@ -747,7 +780,7 @@ void Response::_sendHeaderToClient(void)
 	if (DEBUG_RESPONSE)
 		std::cerr << "buff_size [" << buff_size << "]"
 				  << "About to write client response on fd [" << _clientFd << "]" << std::endl;
-	ret = send(_clientFd, buff, i, 0);
+	ret = send(_clientFd, buff, i, MSG_NOSIGNAL);
 	if (ret == -1)
 	{
 		if (DEBUG_RESPONSE)
@@ -783,7 +816,7 @@ void Response::_sendBodyToClient(void)
 		std::cerr << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
 		std::cerr << "Sending chunk of body to client" << std::endl;
 	}
-	ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
+	ret = send(_clientFd, bufBody, bodyStream.gcount(), MSG_NOSIGNAL);
 	_bodyLength -= ret;
 	if (ret == -1 && DEBUG_RESPONSE)
 		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
@@ -923,6 +956,6 @@ int Response::_createAutoIndex(const string &pathToDir)
 	}
 	_ss << HTMLbody;
 	_bodyLength = HTMLbody.size();
-	_header += "content-length: " + itoa(_bodyLength) + "\n";
+	//_header += "content-length: " + itoa(_bodyLength) + "\n";
 	return (1);
 }

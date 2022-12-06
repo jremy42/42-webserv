@@ -233,7 +233,7 @@ int		Webserv::createServerListByPortConfig(void)
 		}
 	}
 	if(_serverList.size() == 0)
-		throw std::runtime_error("Webserv: No server created. Check your config files");
+		throw std::runtime_error("Webserv: No server created. check your config file or quit webserv");
 	return (1);
 }
 
@@ -241,21 +241,20 @@ int		Webserv::execServerLoop(void)
 {
 	std::map<int, int> _fdAvailable;
 	std::map<int, int>::iterator ite;
-
+	printLog(1,0,1,"Webserv is running");
 	while (g_rv)
 	{
 		_fdAvailable = _evListener.fdAvailable();
 		ite = _fdAvailable.end();
-		//std::cout << _openFd << std::endl;
 		for (std::map<int, int>::iterator it = _fdAvailable.begin(); it != ite; it++)
 		{
-	
+
 			if (_fdServerList.find(it->first) != _fdServerList.end() && _openFd < _maxFd - 10)
 			{
 				try {
 					if (DEBUG_SERVER)
 						std::cerr << "\e[32mACCEPT NEW CLIENT\e[0m\n";
-					// verification du flag
+					std::cout << "Number of openfd : [" <<_openFd << "]" << std::endl;
 					int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
 					_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
 					_openFd++;
@@ -276,7 +275,7 @@ int		Webserv::execServerLoop(void)
 			}
 		}
 	}
-
+	printLog(1,0,1,"Closing Webserv");
 	return (1);
 }
 
@@ -303,5 +302,5 @@ std::string Webserv::_checkServerName(std::vector<string> nextServerName, std::v
 
 const char	*Webserv::NotEnoughValidConfigFilesException::what(void) const throw ()
 {
-	return ("Need at least one valid configuration file to launch Webserv");
+	return ("Webserv : Need at least one valid configuration file to launch Webserv");
 }
