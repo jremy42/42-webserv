@@ -38,6 +38,8 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 
 Client::~Client()
 {
+	delete _response;
+	delete _request;
 }
 
 Client::Client(const Client & src)
