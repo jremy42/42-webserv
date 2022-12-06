@@ -159,6 +159,7 @@ int Client::executeAction()
 		{
 			printLog(1,_clientFd, 2, "RESPONSE :", _response->getlineStatus().c_str());
 			delete _response;
+			_response = NULL;
 			_state = S_CLOSE_FD;
 		}
 	}
@@ -166,12 +167,15 @@ int Client::executeAction()
 	{
 		printLog(1,_clientFd, 2, "RESPONSE :", _response->getlineStatus().c_str());
 		delete _request;
+		_request = NULL;
 		delete _response;
+		_response = NULL;
 		_state = S_INIT;
 	}
 	if(_state == S_CLOSE_FD)
 	{
 		delete _request;
+		_request = NULL;
 		_state = S_CLOSE_FD;
 	}
 	//printTimeDebug(DEBUG_CLIENT, "Client State at end of executeAction", getStateStr());

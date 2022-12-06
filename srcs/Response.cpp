@@ -297,9 +297,11 @@ void Response::_cleanRawRequestTarget(void)
 	{
 		if (!_rawRequestedTarget.empty())
 			targetParts.top() += "/";
-		_rawRequestedTarget = "/" + targetParts.top() +  _rawRequestedTarget;
+		_rawRequestedTarget = targetParts.top() +  _rawRequestedTarget;
 		targetParts.pop();
 	}
+	if (_rawRequestedTarget.empty())
+		_rawRequestedTarget = "/";
 	std::cerr << "ICI [" << _rawRequestedTarget << "]" << std::endl;
 }
 
@@ -573,8 +575,8 @@ void Response::_waitCGIfile(void)
 			ret = (WEXITSTATUS(status));
 		if (WIFSIGNALED(status) > 0)
 			ret = (WTERMSIG(status));
-		// if (DEBUG_RESPONSE)
-		std::cerr << "ret : [" << ret << "]" << std::endl;
+		if (DEBUG_RESPONSE)
+			std::cerr << "ret : [" << ret << "]" << std::endl;
 		if (_requestBodyFileSize != 0 && close(_inChild))
 			throw(std::runtime_error("Close error inChild"));
 		if (close(_outChild))
@@ -802,7 +804,6 @@ void Response::_sendBodyToClient(void)
 	std::istream *bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
 	std::istream &bodyStream = *bodyStreamPtr;
 
-	printLog(1, _clientFd, 1, "1");
 	if (DEBUG_RESPONSE)
 		std::cerr << "Header IS empty -> sending Body" << std::endl;
 	if (_bodyLength < WRITE_BUFFER_SIZE)
@@ -810,17 +811,13 @@ void Response::_sendBodyToClient(void)
 	else
 		buff_size = WRITE_BUFFER_SIZE;
 	bufBody = new char[buff_size];
-	printLog(1, _clientFd, 1, "2");
 	bodyStream.read(bufBody, buff_size);
-	printLog(1, _clientFd, 1, "3");
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
 		std::cerr << "Sending chunk of body to client" << std::endl;
 	}
-	printLog(1, _clientFd, 1, "4");
 	ret = send(_clientFd, bufBody, bodyStream.gcount(), MSG_NOSIGNAL);
-	printLog(1, _clientFd, 1, "5");
 	_bodyLength -= ret;
 	if (ret == -1 && DEBUG_RESPONSE)
 		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
@@ -848,7 +845,6 @@ void Response::_sendBodyToClient(void)
 	else
 		bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
 	delete[] bufBody;
-	printLog(1, _clientFd, 1, "6");
 }
 
 int Response::_writeClientResponse(void)
