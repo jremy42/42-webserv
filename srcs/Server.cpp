@@ -221,12 +221,12 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		close(_serverFd);
 	}
 	if (!result_it)
-		throw(std::runtime_error("Webserv: enable to create and bind listening socket"));
+		throw(std::runtime_error("Webserv: unable to create and bind listening socket"));
 	if (listen(_serverFd, _backlog) == -1)
 	{
 		close(_serverFd);
 		freeaddrinfo(result);
-		throw(std::runtime_error(strerror(errno)));
+		throw(std::runtime_error(string("Webserv : listen failure : ") + strerror(errno)));
 	}
 	if (DEBUG_SERVER)
 		std::cerr << " listen socket address with host [" << _listenSockaddr.sin_addr.s_addr << "]"<< std::endl;

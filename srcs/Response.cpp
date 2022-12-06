@@ -249,7 +249,7 @@ void Response::_createErrorMessageBody(void)
 		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
 		_bodyLength = _defaultErrorBodyToSend.size();
-		_header += "content-length: " + itoa(_bodyLength) + "\n";
+		//_header += "content-length: " + itoa(_bodyLength) + "\n";
 	}
 }
 
@@ -297,7 +297,7 @@ void Response::_cleanRawRequestTarget(void)
 	{
 		if (!_rawRequestedTarget.empty())
 			targetParts.top() += "/";
-		_rawRequestedTarget = targetParts.top() +  _rawRequestedTarget;
+		_rawRequestedTarget = "/" + targetParts.top() +  _rawRequestedTarget;
 		targetParts.pop();
 	}
 	std::cerr << "ICI [" << _rawRequestedTarget << "]" << std::endl;
@@ -779,7 +779,7 @@ void Response::_sendHeaderToClient(void)
 	if (DEBUG_RESPONSE)
 		std::cerr << "buff_size [" << buff_size << "]"
 				  << "About to write client response on fd [" << _clientFd << "]" << std::endl;
-	ret = send(_clientFd, buff, i, 0);
+	ret = send(_clientFd, buff, i, MSG_NOSIGNAL);
 	if (ret == -1)
 	{
 		if (DEBUG_RESPONSE)
@@ -802,6 +802,7 @@ void Response::_sendBodyToClient(void)
 	std::istream *bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
 	std::istream &bodyStream = *bodyStreamPtr;
 
+	printLog(1, _clientFd, 1, "1");
 	if (DEBUG_RESPONSE)
 		std::cerr << "Header IS empty -> sending Body" << std::endl;
 	if (_bodyLength < WRITE_BUFFER_SIZE)
@@ -809,13 +810,17 @@ void Response::_sendBodyToClient(void)
 	else
 		buff_size = WRITE_BUFFER_SIZE;
 	bufBody = new char[buff_size];
+	printLog(1, _clientFd, 1, "2");
 	bodyStream.read(bufBody, buff_size);
+	printLog(1, _clientFd, 1, "3");
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
 		std::cerr << "Sending chunk of body to client" << std::endl;
 	}
-	ret = send(_clientFd, bufBody, bodyStream.gcount(), 0);
+	printLog(1, _clientFd, 1, "4");
+	ret = send(_clientFd, bufBody, bodyStream.gcount(), MSG_NOSIGNAL);
+	printLog(1, _clientFd, 1, "5");
 	_bodyLength -= ret;
 	if (ret == -1 && DEBUG_RESPONSE)
 		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
@@ -843,6 +848,7 @@ void Response::_sendBodyToClient(void)
 	else
 		bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
 	delete[] bufBody;
+	printLog(1, _clientFd, 1, "6");
 }
 
 int Response::_writeClientResponse(void)
@@ -955,6 +961,6 @@ int Response::_createAutoIndex(const string &pathToDir)
 	}
 	_ss << HTMLbody;
 	_bodyLength = HTMLbody.size();
-	_header += "content-length: " + itoa(_bodyLength) + "\n";
+	//_header += "content-length: " + itoa(_bodyLength) + "\n";
 	return (1);
 }

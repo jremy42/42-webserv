@@ -246,16 +246,15 @@ int		Webserv::execServerLoop(void)
 	{
 		_fdAvailable = _evListener.fdAvailable();
 		ite = _fdAvailable.end();
-		//std::cout << _openFd << std::endl;
 		for (std::map<int, int>::iterator it = _fdAvailable.begin(); it != ite; it++)
 		{
-	
+
 			if (_fdServerList.find(it->first) != _fdServerList.end() && _openFd < _maxFd - 10)
 			{
 				try {
 					if (DEBUG_SERVER)
 						std::cerr << "\e[32mACCEPT NEW CLIENT\e[0m\n";
-					// verification du flag
+					std::cout << "Number of openfd : [" <<_openFd << "]" << std::endl;
 					int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
 					_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
 					_openFd++;
