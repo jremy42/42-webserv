@@ -24,6 +24,7 @@
 # include <sys/wait.h>
 # include <cctype>
 # include "Multipart.hpp"
+# include <stack>
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
@@ -95,6 +96,7 @@ class Response
 		static m_ss						_initCgiMetaVar(void);
 
 		void							_parseRawRequestTarget(void);
+		void							_cleanRawRequestTarget(void);
 		void							_selectActualTarget(void);
 		void							_createErrorMessageBody(void);
 		void							_createBody(void);

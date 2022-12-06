@@ -173,7 +173,7 @@ int	Request::parseRequestLine(string rawRequestLine)
 int Request::checkHeader()
 {
 	if (_requestLine.find("http_version")->second == "HTTP/1.1"
-	&& (_header.find("host")->second == "no host"))
+	&& (_header.find("Host")->second == "no host"))
 		return -1;
 	return 0;
 }
@@ -193,6 +193,7 @@ int	Request::parseHeader(string rawHeader)
 				|| colonPos == bufExtract.length() - 1
 				|| colonPos == 1)
 		{
+			_statusCode = 400;
 			_state = R_ERROR;
 			return (-1);
 		}
@@ -273,20 +274,22 @@ void Request::_handleHeader(void)
 	for (; it != ite; it++)
 	{
 		if (*it == '\r'
-			&& it + 1 != ite && *(it + 1) == '\n'
-			&& it + 2 != ite && *(it + 2) == '\r'
-			&& it + 3 != ite && *(it + 3) == '\n')
+				&& it + 1 != ite && *(it + 1) == '\n'
+				&& it + 2 != ite && *(it + 2) == '\r'
+				&& it + 3 != ite && *(it + 3) == '\n')
 		{
 			string rawHeader(_rawRequest.begin(), it);
-			if(this->parseHeader(rawHeader))
+			if (this->parseHeader(rawHeader))
+			{
 				_state = R_ERROR;
-			if (_state == R_ERROR)
-				return;
+				_statusCode = 400;
+				return ;
+			}
 			_rawRequest.erase(_rawRequest.begin(), it + 4);
 			_state = R_SET_CONFIG;
 			return ;
 		}
-	} 
+	}
 
 }
 

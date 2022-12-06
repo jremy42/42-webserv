@@ -158,8 +158,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	}
 	_selectActualTarget();
 	memset(_nameOut, 0, 32);
-	::
-		strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
+	strncpy(_nameOut, "/tmp/webservXXXXXX", 32);
 	_requestBodyFile = _request->getTmpBodyFile();
 	_requestBodyFileSize = (_requestBodyFile != "") ? getFileSize(_requestBodyFile) : 0;
 }
@@ -272,9 +271,42 @@ int Response::_urlDecodeString(string &strToDecode)
 	return (1);
 }
 
+void Response::_cleanRawRequestTarget(void)
+{
+	std::stack<std::string>	targetParts;
+	std::stringstream		_rawRequestedTargetSteam(_rawRequestedTarget);
+	std::string				buf;
+
+	while (getline(_rawRequestedTargetSteam, buf, '/'))
+	{
+		if (buf == "..")
+		{
+			if (targetParts.empty())
+			{
+				_statusCode = 403;
+				return ;
+			}
+			else
+				targetParts.pop();
+		}
+		else
+			targetParts.push(buf);
+	}
+	_rawRequestedTarget.erase();
+	while (!targetParts.empty())
+	{
+		if (!_rawRequestedTarget.empty())
+			targetParts.top() += "/";
+		_rawRequestedTarget = targetParts.top() +  _rawRequestedTarget;
+		targetParts.pop();
+	}
+	std::cerr << "ICI [" << _rawRequestedTarget << "]" << std::endl;
+}
+
 void Response::_parseRawRequestTarget(void)
 {
 	_rawRequestedTarget = _request->getTarget();
+	_cleanRawRequestTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
 	_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
 	_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget;
