@@ -16,7 +16,7 @@ Server::Server(v_config configList)
 	} catch (const std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
-		throw(std::runtime_error("Server creation failure"));
+		throw(std::runtime_error("Webserv: Server creation failure"));
 	}
 	if (DEBUG_SERVER)
 	{
@@ -114,7 +114,7 @@ int Server::acceptNewClient(void)
 	addrlen = sizeof(struct sockaddr_in);
 	clientFd = accept(_serverFd, (struct sockaddr *)& claddr, &addrlen);
 	if (clientFd == -1 && (errno != EAGAIN || errno != EWOULDBLOCK))
-		throw(std::runtime_error(strerror(errno)));
+		throw(std::runtime_error(string("Webserv: accept failed:") + strerror(errno)));
 	//printf("serverFd: [%d] | client fd : [%d]\n",_serverFd, clientFd);
 	
 	if (clientFd > 0)
@@ -137,18 +137,30 @@ int Server::execClientAction(int fd, int availableAction ) // mode naif activate
 {
 	Client* currentCli = _clientListFd.find(fd)->second;
 	currentCli->setAvailableActions(availableAction);
-	if (currentCli->executeAction())
+	try 
 	{
-		if (currentCli->getState() == S_CLOSE_FD)
+		if (currentCli->executeAction())
 		{
-			if (DEBUG_SERVER)
-				std::cerr << "Closing and removing Client with read return = 0" << std::endl;
-			printLog(1, currentCli->getClientFd(), 1, " connection close");
-			close(currentCli->getClientFd());
-			_clientListFd.erase(currentCli->getClientFd());
-			delete currentCli;
-			return 0;
+			if (currentCli->getState() == S_CLOSE_FD)
+			{
+				if (DEBUG_SERVER)
+					std::cerr << "Closing and removing Client with read return = 0" << std::endl;
+				printLog(1, currentCli->getClientFd(), 1, " connection close");
+				close(currentCli->getClientFd());
+				_clientListFd.erase(currentCli->getClientFd());
+				delete currentCli;
+				return 0;
+			}
 		}
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+		printLog(1, currentCli->getClientFd(), 1, " connection close because system error");
+		close(currentCli->getClientFd());
+		_clientListFd.erase(currentCli->getClientFd());
+		delete currentCli;
+		return 0;
 	}
 	return 1;
 }
@@ -177,7 +189,7 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		memset(buff, 0, INET_ADDRSTRLEN);
 		inet_ntop(AF_INET, &((struct sockaddr_in*)(result_it->ai_addr))->sin_addr, buff, INET_ADDRSTRLEN);
 		if(DEBUG_SERVER)
-			std::cout << "inet_ntop["<< buff<< "]" << std::endl;
+			std::cerr << "inet_ntop["<< buff<< "]" << std::endl;
 	}
 	//std::cout << "##########################################" << std::endl;
 	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
@@ -209,7 +221,7 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		close(_serverFd);
 	}
 	if (!result_it)
-		throw(std::runtime_error("enable to create and bind listening socket"));
+		throw(std::runtime_error("Webserv: enable to create and bind listening socket"));
 	if (listen(_serverFd, _backlog) == -1)
 	{
 		close(_serverFd);

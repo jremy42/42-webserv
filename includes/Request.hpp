@@ -75,6 +75,7 @@ class Request
 		string 				getUploadDir(void) const;
 		string 				getBodyFile(void);
 		string				getLog(void);
+		v_s					getContentType(void) const;
 
 
 	private:

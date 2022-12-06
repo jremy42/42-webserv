@@ -158,8 +158,11 @@ int		Webserv::parseRawConfig(void)
 				{
 					std::vector<Config> tmp;
 					tmp.push_back(nextConfig);
-					std::cout << "\e[32mPushing back a new config in the PortConfigList\e[0m" << std::endl;
-					std::cout << "port :[" << nextConfig.getListenPort() << "]" << std::endl;
+					if (DEBUG_WEBSERV)
+					{
+						std::cerr << "\e[32mPushing back a new config in the PortConfigList\e[0m" << std::endl;
+						std::cerr << "port :[" << nextConfig.getListenPort() << "]" << std::endl;
+					}
 					_portIpConfigList.insert(std::pair< std::pair<int, int> ,std::vector<Config> >(std::pair<int, int>(nextConfig.getListenPort(), nextConfig.getHost()), tmp));
 				}
 			}
@@ -170,7 +173,7 @@ int		Webserv::parseRawConfig(void)
 			}
 		}
 		if (DEBUG_WEBSERV)
-			std::cout << "No more server block. Going to next conf file" << std::endl;
+			std::cerr << "No more server block. Going to next conf file" << std::endl;
 	}
 	if (viableConfig == 0)
 		throw NotEnoughValidConfigFilesException();
@@ -185,15 +188,19 @@ void	Webserv::_moveHostConfigToWildcard()
 	{
 		if (it->first.second == 0)
 		{
-			std::cout << "\e[35mFound Wildcard for port : [" << it->first.first << "]\e[0m" << std::endl;
-			std::cout << "Before WildCard Clean" << std::endl << it->second << std::endl;
+			if (DEBUG_WEBSERV)
+			{
+				std::cerr << "\e[35mFound Wildcard for port : [" << it->first.first << "]\e[0m" << std::endl;
+				std::cerr << "Before WildCard Clean" << std::endl << it->second << std::endl;
+			}
 			searchPort = it->first.first;
 			m_piu_vc::iterator it2;
 			for (it2 = _portIpConfigList.begin(); it2 != _portIpConfigList.end(); it2++)
 			{
 				if (it2->first.first == searchPort && it != it2)
 				{
-					std::cout << "\e[36mFound a Host/Port pair matching Wildcard for port : Port[" << it2->first.first << "] Host : [" << it2->first.second << "]\e[0m" << std::endl;
+					if (DEBUG_WEBSERV)
+						std::cerr << "\e[36mFound a Host/Port pair matching Wildcard for port : Port[" << it2->first.first << "] Host : [" << it2->first.second << "]\e[0m" << std::endl;
 					v_config tmpVconfig = it2->second;
 					for (v_config::iterator confIt = tmpVconfig.begin(); confIt != tmpVconfig.end(); confIt++)
 						it->second.push_back(*confIt);
@@ -201,9 +208,9 @@ void	Webserv::_moveHostConfigToWildcard()
 				}
 			}
 		}
-		std::cout << "After WildCard Clean" << std::endl << it->second << std::endl;
+		if (DEBUG_WEBSERV)
+			std::cout << "After WildCard Clean" << std::endl << it->second << std::endl;
 	}
-
 }
 
 int		Webserv::createServerListByPortConfig(void)
@@ -213,12 +220,20 @@ int		Webserv::createServerListByPortConfig(void)
 	_moveHostConfigToWildcard();
 	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end() && _openFd < _maxFd ; it++)
 	{
-		Server *newServer = new Server((*it).second);
-		_serverList.push_back(newServer);
-		_evListener.trackNewFd(newServer->getServerFd(), EPOLLIN);
-		_fdServerList.insert(std::pair<int, Server*>(newServer->getServerFd(), newServer));
-		_openFd++;
+		try {
+			Server *newServer = new Server((*it).second);
+			_serverList.push_back(newServer);
+			_evListener.trackNewFd(newServer->getServerFd(), EPOLLIN);
+			_fdServerList.insert(std::pair<int, Server*>(newServer->getServerFd(), newServer));
+			_openFd++;
+		}
+		catch (const std::exception &e)
+		{
+			std::cerr << e.what() << std::endl;
+		}
 	}
+	if(_serverList.size() == 0)
+		throw std::runtime_error("Webserv: No server created. Check your config files");
 	return (1);
 }
 
@@ -234,15 +249,22 @@ int		Webserv::execServerLoop(void)
 		//std::cout << _openFd << std::endl;
 		for (std::map<int, int>::iterator it = _fdAvailable.begin(); it != ite; it++)
 		{
+	
 			if (_fdServerList.find(it->first) != _fdServerList.end() && _openFd < _maxFd - 10)
 			{
-				if (DEBUG_SERVER)
-					std::cerr << "\e[32mACCEPT NEW CLIENT\e[0m\n";
-				// verification du flag
-				int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
-				_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
-				_openFd++;
-				_fdClientList.insert(std::pair<int, Server*>(newFd, _fdServerList.find(it->first)->second));
+				try {
+					if (DEBUG_SERVER)
+						std::cerr << "\e[32mACCEPT NEW CLIENT\e[0m\n";
+					// verification du flag
+					int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
+					_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
+					_openFd++;
+					_fdClientList.insert(std::pair<int, Server*>(newFd, _fdServerList.find(it->first)->second));
+				}
+				catch (const std::exception &e)
+				{
+					std::cerr << e.what() << std::endl;
+				}
 			}
 			else if (_fdClientList.find(it->first) != _fdClientList.end())
 			{

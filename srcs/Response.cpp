@@ -24,8 +24,8 @@ Response::m_is Response::_initStatusCodeMessage()
 	return ret;
 }
 
-std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>";
-std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>";
+std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>\n";
+std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>\n";
 
 Response::m_ss Response::_initCgiMetaVar()
 {
@@ -217,7 +217,7 @@ Response &Response::operator=(const Response &rhs)
 
 std::string Response::getlineStatus(void)
 {
-	string lineStatusTrim = strtrim(_lineStatus, "\n\r");
+	string lineStatusTrim = strtrim(_lineStatus, "\t\n\r ");
 	return lineStatusTrim;
 }
 void Response::_createErrorMessageBody(void)
@@ -443,6 +443,12 @@ void Response::_methodPOST(void)
 			_initCGIfile();
 		if (_state == R_WAIT_CGI_EXEC)
 			_waitCGIfile();
+	}
+	else if (_request->getContentType().size() > 0 && _request->getContentType()[0] != "multipart/form-data")
+	{
+		_statusCode = 403;
+		_createErrorMessageBody();
+		_state = R_FILE_READY;
 	}
 	else
 	{

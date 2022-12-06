@@ -174,7 +174,7 @@ float	ft_get_time_sec(void)
 		init = 1;
 	}
 	gettimeofday(&now, NULL);
-	return ((now.tv_sec - begin.tv_sec) * 1000 + (now.tv_usec - begin.tv_usec) / 1000);
+	return ((now.tv_sec - begin.tv_sec) * 1);
 }
 
 unsigned int			getipbyhost(const char *host, const char *service)
@@ -365,7 +365,7 @@ void printLog(int log, int fd, int nb, ...)
 	{
 		std::cerr << "[\e[32m" << ft_get_time_sec() << "\e[0m] ";
 		if (fd)
-			std::cerr << "host :" << getClientHostnameAndService(fd).first  << "| client: " << getClientAddrFromSocket(fd) << " | " ;
+			std::cerr << "client : " << getClientHostnameAndService(fd).first << "| host: " << getRequestedAddrFromSocket(fd) << " | " ;
 		while (nb)
 		{
 			char * toPrintc = va_arg(args, char *);

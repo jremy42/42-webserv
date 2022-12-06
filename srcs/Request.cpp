@@ -569,9 +569,14 @@ std::string Request::getLog(void)
 {
 	std::string logRequest;
 
-	logRequest = "REQUEST :" + _rawRequestLine + "/ host:" + this->getHost();
+	logRequest = "REQUEST : " + _rawRequestLine + "/ host:" + this->getHost();
 
 	return logRequest;
+}
+
+Request::v_s Request::getContentType(void) const
+{
+	return _contentType;
 }
 
 /* void Request::_handleBodyChunked(void)

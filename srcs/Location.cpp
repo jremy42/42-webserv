@@ -8,7 +8,6 @@ std::map<std::string, std::pair<int, int> > Location::_initConfigField()
 
 	configField.insert(std::pair<std::string, std::pair<int, int> >("root", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("allowed_method", std::pair<int, int>(1,3)));
-	//configField.insert(std::pair<std::string, std::pair<int, int> >("client_max_body_size", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("autoindex", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("index", std::pair<int, int>(1,__INT_MAX__)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("upload", std::pair<int, int>(1,1)));
@@ -26,11 +25,9 @@ void	Location::_initLocationInfoMap(void)
 		_locationInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
 	_locationInfoMap.find("root")->second.push_back("./www");
 	_locationInfoMap.find("allowed_method")->second.push_back("GET");
-	//_locationInfoMap.find("client_max_body_size")->second.push_back("12m");
 	_locationInfoMap.find("index")->second.push_back("index.html");
 	_locationInfoMap.find("return")->second.push_back("1");
 	_locationInfoMap.find("upload")->second.push_back( _locationInfoMap["root"][0] + "/upload");	
-	//_locationInfoMap.find("error_page")->second.push_back("999");
 	_locationInfoMap.find("autoindex")->second.push_back("off");	
 
 }
@@ -38,14 +35,14 @@ void	Location::_initLocationInfoMap(void)
 Location::Location(string rawLocation)
 {
 	if (DEBUG_LOCATION)
-		std::cout << "Location string constructor called with : ~>" << rawLocation << "<~" << std::endl;
+		std::cerr << "Location string constructor called with : ~>" << rawLocation << "<~" << std::endl;
 	_initLocationInfoMap();
 	_createLocationInfoMap(rawLocation);
 	_parseAllowedMethods();
 	_parseAutoindex();
 	if (DEBUG_LOCATION)
 	{
-		std::cout << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
+		std::cerr << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
 	}
 }
 
@@ -77,19 +74,19 @@ std::pair<std::string, std::vector<std::string > >	Location::parseLocationLine(s
 	if (_configField.find(key) != _configField.end() )
 	{
 		if (DEBUG_LOCATION)
-			std::cout << "Location : Found a valid Field : [" << key << "]" << std::endl;
+			std::cerr << "Location : Found a valid Field : [" << key << "]" << std::endl;
 		ret.first = key;
 		while (getline(iss, value, ' '))
 		{
 			if (DEBUG_LOCATION)
-				std::cout << "Location Added value: [" << value << "]" << std::endl;
+				std::cerr << "Location Added value: [" << value << "]" << std::endl;
 			ret.second.push_back(value);
 		}
 		if (ret.second.size() < (size_t)_configField.find(key)->second.first
 		|| ret.second.size() > (size_t)_configField.find(key)->second.second)
 		{
 			if (DEBUG_LOCATION)
-				std::cout << " Location : Wrong number of config field values : [" << key << "]" << std::endl;
+				std::cerr << " Location : Wrong number of config field values : [" << key << "]" << std::endl;
 			throw(std::runtime_error("Webserv: Config: Location: Wrong number of config field values : [" + key + "]"));
 
 		}
@@ -117,16 +114,20 @@ void	Location::_createLocationInfoMap(std::string &rawServerConf)
 			if (locationLine.first == "error_page")
 			{
 				_parseErrorPage(locationLine.second[0]);
-				std::cout << "insert error page with value" << locationLine << std::endl;
+				if (DEBUG_LOCATION)
+					std::cerr << "insert error page with value" << locationLine << std::endl;
 				_errorPage.insert(std::pair<int, string>(atoi(locationLine.second[0].c_str()), locationLine.second[1]));
-				std::cout << _errorPage << std::endl;
+				if (DEBUG_LOCATION)
+					std::cerr << _errorPage << std::endl;
 			}
 			else if (locationLine.first == "cgi")
 			{
 				_parseCgi(locationLine.second[0], locationLine.second[1]);
-				std::cout << "insert cgi executable with value" << locationLine << std::endl;
+				if (DEBUG_LOCATION)
+					std::cerr << "insert cgi executable with value" << locationLine << std::endl;
 				_cgi.insert(std::pair<string, string>(locationLine.second[0], locationLine.second[1]));
-				std::cout << _cgi << std::endl;
+				if (DEBUG_LOCATION)
+					std::cerr << _cgi << std::endl;
 			}
 			else
 				_locationInfoMap[locationLine.first] = locationLine.second;
@@ -158,17 +159,17 @@ void Location::_parseErrorPage(string errorNum)
 {
 	int errorCode  = atoi(errorNum.c_str());
 	if (errorNum.find_first_not_of("1234567890") != std::string::npos || (errorCode < 400 || errorCode > 511))
-		throw(std::runtime_error("webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
+		throw(std::runtime_error("Webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
 }
 
 void Location::_parseCgi(string extension, string executable)
 {
 	if (extension.length() < 2 || extension.at(0) != '.' || (extension != ".php" && extension != ".sh"))
-		throw(std::runtime_error("webserv: config : not valid extension in cgi, must be valid extension name like [.php] or [.sh] : [" + extension + "]"));
+		throw(std::runtime_error("Webserv: config : not valid extension in cgi, must be valid extension name like [.php] or [.sh] : [" + extension + "]"));
 	if (access(executable.c_str(), F_OK))
-		throw(std::runtime_error("webserv: config : cgi : executable : no such file [" + executable + "]"));
+		throw(std::runtime_error("Webserv: config : cgi : executable : no such file [" + executable + "]"));
 	if (access(executable.c_str(), X_OK))
-		throw(std::runtime_error("webserv: config : cgi : executable : no execution right [" + executable + "]"));
+		throw(std::runtime_error("Webserv: config : cgi : executable : no execution right [" + executable + "]"));
 }
 
 
@@ -202,7 +203,7 @@ void Location::_parseAllowedMethods(void)
 	for (; it != ite; it++)
 	{
 		if (find(it_allowed, ite_allowed, *it) == allowed_method.end())
-			throw(std::runtime_error("webserv: config : not valid method : [" + *it +  "]"));
+			throw(std::runtime_error("Webserv: config : not valid method : [" + *it +  "]"));
 	}
 }
 
@@ -211,5 +212,5 @@ void Location::_parseAutoindex(void)
 	string	autoIndexValue = _locationInfoMap["autoindex"][0];
 
 	if (autoIndexValue.compare("on") && autoIndexValue.compare("off"))
-		throw(std::runtime_error("webserv: config : not valid autoindex value : [" + autoIndexValue +  "]"));
+		throw(std::runtime_error("Webserv: config : not valid autoindex value : [" + autoIndexValue +  "]"));
 }

@@ -41,7 +41,8 @@ Config::Config(std::string rawServerConfig)
 	_initServerInfoMap();
 	_burnExternalBrackets(rawServerConfig);
 	_createServerInfoMap(rawServerConfig);
-	std::cout	<< "------------Done Creating the serverInfoMap-------------" << std::endl
+	if(DEBUG_CONFIG)
+		std::cout << "------------Done Creating the serverInfoMap-------------" << std::endl
 				<< _serverInfoMap << "--------------------------------------------------------" << std::endl;
 	if (_serverInfoMap.empty())
 		throw(std::runtime_error("webserv: empty conf, server block ignored"));
@@ -50,8 +51,11 @@ Config::Config(std::string rawServerConfig)
 	_parseClientMaxBodySize();
 	// WARNING -> valeurs a verfier avant de les recup
 	_listenPort = atoi(_serverInfoMap["listen"][1].c_str());
-	std::cout << "\e[32mlisten[0] :" << _serverInfoMap["listen"][0].c_str() << "\e[0m" << std::endl;
-	std::cout << "\e[32mlisten[1] :" << _serverInfoMap["listen"][1].c_str() << "\e[0m" << std::endl;
+	if (DEBUG_CONFIG)
+	{
+		std::cout << "\e[32mlisten[0] :" << _serverInfoMap["listen"][0].c_str() << "\e[0m" << std::endl;
+		std::cout << "\e[32mlisten[1] :" << _serverInfoMap["listen"][1].c_str() << "\e[0m" << std::endl;
+	}
 	if (_serverInfoMap["listen"][0] == "*")
 		_host = 0;
 	else
@@ -128,14 +132,14 @@ const std::vector<std::string> Config::getParamByLocation(string &requestTarget,
 			if (tryfind != it->second.getLocationInfoMap().end())
 			{
 				if (DEBUG_CONFIG)
-					std::cout << "getParamByLocation : Found a value for key [" << key << "][" << tryfind->second << "] with location" 
+					std::cerr << "getParamByLocation : Found a value for key [" << key << "][" << tryfind->second << "] with location" 
 					<< it->first << std::endl;
 				return (tryfind->second);
 			}
 		}
 	}
 	if (DEBUG_CONFIG)
-		std::cout << "getParamByLocation : No value found for key [" << key << "]. Using Config Default value" << std::endl;
+		std::cerr << "getParamByLocation : No value found for key [" << key << "]. Using Config Default value" << std::endl;
 	return (defaultRet);
 }
 
@@ -154,14 +158,14 @@ std::string Config::getErrorPageByLocation(string &requestTarget, int errorCode)
 			if (tryfind != it->second.getErrorPage().end())
 			{
 				if (DEBUG_CONFIG)
-					std::cout << "getErrorPageByLocation : Found a value for errorCode [" << errorCode << "][" << tryfind->second << "] with location" 
+					std::cerr << "getErrorPageByLocation : Found a value for errorCode [" << errorCode << "][" << tryfind->second << "] with location" 
 					<< it->first << std::endl;
 				return (tryfind->second);
 			}
 		}
 	}
 	if (DEBUG_CONFIG)
-		std::cout << "getErrorPageByLocation : : No value found for errorCode [" << errorCode << "]. Using Config Default value" << std::endl;
+		std::cerr << "getErrorPageByLocation : : No value found for errorCode [" << errorCode << "]. Using Config Default value" << std::endl;
 	return ("");
 }
 
@@ -179,14 +183,14 @@ std::string Config::getCgiByLocation(string &requestTarget, string extension) co
 			if (tryfind != it->second.getCgi().end())
 			{
 				if (DEBUG_CONFIG)
-					std::cout << "getCgiByLocation : Found a value for extension [" << extension << "][" << tryfind->second << "] with location" 
+					std::cerr << "getCgiByLocation : Found a value for extension [" << extension << "][" << tryfind->second << "] with location" 
 					<< it->first << std::endl;
 				return (tryfind->second);
 			}
 		}
 	}
 	if (DEBUG_CONFIG)
-		std::cout << "getCgiByLocation : : No value found for extension [" << extension << "]" << std::endl;
+		std::cerr << "getCgiByLocation : : No value found for extension [" << extension << "]" << std::endl;
 	return ("");
 
 }
@@ -201,7 +205,7 @@ std::string Config::getMatchingLocation(string &requestTarget) const
 			return it->first;
 	}
 	if (DEBUG_CONFIG)
-		std::cout << "getMatchingLocation : : No value found [" << requestTarget << "]. Using Config Default value" << std::endl;
+		std::cerr << "getMatchingLocation : : No value found [" << requestTarget << "]. Using Config Default value" << std::endl;
 	return ("");
 }
 
@@ -267,7 +271,7 @@ void	Config::_createServerInfoMap(std::string &rawServerConf)
 			normalizeKeyValStr(nextLine, "\f\t\n\r\v ;", ' ');
 			configLine = _parseConfigBlock(nextLine);
 			if (DEBUG_CONFIG)
-				std::cout << "\e[31mConfigLine : " << configLine << "\e[0m" << std::endl; 
+				std::cerr << "\e[31mConfigLine : " << configLine << "\e[0m" << std::endl; 
 			if (!configLine.first.empty())
 				_serverInfoMap[configLine.first] = configLine.second;
 		}
@@ -290,19 +294,19 @@ std::pair<std::string, std::vector<std::string > >	Config::_parseConfigBlock(std
 		if (_configField.find(key)->second.first == 0)
 			throw(std::runtime_error("Webserv: Config: only configurable in location [" + key + "]"));
 		if (DEBUG_CONFIG)
-			std::cout << "Config: Found a valid Field : [" << key << "]" << std::endl;
+			std::cerr << "Config: Found a valid Field : [" << key << "]" << std::endl;
 		ret.first = key;
 		while (getline(iss, value, ' '))
 		{
 			if (DEBUG_CONFIG)
-				std::cout << "Config: Added value: [" << value << "]" << std::endl;
+				std::cerr << "Config: Added value: [" << value << "]" << std::endl;
 			ret.second.push_back(value);
 		}
 		if (ret.second.size() < (size_t)_configField.find(key)->second.first
 		|| ret.second.size() > (size_t)_configField.find(key)->second.second)
 		{
 			if (DEBUG_CONFIG)
-				std::cout << "Config: Wrong number of config field values : [" << key << "]" << std::endl;
+				std::cerr << "Config: Wrong number of config field values : [" << key << "]" << std::endl;
 			throw(std::runtime_error("Webserv: Config: Wrong number of config field values : [" + key + "]"));
 
 		}
@@ -425,21 +429,21 @@ void Config::_parseClientMaxBodySize(void)
 	lastChar = ret.at(ret.size() - 1);
 
 	if (DEBUG_CONFIG)
-		std::cout << "Entering _parseClientMaxBodySize wit ret : [" << ret << "] lastChar [" << lastChar << "]" << std::endl;
+		std::cerr << "Entering _parseClientMaxBodySize wit ret : [" << ret << "] lastChar [" << lastChar << "]" << std::endl;
 	if (lastChar != 'm' && lastChar != 'k' && string("0123456789").find_first_of(lastChar) == std::string::npos)
-		throw(std::runtime_error("webserv: config : client_max_body_size : wrong unit [" + ret + "]"));
+		throw(std::runtime_error("Webserv: config : client_max_body_size : wrong unit [" + ret + "]"));
 	if (ret.substr(0, ret.size() - 1).find_first_not_of("0123456789") != std::string::npos)
-		throw(std::runtime_error("webserv: config : client_max_body_size wrong digit [" + ret + "]"));
+		throw(std::runtime_error("Webserv: config : client_max_body_size wrong digit [" + ret + "]"));
 	if (string("0123456789").find_first_of(lastChar) != std::string::npos)
 	{
 		if (ret.find_first_not_of("0123456789") != std::string::npos)
-			throw(std::runtime_error("webserv: config : client_max_body_size : wrong digit [" + ret + "]"));
+			throw(std::runtime_error("Webserv: config : client_max_body_size : wrong digit [" + ret + "]"));
 		if (atol(ret.c_str()) > MAX_BODY_SIZE_HARD_LIMIT)
-			throw(std::runtime_error("webserv: config : client_max_body_size is too high [" + ret + "] > " + itoa(MAX_BODY_SIZE_HARD_LIMIT)));
+			throw(std::runtime_error("Webserv: config : client_max_body_size is too high [" + ret + "] > " + itoa(MAX_BODY_SIZE_HARD_LIMIT)));
 		if (atol(ret.c_str()) < MIN_BODY_SIZE_HARD_LIMIT)
-			throw(std::runtime_error("webserv: config : client_max_body_size is too low [" + ret + "] > " + itoa(MIN_BODY_SIZE_HARD_LIMIT)));
+			throw(std::runtime_error("Webserv: config : client_max_body_size is too low [" + ret + "] > " + itoa(MIN_BODY_SIZE_HARD_LIMIT)));
 		if (DEBUG_CONFIG)
-			std::cout << "\e[32mValid Max client body size : [" << ret << "]\e[0m" << std::endl;
+			std::cerr << "\e[32mValid Max client body size : [" << ret << "]\e[0m" << std::endl;
 	}
 	else
 	{

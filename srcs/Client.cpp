@@ -132,7 +132,7 @@ int Client::executeAction()
 		_state = S_REQREAD;
 		actionReturnValue = _request->handleRequest();
 		if (DEBUG_CLIENT)
-			std::cout << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
+			std::cerr << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
 		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)
 		{
 			printLog(1,_clientFd, 1, _request->getLog().c_str());

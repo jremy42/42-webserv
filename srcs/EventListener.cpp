@@ -6,7 +6,8 @@ EventListener::EventListener()
 	if (_epfd == -1)
 		throw(std::runtime_error(strerror(errno)));
     _fd_available = 0;
-	std::cout << "create event listener\n";
+	if (DEBUG_EVENTLISTENER)
+		std::cerr << "create event listener\n";
 }
 
 EventListener::~EventListener(){};
@@ -39,7 +40,7 @@ void EventListener::trackNewFd(int fd, int option)
 	ev.events = option;
 	ev.data.fd = fd;
 	if (epoll_ctl(_epfd, EPOLL_CTL_ADD, fd, &ev) == -1)
-		throw(std::runtime_error(strerror(errno)));
+		throw(std::runtime_error(std::string("Webserv:") + strerror(errno)));
 };
 
 std::map<int, int> EventListener::fdAvailable()
@@ -47,7 +48,7 @@ std::map<int, int> EventListener::fdAvailable()
 	std::map<int, int> _fdList;
 	_fd_available = epoll_wait(_epfd, _evlist, MAX_FD, 0);
 	if (_fd_available == -1)
-		throw(std::runtime_error(strerror(errno)));
+		throw(std::runtime_error(std::string("Webserv:") + strerror(errno)));
 	for (int i = 0; i < _fd_available; i++)
 		_fdList.insert(std::pair<int, int>(_evlist[i].data.fd, _evlist[i].events));
 	return  _fdList;

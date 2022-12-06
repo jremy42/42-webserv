@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/12/05 17:02:13 by jremy            ###   ########.fr       */
+/*   Updated: 2022/12/06 12:53:28 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ int main(int ac, char **av)
 	srand(0);
 	try
 	{
-		
 		if (ac == 1)
 			myServ = Webserv("conf/default.config");
 		else

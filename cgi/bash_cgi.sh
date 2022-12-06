@@ -56,6 +56,12 @@ echo "</p>"
 echo "<p>"
 cat /tmp/tmp_stdout
 echo "</p>"
+echo "<h2>"$(basename "$1")" error output :</h2>"
+echo "</p>"
+echo "<p>"
+cat /tmp/tmp_stderr
+echo "</p>"
+
 echo "</body>"
 echo "</html>"
 
