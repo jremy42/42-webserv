@@ -1,18 +1,21 @@
-!#/bin/bash
+#!/bin/bash
 
 TEST_NUMBER="0"
-EXEC="./webserv"
+EXEC="../webserv"
 
 function test_config ()
 {
 	(( TEST_NUMBER++ ))
+	echo -e "####################################"
 	echo -e "Testing"  "'$1'" "ref : $TEST_NUMBER"
-    timeout 1 SIGKILL $EXEC "$1"
+    timeout 1 $EXEC "$1"
     RET=$?
     echo -e "RET:$RET"
+	echo -e "####################################"
 }
 
 echo "##### PARSING GLOBAL CONFIG #####"
-test_config './conf/bad_conf/bad_bracket.conf'
-test_config './conf/bad_conf/bad_server.conf'
-test_config './conf/bad_conf/empty_server.conf'
+for i in `ls bad_conf/**/*`
+do
+	test_config "$i"
+done

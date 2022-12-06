@@ -250,7 +250,7 @@ void Response::_createErrorMessageBody(void)
 		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
 		_bodyLength = _defaultErrorBodyToSend.size();
-		_header += "content-length: " + itoa(_bodyLength) + "\n";
+		_header += "Content-length: " + itoa(_bodyLength) + "\n";
 	}
 }
 
