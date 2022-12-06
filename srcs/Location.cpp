@@ -29,7 +29,7 @@ void	Location::_initLocationInfoMap(void)
 	//_locationInfoMap.find("client_max_body_size")->second.push_back("12m");
 	_locationInfoMap.find("index")->second.push_back("index.html");
 	_locationInfoMap.find("return")->second.push_back("1");
-	_locationInfoMap.find("upload")->second.push_back("./upload");	
+	_locationInfoMap.find("upload")->second.push_back( _locationInfoMap["root"][0] + "/upload");	
 	//_locationInfoMap.find("error_page")->second.push_back("999");
 	_locationInfoMap.find("autoindex")->second.push_back("off");	
 
@@ -163,8 +163,8 @@ void Location::_parseErrorPage(string errorNum)
 
 void Location::_parseCgi(string extension, string executable)
 {
-	if (extension.length() < 2 || extension.at(0) != '.' || extension != ".php")
-		throw(std::runtime_error("webserv: config : not valid extension in cgi, must be valid extension name like [.php] : [" + extension + "]"));
+	if (extension.length() < 2 || extension.at(0) != '.' || (extension != ".php" && extension != ".sh"))
+		throw(std::runtime_error("webserv: config : not valid extension in cgi, must be valid extension name like [.php] or [.sh] : [" + extension + "]"));
 	if (access(executable.c_str(), F_OK))
 		throw(std::runtime_error("webserv: config : cgi : executable : no such file [" + executable + "]"));
 	if (access(executable.c_str(), X_OK))

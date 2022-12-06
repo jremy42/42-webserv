@@ -143,7 +143,7 @@ int Request::checkRequestLine(void)
 
 	if (_requestLine.find("http_version")->second != "HTTP/1.1")
 	{
-		_statusCode = 400;
+		_statusCode = 505;
 		return -1;
 	}
 	return 0;
@@ -232,6 +232,13 @@ void Request::_handleRequestLine(void)
 	}
 	for (; it != ite; it++)
 	{
+		if (!isprint(*it) && (*it) != '\r' && (*it) != '\n')
+		{
+			std::cerr << "Request Line is not printable with char :["<< (int)(*it) << "]"<< std::endl;
+			_state = R_ERROR;
+			_statusCode = 501;
+			return ;
+		}
 		if (*it == '\r' && it + 1 != ite && *(it + 1) == '\n')
 		{
 			string rawRequestLine(_rawRequest.begin(), it);
@@ -304,7 +311,7 @@ void Request::_initBodyFile(void)
 		std::cout << "Successfully opened body file "<< std::endl;
 	else
 	{
-		throw(std::runtime_error(std::string("Failed to open tmpfile body") + strerror(errno)));
+		throw(std::runtime_error(std::string("Failed to open tmpfile body :") + strerror(errno)));
 	}
 	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
 	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));
@@ -384,12 +391,12 @@ void Request::_handleBody(void)
 int Request::readClientRequest(void)
 {
 	unsigned char		buf[READ_BUFFER_SIZE];
-	int			read_ret = 0;
+	ssize_t				read_ret = 0;
 
 	if (DEBUG_REQUEST)
 		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
-	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE);
+	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE - 1);
 	if (read_ret == -1)
 		throw (std::runtime_error(strerror(errno)));
 	if (DEBUG_REQUEST)

@@ -6,7 +6,7 @@
 /*   By: jremy <jremy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/14 18:22:08 by deus              #+#    #+#             */
-/*   Updated: 2022/11/29 10:34:48 by jremy            ###   ########.fr       */
+/*   Updated: 2022/12/05 17:02:13 by jremy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,19 +15,21 @@
 # include "_utils.hpp"
 int	g_rv;
 
-/*
 int main(int ac, char **av)
 {
 	Webserv myServ;
-
+	g_rv = 1;
+	signal(SIGINT, __signal);
+	signal(SIGQUIT, __signal);
+	srand(0);
 	try
 	{
+		
 		if (ac == 1)
 			myServ = Webserv("conf/default.config");
 		else
 			myServ = Webserv(av[1]);
 		myServ.parseRawConfig();
-		//myServ.createServerListFromRawConfig();
 		myServ.createServerListByPortConfig();
 		myServ.execServerLoop();
 	}
@@ -36,23 +38,5 @@ int main(int ac, char **av)
 		std::cerr << e.what() << std::endl;
 		return 1;
 	}
-}
-*/
-
-int main(int ac, char **av)
-{
-	Webserv myServ;
-	g_rv = 1;
-	signal(SIGINT, __signal);
-	signal(SIGQUIT, __signal);
-	srand(0);
-	if (ac == 1)
-		myServ = Webserv("conf/default.config");
-	else
-		myServ = Webserv(av[1]);
-	myServ.parseRawConfig();
-		//myServ.createServerListFromRawConfig();
-	myServ.createServerListByPortConfig();
-	myServ.execServerLoop();
 	return (0);
 }

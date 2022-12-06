@@ -369,10 +369,7 @@ void printLog(int log, int fd, int nb, ...)
 		while (nb)
 		{
 			char * toPrintc = va_arg(args, char *);
-			if (toPrintc == NULL)
-				break;
-			else
-            	std::cerr << " " << toPrintc << " ";
+			std::cerr << " " << toPrintc << " ";
 			nb--;
 		}
 	}
