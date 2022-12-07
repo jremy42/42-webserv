@@ -162,7 +162,7 @@ unsigned long	ft_get_time(void)
 	return (now.tv_sec * 1000 + now.tv_usec / 1000);
 }
 
-float	ft_get_time_sec(void)
+unsigned long	ft_get_time_sec(void)
 {
 	static struct timeval	begin;
 	static int				init = 0;
@@ -223,7 +223,7 @@ void printAvailableAction(int debug, int _clientFd, int _availableActions)
 }
 
 
-std::string _tmpFileName(const std::string path)
+std::string tmpFileName(const std::string path)
 {
 	std::string allowedChar = "abcdefghijklmnoprstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	std::string fileName(path);
@@ -241,7 +241,7 @@ std::string _tmpFileName(const std::string path)
 			fileName += path;
 		}
 	}
-	return (NULL);
+	return ("");
 }
 
 std::string		getClientAddrFromSocket(int acceptSysCallReturnedFd)

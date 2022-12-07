@@ -69,6 +69,7 @@ class Response
 		int								_bodyLength;
 		std::stringstream				_ss; // is in fact defautlErrorbodytoSendStringStream;
 		//Target
+		string							_matchingLocation;
 		string							_rawRequestedTarget;
 		string							_requestedTargetRoot;
 		string							_rawActualTarget;
@@ -117,6 +118,7 @@ class Response
 		std::istream					*_selectBodySourceBetweenFileAndStringStream(void);
 // POST
 		void							_methodPOST(void);
+		void 							_monoPartFile(void);
 // DELETE
 		void							_methodDELETE(void);
 // CGI

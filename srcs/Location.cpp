@@ -164,7 +164,7 @@ void Location::_parseErrorPage(string errorNum)
 
 void Location::_parseCgi(string extension, string executable)
 {
-	if (extension.length() < 2 || extension.at(0) != '.' || (extension != ".php" && extension != ".sh"))
+	if (extension.length() < 2 || extension.at(0) != '.')
 		throw(std::runtime_error("Webserv: config : not valid extension in cgi, must be valid extension name like [.php] or [.sh] : [" + extension + "]"));
 	if (access(executable.c_str(), F_OK))
 		throw(std::runtime_error("Webserv: config : cgi : executable : no such file [" + executable + "]"));

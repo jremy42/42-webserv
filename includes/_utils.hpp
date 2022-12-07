@@ -47,10 +47,10 @@ long			getFileSize(std::string filename);
 
 int				isDir(std::string fileName);
 int 			fileExist(std::string fileName);
-std::string		_tmpFileName(const std::string path);
+std::string		tmpFileName(const std::string path);
 void		__signal(int signal);
 unsigned long	ft_get_time(void);
-float	ft_get_time_sec(void);
+unsigned long	ft_get_time_sec(void);
 unsigned int			getipbyhost(const char *host, const char *service);
 void                    printTimeDebug(int debug,std::string quote, std::string arg);
 void                    printAvailableAction(int debug, int _clientFd, int _availableActions);

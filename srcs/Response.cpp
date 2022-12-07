@@ -192,6 +192,7 @@ Response &Response::operator=(const Response &rhs)
 	_config = rhs._config;
 	_bodyLength = rhs._bodyLength;
 
+	_matchingLocation = rhs._matchingLocation;
 	_rawRequestedTarget = rhs._rawRequestedTarget;
 	_requestedTargetRoot = rhs._requestedTargetRoot;
 	_rawActualTarget = rhs._rawActualTarget;
@@ -199,6 +200,7 @@ Response &Response::operator=(const Response &rhs)
 	_targetExtension = rhs._targetExtension;
 	_targetStatus = rhs._targetStatus;
 	_cgiExecutable = rhs._cgiExecutable;
+
 
 	_PATH_INFO = rhs._PATH_INFO;
 	_QUERY_STRING = rhs._QUERY_STRING;
@@ -306,12 +308,15 @@ void Response::_cleanRawRequestTarget(void)
 }
 
 void Response::_parseRawRequestTarget(void)
-{
+{	
 	_rawRequestedTarget = _request->getTarget();
+	_matchingLocation = _config->getMatchingLocation(_rawRequestedTarget);
 	_cleanRawRequestTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
 	_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
-	_rawActualTarget = _requestedTargetRoot + _rawRequestedTarget;
+	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size()); 
+	requestTargetWithOutLocation.erase(0, (requestTargetWithOutLocation[0] == '/' ? 1 : 0));
+	_rawActualTarget = _requestedTargetRoot + "/" + requestTargetWithOutLocation;
 	_actualTarget = _rawActualTarget;
 
 	std::size_t posFirstSlash = _rawActualTarget.find_first_of("/", _requestedTargetRoot.size());
@@ -346,6 +351,8 @@ void Response::_parseRawRequestTarget(void)
 		std::cerr << "_PATH_INFO : [" << _PATH_INFO << "]" << std::endl;
 		std::cerr << "_targetExtension : [" << _targetExtension << "]" << std::endl;
 		std::cerr << "_cgiExecutable : [" << _cgiExecutable << "]" << std::endl;
+		std::cerr << "_matchingLocation : [" << _matchingLocation << "]" << std::endl;
+		std::cerr << "requestTargetWithOutLocation : [" << requestTargetWithOutLocation << "]" << std::endl;
 		if (!fileExist(_actualTarget))
 			std::cerr << "actual Target does not exists" << std::endl;
 		if (fileExist(_actualTarget) && isDir(_actualTarget))
@@ -466,6 +473,23 @@ void Response::_methodGET(void)
 	}
 }
 
+void Response::_monoPartFile(void)
+{
+	std::fstream retrieveRequestBody;
+ 	retrieveRequestBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
+	if (!retrieveRequestBody.good())
+		throw(std::runtime_error(string("Monopart: cannot open body file: ") + strerror(errno)));
+	std::string fileName =  _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
+	std::fstream fileToWrite;
+	std::cout << "file name : " << fileName << std::endl;
+	fileToWrite.open(fileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
+	if (!fileToWrite.good())
+		throw(std::runtime_error(string("Monopart: cannot open file to write: ") + strerror(errno)));
+	fileToWrite << retrieveRequestBody.rdbuf();
+	fileToWrite.close();
+	retrieveRequestBody.close();
+}
+
 void Response::_methodPOST(void)
 {
 
@@ -478,16 +502,18 @@ void Response::_methodPOST(void)
 		if (_state == R_WAIT_CGI_EXEC)
 			_waitCGIfile();
 	}
-	else if (_request->getContentType().size() > 0 && _request->getContentType()[0] != "multipart/form-data")
-	{
-		_statusCode = 403;
-		_createErrorMessageBody();
-		_state = R_FILE_READY;
-	}
-	else
-	{
-		try
+	try {
+		if (_request->getContentType().size() > 0 && _request->getContentType()[0] != "multipart/form-data")
 		{
+			_monoPartFile();
+			_statusCode = 201;
+			_state = R_FILE_READY;
+			_ss << "File uploaded\n";
+			_bodyLength = _ss.str().size();
+		}
+		else
+		{
+		
 			Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
 			multipart.createFilesFromBody();
 			_state = R_FILE_READY;
@@ -498,13 +524,13 @@ void Response::_methodPOST(void)
 			else
 				_statusCode = 201;
 		}
-		catch (std::exception &e)
-		{
-			std::cerr << e.what() << std::endl;
-			_statusCode = 500;
-			_createErrorMessageBody();
-			_state = R_FILE_READY;
-		}
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+		_statusCode = 500;
+		_createErrorMessageBody();
+		_state = R_FILE_READY;
 	}
 	// access sur le fichier droit d'ecriture
 	// if file existe append ?

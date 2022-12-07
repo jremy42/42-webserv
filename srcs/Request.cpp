@@ -310,7 +310,7 @@ void Request::_parseContentType(string rawContentType)
 
 void Request::_initBodyFile(void)
 {
-	_nameBodyFile = _tmpFileName("./tmp/webserv");
+	_nameBodyFile = tmpFileName("./tmp/webserv");
 	printTimeDebug(DEBUG_REQUEST, "initBodyfile with file", _nameBodyFile);
 	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
 	if (!_fs.good())
