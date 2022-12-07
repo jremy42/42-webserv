@@ -125,8 +125,10 @@ int Server::acceptNewClient(void)
 		char buf[INET_ADDRSTRLEN + 1];
 		memset(buf, 0, sizeof(buf));
 		if(DEBUG_SERVER)
+		{
 			std::cerr << "\e[35mRequested Server IP : [" << inet_ntop(AF_INET, &requestedServerIp.sin_addr, buf, sizeof(buf)) << "]\e[0m" << std::endl;
-		_clientAddressPrint((struct sockaddr *)& claddr);
+			_clientAddressPrint((struct sockaddr *)& claddr);
+		}
 		Client *newClient = new Client(clientFd, &_configList, this, (unsigned int)requestedServerIp.sin_addr.s_addr);
 		_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient));
 		return clientFd;

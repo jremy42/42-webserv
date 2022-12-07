@@ -312,12 +312,13 @@ void Request::_initBodyFile(void)
 {
 	_nameBodyFile = _tmpFileName("./tmp/webserv");
 	printTimeDebug(DEBUG_REQUEST, "initBodyfile with file", _nameBodyFile);
-	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app | std::ifstream::in);
-	if (_fs.good())
-		std::cout << "Successfully opened body file "<< std::endl;
-	else
+	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
+	if (!_fs.good())
 	{
-		throw(std::runtime_error(std::string("Failed to open tmpfile body :") + strerror(errno)));
+		std::cerr << "Error while opening file : " << _nameBodyFile << std::endl;
+		_state = R_ERROR;
+		_statusCode = 500;
+		return;
 	}
 	printTimeDebug(DEBUG_REQUEST, "Boundary", _boundary);
 	printTimeDebug(DEBUG_REQUEST, "Content-Length", itoa(_contentLength));

@@ -15,7 +15,7 @@
 # include "EventListener.hpp"
 
 # ifndef DEBUG_WEBSERV
-#  define DEBUG_WEBSERV 1
+#  define DEBUG_WEBSERV 0
 # endif
 
 # define CLIENT 0

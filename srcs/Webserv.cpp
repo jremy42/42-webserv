@@ -260,7 +260,8 @@ int		Webserv::execServerLoop(void)
 				try {
 					if (DEBUG_SERVER)
 						std::cerr << "\e[32mACCEPT NEW CLIENT\e[0m\n";
-					std::cout << "Number of openfd : [" <<_openFd << "]" << std::endl;
+					if (DEBUG_SERVER)
+						std::cout << "Number of openfd : [" <<_openFd << "]" << std::endl;
 					int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
 					_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
 					_openFd++;

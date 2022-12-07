@@ -11,12 +11,10 @@ Multipart::Multipart(string bodyFile, string boundaryDelim, string uploadDir)
 	_currentFileError = false;
 	_boundaryDelim = boundaryDelim;
 	_uploadDir = uploadDir;
-	printTimeDebug(1, "create Multipart with tmpfile", _bodyFile);
+	printTimeDebug(DEBUG_MULTIPART, "create Multipart with tmpfile", _bodyFile);
 	_fs.open(_bodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
-	if (_fs.good())
-		std::cout << "Successfully opened body file "<< std::endl;
-	else
-		throw(std::runtime_error(std::string("Failed to open tmpfile body in multipart: ") + strerror(errno)));
+	if (!_fs.good())
+		throw(std::runtime_error(string("Multipart: cannot open body file") + strerror(errno)));
 }
 
 Multipart::Multipart(const Multipart &src)
@@ -59,7 +57,6 @@ int Multipart::_extractFileFromBody(void)
 		if (bufExtract == string("\r"))
 			continue;
 		bufExtract += "\n";
-		std::cout << "bufExtract: [" << bufExtract << "]" << std::endl;
 		_fsNewFile << bufExtract;
 	}
 	if(!_currentFileError)
@@ -83,7 +80,8 @@ int Multipart::_extractHeader(void)
 	{
 		if (bufExtract == (string("--" + _boundaryDelim + "\r")))
 		{
-			std::cout << "continue" << std::endl;
+			if (DEBUG_MULTIPART)
+				std::cout << "continue" << std::endl;
 			continue;
 		}
 		if (bufExtract == "\r")
@@ -102,7 +100,8 @@ int Multipart::_extractHeader(void)
 		header_key = strtrim(header_key, "\f\t\n\r\v ");
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
 		_boundaryHeader.insert(std::pair<string, string>(header_key, header_value));
-		std::cout << "Inserted :" << " new header key-value in Boundary header : [" << header_key << "][" << header_value << "]" << std::endl;
+		if (DEBUG_MULTIPART)
+			std::cout << "Inserted :" << " new header key-value in Boundary header : [" << header_key << "][" << header_value << "]" << std::endl;
 	}
 	if (_boundaryHeader.empty())
 		return 0;
@@ -117,7 +116,8 @@ int 	Multipart::_createFileFromHeader(void)
 	if (_fileName.empty())
 		return 0;
 	_fileName = _uploadDir + "/" + _fileName;
-	std::cout << "Creating new file : " << _fileName << std::endl;
+	if (DEBUG_MULTIPART)
+		std::cout << "Creating new file : " << _fileName << std::endl;
 	_fsNewFile.open(_fileName.c_str(), std::ofstream::binary | std::ifstream::out | std::ifstream::trunc);
 	if (!_fsNewFile.good())
 	{

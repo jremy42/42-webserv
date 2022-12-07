@@ -486,15 +486,25 @@ void Response::_methodPOST(void)
 	}
 	else
 	{
-		Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
-		multipart.createFilesFromBody();
-		_state = R_FILE_READY;
-		_ss << multipart.getReturnMessage();
-		_bodyLength = multipart.getReturnMessage().size();
-		if (multipart.getError())
-			_statusCode = 206;
-		else
-			_statusCode = 201;
+		try
+		{
+			Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
+			multipart.createFilesFromBody();
+			_state = R_FILE_READY;
+			_ss << multipart.getReturnMessage();
+			_bodyLength = multipart.getReturnMessage().size();
+			if (multipart.getError())
+				_statusCode = 206;
+			else
+				_statusCode = 201;
+		}
+		catch (std::exception &e)
+		{
+			std::cerr << e.what() << std::endl;
+			_statusCode = 500;
+			_createErrorMessageBody();
+			_state = R_FILE_READY;
+		}
 	}
 	// access sur le fichier droit d'ecriture
 	// if file existe append ?
