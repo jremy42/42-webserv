@@ -1,9 +1,9 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-#define READ_BUFFER_SIZE 1024 * 16
-# define MAX_REQUESTLINE_SIZE 4096
-# define MAX_HEADER_SIZE 4096
+# define READ_BUFFER_SIZE 1024 * 16
+# define MAX_REQUESTLINE_SIZE READ_BUFFER_SIZE * 4
+# define MAX_HEADER_SIZE READ_BUFFER_SIZE * 2
 
 # include <string>
 # include <vector>

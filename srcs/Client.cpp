@@ -21,7 +21,6 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 	_configList = _matchingConfigListByHost(config, host);
 	printTimeDebug(DEBUG_CLIENT, "A client is born", "");
 	printLog(1, _clientFd, 1, "connection accepted");
-	//exit(1);
 	if (DEBUG_CLIENT)
 	{
 		std::cout << "create client with fd :" << _clientFd << std::endl;

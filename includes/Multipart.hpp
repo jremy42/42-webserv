@@ -1,9 +1,6 @@
 #ifndef MULTIPART_HPP
 #define MULTIPART_HPP
 
-# define MAX_MULTIPARTLINE_SIZE 4096
-# define MAX_HEADER_SIZE 4096
-
 # include <string>
 # include <vector>
 # include <map>

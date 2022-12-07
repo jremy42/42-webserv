@@ -39,14 +39,14 @@ Request::~Request(void)
 	if (_nameBodyFile.size() > 0)
 	{
 		_fs.close();
-		if (unlink(_nameBodyFile.c_str()) == -1)
-		{
-			if (DEBUG_REQUEST)
-			{
-				std::cerr << "unlink error" << std::endl;
-				std::cerr << "errno: " << strerror(errno) << std::endl;
-			}
-		}
+ 		if (unlink(_nameBodyFile.c_str()) == -1)
+ 		{
+ 			if (DEBUG_REQUEST)
+ 			{
+ 				std::cerr << "unlink error" << std::endl;
+ 				std::cerr << "errno: " << strerror(errno) << std::endl;
+ 			}
+ 		}
 	}
 }
 
