@@ -45,7 +45,6 @@ Webserv &Webserv::operator=(const Webserv &rhs)
 {
 	this->_serverList = rhs._serverList;
 	this->_rawConfig = rhs._rawConfig;
-	this-> _configList = rhs._configList;
 	this-> _portIpConfigList = rhs._portIpConfigList;
 	this->_openFd = rhs._openFd;
 	this->_maxFd = rhs._maxFd;
@@ -141,14 +140,19 @@ int		Webserv::parseRawConfig(void)
 		{
 			try {
 				Config nextConfig(rawServerConf);
-				for (v_config::iterator it = _configList.begin(); it != _configList.end() ; it++)
+				for (m_piu_vc::iterator it = _portIpConfigList.begin(); it != _portIpConfigList.end() ; it++)
 				{
-					if (nextConfig.getListenPort() == it->getListenPort()
-						&& (conflictServerName = _checkServerName(nextConfig.getServerName(), it->getServerName())) != "")
+					for (std::vector<Config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
 					{
+						if (nextConfig.getListenPort() == it2->getListenPort()
+							&& nextConfig.getHost() == it2->getHost()
+							&& (conflictServerName = _checkServerName(nextConfig.getServerName(), it2->getServerName())) != "")
+						{
 
-						throw (std::runtime_error("\e[33mConfig Block ignore : Same server name on port :"
-						+ nextConfig.getListenPortStr() + " with a server_name: " + conflictServerName + "\e[0m"));
+							throw (std::runtime_error("\e[33mConfig Block ignore : Same server name on port :"
+								+ nextConfig.getHostStr() + ":" + nextConfig.getListenPortStr()
+								+ " with a server_name: " + conflictServerName + "\e[0m"));
+						}
 					}
 				}
 				viableConfig |= 1;
@@ -197,8 +201,10 @@ void	Webserv::_moveHostConfigToWildcard()
 			m_piu_vc::iterator it2;
 			for (it2 = _portIpConfigList.begin(); it2 != _portIpConfigList.end(); it2++)
 			{
-				if (it2->first.first == searchPort && it != it2)
+				if (it2->first.first == searchPort && it2->first.second != it->first.second && it != it2)
 				{
+					//if (it2->first.second == it->first.second && _checkServerName())
+					//	throw (std::runtime_error("\e[33mWebserv : Same server name on port : " + it2->first.first + " with a server_name: " + conflictServerName + "\e[0m"));
 					if (DEBUG_WEBSERV)
 						std::cerr << "\e[36mFound a Host/Port pair matching Wildcard for port : Port[" << it2->first.first << "] Host : [" << it2->first.second << "]\e[0m" << std::endl;
 					v_config tmpVconfig = it2->second;
@@ -292,7 +298,7 @@ std::string Webserv::_checkServerName(std::vector<string> nextServerName, std::v
 	std::vector<string>::iterator ite = nextServerName.end();
 	for (std::vector<string>::iterator it = nextServerName.begin(); it != ite; it++)
 	{
-		if (DEBUG_WEBSERV)
+		//if (DEBUG_WEBSERV)
 			std::cout << "Check for server name :" << *it << std::endl;
 		if (find(currentServerName.begin(), currentServerName.end(), *it) != currentServerName.end())
 			return (*it);

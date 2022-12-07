@@ -363,16 +363,26 @@ void printLog(int log, int fd, int nb, ...)
 
 	if (log)
 	{
-		std::cerr << "[\e[32m" << ft_get_time_sec() << "\e[0m] ";
+		std::cout << "[\e[32m" << ft_get_time_sec() << "\e[0m]";
 		if (fd)
-			std::cerr << "client : " << getClientHostnameAndService(fd).first << "| host: " << getRequestedAddrFromSocket(fd) << " | " ;
+			std::cout << "client : " << getClientHostnameAndService(fd).first << "| host: " << getRequestedAddrFromSocket(fd) << " | " ;
 		while (nb)
 		{
 			char * toPrintc = va_arg(args, char *);
-			std::cerr << " " << toPrintc << " ";
+			std::cout << toPrintc << " ";
 			nb--;
 		}
 	}
-	std::cerr << std::endl;
+	std::cout << std::endl;
     va_end(args);
+}
+
+void printLogServer(int log, int fd)
+{
+	if (log)
+	{
+		std::cout << "[\e[32m" << ft_get_time_sec() << "\e[0m]";
+		std::cout << "server is created with addr [" <<  getRequestedAddrFromSocket(fd) << ":" << getRequestedPortFromSocket(fd) <<"]";
+	}
+	std::cout << std::endl;
 }

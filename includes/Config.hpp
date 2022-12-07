@@ -34,12 +34,15 @@ class Config
 		typedef std::pair<string, std::vector<string> >	p_s_vs;
 		typedef std::map<string, Location>				m_s_l;
 		typedef std::pair<int, int>						p_ii;
+		typedef std::map<int, string>					m_is;
+
 // var
 	private:
 		int				_listenPort;
 		string			_rootDirectory;
 		m_s_vs			_serverInfoMap;
 		m_s_l			_location;
+		m_is			_errorPage;
 		unsigned int	_host;
 // functions
 	public:
@@ -56,7 +59,10 @@ class Config
 		const char * getRootDir(void) const;
 		const std::vector<string> getParamByLocation(string &requestTarget, string field) const;
 		const m_s_vs		&getServerInfoMap(void) const;
+		std::string getHostStr(void) const;
 		const m_s_l		&getLocation(void) const;
+		const m_is		&getErrorPageConfig(void) const;
+
 		std::string getErrorPageByLocation(string &requestTarget, int errorCode) const;
 		std::string getCgiByLocation(string &requestTarget, string extension) const;
 		std::string getMatchingLocation(string &requestTarget) const;
@@ -72,6 +78,7 @@ class Config
 		string		_getNextLocationBlock(std::string &rawLocation);
 		void		_parseListenHostPort(void);
 		void		_parseClientMaxBodySize(void);
+		void		_parseErrorPage(string errorNum);
 		static std::map<std::string, std::pair<int, int> >	_configField;
 		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);
 };

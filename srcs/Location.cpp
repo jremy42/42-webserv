@@ -26,7 +26,7 @@ void	Location::_initLocationInfoMap(void)
 	_locationInfoMap.find("root")->second.push_back("./www");
 	_locationInfoMap.find("allowed_method")->second.push_back("GET");
 	_locationInfoMap.find("index")->second.push_back("index.html");
-	_locationInfoMap.find("return")->second.push_back("1");
+	_locationInfoMap.find("return")->second.push_back("no redirect");
 	_locationInfoMap.find("upload")->second.push_back( _locationInfoMap["root"][0] + "/upload");	
 	_locationInfoMap.find("autoindex")->second.push_back("off");	
 
@@ -142,7 +142,7 @@ const Location::m_s_vs	&Location::getLocationInfoMap(void) const
 
 }
 
-const Location::m_is	&Location::getErrorPage(void) const
+const Location::m_is	&Location::getErrorPageLocation(void) const
 {
 	const m_is	&errorRef = this->_errorPage;
 	return (errorRef);
@@ -159,7 +159,7 @@ void Location::_parseErrorPage(string errorNum)
 {
 	int errorCode  = atoi(errorNum.c_str());
 	if (errorNum.find_first_not_of("1234567890") != std::string::npos || (errorCode < 400 || errorCode > 511))
-		throw(std::runtime_error("Webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
+		throw(std::runtime_error("Webserv: config: location: not valid field in error_page, must be valid error code : [" + errorNum + "]"));
 }
 
 void Location::_parseCgi(string extension, string executable)
@@ -178,7 +178,7 @@ std::ostream	&operator<<(std::ostream &o, const Location &Location)
 	std::cout << "-------------------Location Printer Start-------------------" << std::endl;
 	std::cout << Location.getLocationInfoMap();
 	std::cout << "####################Location ErrorPage Start################" << std::endl;
-	std::cout << Location.getErrorPage();
+	std::cout << Location.getErrorPageLocation();
 	std::cout << "####################Location ErrorPage end################" << std::endl;
 	std::cout << "####################Location CGI Start################" << std::endl;
 	std::cout << Location.getCgi();

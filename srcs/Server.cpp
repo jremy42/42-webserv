@@ -35,6 +35,7 @@ Server::Server(v_config configList)
 		}
 		std::cout << "___________________________________________________________________\n";
 	}
+	printLogServer(1, _serverFd );
 
 };
 
@@ -182,7 +183,6 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 	hints.ai_socktype = SOCK_STREAM;
 	if ((g_error = getaddrinfo(host, service, &hints, &result )) != 0)
 		throw(std::runtime_error(gai_strerror(g_error)));
-	//std::cout << "##########################################" << std::endl;
 	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
 	{
 		char buff[INET_ADDRSTRLEN];
@@ -191,13 +191,11 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		if(DEBUG_SERVER)
 			std::cerr << "inet_ntop["<< buff<< "]" << std::endl;
 	}
-	//std::cout << "##########################################" << std::endl;
 	for (result_it = result; result_it != NULL; result_it = result_it->ai_next)
 	{
 		_serverFd = socket(result_it->ai_family, result_it->ai_socktype, result_it->ai_protocol);
 		if (_serverFd == -1)
 			continue;
-		//std::cerr << "SOCKET OK" << std::endl;
 		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
 		{
 				close(_serverFd);
@@ -228,7 +226,7 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		freeaddrinfo(result);
 		throw(std::runtime_error(string("Webserv : listen failure : ") + strerror(errno)));
 	}
-	if (DEBUG_SERVER)
+	if (DEBUG_SERVER && result_it)
 		std::cerr << " listen socket address with host [" << _listenSockaddr.sin_addr.s_addr << "]"<< std::endl;
 	_listenSockaddr = *(struct sockaddr_in *)result_it->ai_addr;
 	freeaddrinfo(result);

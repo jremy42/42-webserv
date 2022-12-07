@@ -12,8 +12,9 @@ std::map<std::string, std::pair<int, int> > Config::_initConfigField()
 	configField.insert(std::pair<std::string, std::pair<int, int> >("autoindex", std::pair<int, int>(0,0)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("index", std::pair<int, int>(0, 0)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("upload", std::pair<int, int>(0,0)));
-	configField.insert(std::pair<std::string, std::pair<int, int> >("return", std::pair<int, int>(1,2)));
-	
+	configField.insert(std::pair<std::string, std::pair<int, int> >("return", std::pair<int, int>(0,0)));
+	configField.insert(std::pair<std::string, std::pair<int, int> >("error_page", std::pair<int, int>(2,2)));
+
 	configField.insert(std::pair<std::string, std::pair<int, int> >("listen", std::pair<int, int>(1,1)));
 	configField.insert(std::pair<std::string, std::pair<int, int> >("server_name", std::pair<int, int>(1,__INT_MAX__)));
 
@@ -88,6 +89,7 @@ Config	&Config::operator=(const Config &rhs)
 	this->_serverInfoMap = rhs._serverInfoMap;
 	this->_location = rhs._location;
 	this->_host = rhs._host;
+	this->_errorPage = rhs._errorPage;
 
 	return (*this);
 }
@@ -110,6 +112,11 @@ int		Config::getListenPort(void) const
 unsigned int		Config::getHost(void) const
 {
 	return (_host);
+}
+
+std::string Config::getHostStr(void) const
+{
+	return (_serverInfoMap.find("listen")->second[0]);
 }
 
 const char* Config::getRootDir(void) const
@@ -154,14 +161,25 @@ std::string Config::getErrorPageByLocation(string &requestTarget, int errorCode)
 	{
 		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
 		{
-			tryfind = it->second.getErrorPage().find(errorCode);
-			if (tryfind != it->second.getErrorPage().end())
+			tryfind = it->second.getErrorPageLocation().find(errorCode);
+			if (tryfind != it->second.getErrorPageLocation().end())
 			{
 				if (DEBUG_CONFIG)
 					std::cerr << "getErrorPageByLocation : Found a value for errorCode [" << errorCode << "][" << tryfind->second << "] with location" 
 					<< it->first << std::endl;
 				return (tryfind->second);
 			}
+		}
+	}
+	m_is::const_iterator it2 = _errorPage.begin();
+	m_is::const_iterator ite2 = _errorPage.end();
+	for(;it2 != ite2; it2++)
+	{
+		if (it2->first == errorCode)
+		{
+			if (DEBUG_CONFIG)
+				std::cerr << "getErrorPageByLocation : Found a default value for errorCode [" << errorCode << "][" << it->second << "] with default" << std::endl;
+			return (it2->second);
 		}
 	}
 	if (DEBUG_CONFIG)
@@ -233,7 +251,7 @@ void	Config::_initServerInfoMap(void)
 	_serverInfoMap.find("allowed_method")->second.push_back("GET");
 	_serverInfoMap.find("autoindex")->second.push_back("off");
 	_serverInfoMap.find("index")->second.push_back("index.html");
-	_serverInfoMap.find("return")->second.push_back("1");
+	_serverInfoMap.find("return")->second.push_back("no redirect");
 
 }
 
@@ -270,10 +288,20 @@ void	Config::_createServerInfoMap(std::string &rawServerConf)
 		{
 			normalizeKeyValStr(nextLine, "\f\t\n\r\v ;", ' ');
 			configLine = _parseConfigBlock(nextLine);
-			if (DEBUG_CONFIG)
-				std::cerr << "\e[31mConfigLine : " << configLine << "\e[0m" << std::endl; 
-			if (!configLine.first.empty())
-				_serverInfoMap[configLine.first] = configLine.second;
+			if (configLine.first == "error_page")
+			{
+				_parseErrorPage(configLine.second[0]);
+				_errorPage.insert(std::pair<int, string>(atoi(configLine.second[0].c_str()), configLine.second[1]));
+				if (DEBUG_CONFIG)
+					std::cerr << _errorPage << std::endl;
+			}
+			else
+			{
+				if (DEBUG_CONFIG)
+					std::cerr << "\e[31mConfigLine : " << configLine << "\e[0m" << std::endl; 
+				if (!configLine.first.empty())
+					_serverInfoMap[configLine.first] = configLine.second;
+			}
 		}
 		if (istr.tellg() < 0)
 			break;
@@ -460,4 +488,18 @@ void Config::_parseClientMaxBodySize(void)
 			_parseClientMaxBodySize();
 		}
 	}
+}
+
+void Config::_parseErrorPage(string errorNum)
+{
+	int errorCode  = atoi(errorNum.c_str());
+	if (errorNum.find_first_not_of("1234567890") != std::string::npos || (errorCode < 400 || errorCode > 511))
+		throw(std::runtime_error("Webserv: config : not valid field in error_page, must be valid error code : [" + errorNum + "]"));
+}
+
+const Config::m_is	&Config::getErrorPageConfig(void) const
+{
+	const m_is	&errorRef = this->_errorPage;
+	return (errorRef);
+
 }

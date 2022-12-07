@@ -16,9 +16,10 @@ function test_config ()
 }
 
 echo "##### PARSING GLOBAL CONFIG #####"
-for i in `ls bad_conf/**/*`
-do
-	test_config "$i"
+
+if ! test -z "$1"
+then
+	test_config "$1"
 	if test "$RET" -ne 1
 	then
 		echo -e "\e[31mWebserv should have rejected conf : $i\e[0m"
@@ -28,6 +29,22 @@ do
 		test -s ./.test_stderr && cat ./.test_stderr || echo "File empty" 
 		exit
 	fi
-done
+else
+
+	for i in `ls bad_conf/**/*`
+	do
+		test_config "$i"
+		if test "$RET" -ne 1
+		then
+			echo -e "\e[31mWebserv should have rejected conf : $i\e[0m"
+			echo "STDOUT"
+			test -s ./.test_stdout && cat ./.test_stdout || echo "File empty" 
+			echo "STDERR"
+			test -s ./.test_stderr && cat ./.test_stderr || echo "File empty" 
+			exit
+		fi
+	done
+
+fi
 
 rm -rf ./.test_stdout ./.test_stderr

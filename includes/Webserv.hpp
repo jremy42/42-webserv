@@ -15,7 +15,7 @@
 # include "EventListener.hpp"
 
 # ifndef DEBUG_WEBSERV
-#  define DEBUG_WEBSERV 0
+#  define DEBUG_WEBSERV 1
 # endif
 
 # define CLIENT 0
@@ -54,7 +54,6 @@ class Webserv
 		unsigned long			_openFd;
 		unsigned long			_maxFd;
 		v_server				_serverList;
-		v_config				_configList;
 		v_string				_rawConfig;
 		m_piu_vc				_portIpConfigList;
 		m_i_serv				_fdServerList;

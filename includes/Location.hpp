@@ -32,7 +32,7 @@ class Location
 		~Location(void);
 		Location &operator=(const Location &rhs);
 		const m_s_vs	&getLocationInfoMap(void) const;
-		const m_is		&getErrorPage(void) const;
+		const m_is		&getErrorPageLocation(void) const;
 		const m_ss		&getCgi(void) const;
 
 

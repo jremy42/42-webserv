@@ -301,7 +301,8 @@ void Response::_cleanRawRequestTarget(void)
 	}
 	if (_rawRequestedTarget.empty())
 		_rawRequestedTarget = "/";
-	std::cerr << "ICI [" << _rawRequestedTarget << "]" << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cerr << "clean target: [" << _rawRequestedTarget << "]" << std::endl;
 }
 
 void Response::_parseRawRequestTarget(void)
@@ -659,12 +660,11 @@ void Response::_checkAutorizationForMethod(void)
 void Response::_checkRedirect(void)
 {
 	string requestTarget = _request->getTarget();
-	if (_config->getParamByLocation(requestTarget, "return")[0] == "1")
+	if (_config->getParamByLocation(requestTarget, "return")[0] == "no redirect")
 		return;
 	else
 	{
-		if (DEBUG_RESPONSE)
-			std::cerr << "REDIRECT\n";
+		std::cerr << "REDIRECT\n";
 		_statusCode = atoi(_config->getParamByLocation(requestTarget, "return")[0].c_str());
 		_header += "location: " + _config->getParamByLocation(requestTarget, "return")[1] + "\n";
 	}

@@ -21,7 +21,7 @@
 # include <algorithm>
 
 # ifndef DEBUG_SERVER
-#  define DEBUG_SERVER 0
+#  define DEBUG_SERVER 1
 # endif
 # define KEEP_ALIVE_MAX_REQUEST 1000
 # define KEEP_ALIVE_TIMEOUT 10 //secondes
