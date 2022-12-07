@@ -24,7 +24,7 @@ do
 		echo -e "\e[31mWebserv should have rejected conf : $i\e[0m"
 		echo "STDOUT"
 		test -s ./.test_stdout && cat ./.test_stdout || echo "File empty" 
-		echo "STDERR	"
+		echo "STDERR"
 		test -s ./.test_stderr && cat ./.test_stderr || echo "File empty" 
 		exit
 	fi

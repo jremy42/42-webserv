@@ -202,7 +202,7 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		{
 				close(_serverFd);
 				freeaddrinfo(result);
-				throw(std::runtime_error(strerror(errno)));
+				throw(std::runtime_error(string("Webserv : ") + strerror(errno)));
 
 		}
 		unsigned int uaddr = ((struct sockaddr_in*)(result_it->ai_addr))->sin_addr.s_addr;
