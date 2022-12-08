@@ -17,7 +17,7 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 {
 	_clientFd = clientFd;
 	_request = NULL;
-	_response = NULL;\
+	_response = NULL;
 	_configList = _matchingConfigListByHost(config, host);
 	printTimeDebug(DEBUG_CLIENT, "A client is born", "");
 	printLog(1, _clientFd, 1, "connection accepted");
@@ -76,23 +76,20 @@ Client::v_config	Client::_matchingConfigListByHost(v_config *configList, unsigne
 {
 	v_config ret;
 	v_config::iterator it = configList->begin();
-	for (; it != configList->end(); it++)
-	{
-		if (it->getHost() == host)
-		{
-			printTimeDebug(DEBUG_CLIENT, " add new config by host", "");
-			ret.push_back(*it);
-		}
-	}
-	if (ret.empty())
-	{
-		for (it = configList->begin(); it != configList->end(); it++)
+	for (it = configList->begin(); it != configList->end(); it++)
 		{
 			if (it->getHost() == 0)
 			{
 				printTimeDebug(DEBUG_CLIENT, " add new config for wildcard", "");
 				ret.push_back(*it);
 			}
+		}
+	for (it = configList->begin(); it != configList->end(); it++)
+	{
+		if (it->getHost() == host)
+		{
+			printTimeDebug(DEBUG_CLIENT, " add new config by host", "");
+			ret.push_back(*it);
 		}
 	}
 	if (DEBUG_CLIENT)

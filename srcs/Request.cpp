@@ -531,20 +531,36 @@ std::string Request::getTmpBodyFile(void) const
 }
 
 
+// check all server_name in config if match with request host and host not a wildcard 
+// same but host can be a wildcard
 const Config	*Request::getMatchingConfig(void) const
 {
 	v_config::const_iterator					it = _configList->begin();
 	v_config::const_iterator					ite = _configList->end();
 	std::vector<std::string>::const_iterator	match;
 	std::vector<std::string>					currentCheckedConfig;
+	std::string									Requesthost = _header.find("Host")->second;
+	Requesthost = Requesthost.substr(0, Requesthost.find(":"));
 	for (; it != ite; it++)
 	{
 		currentCheckedConfig = it->getServerName();
-		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), _header.find("Host")->second);
+		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), Requesthost);
+		if (match != currentCheckedConfig.end() && it->getHost() != 0)
+		{
+			printTimeDebug(1, "found a match for requested host/server_name", "");
+			printTimeDebug(1, "Matched", *match);
+			return (&(*it));
+
+		}
+	}
+	for (it = _configList->begin(); it != ite; it++)
+	{
+		currentCheckedConfig = it->getServerName();
+		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), Requesthost);
 		if (match != currentCheckedConfig.end())
 		{
-			printTimeDebug(DEBUG_REQUEST, "found a match for requested host/server_name", "");
-			printTimeDebug(DEBUG_REQUEST, "Matched", *match);
+			printTimeDebug(1, "found a wildcard for requested host/server_name", "");
+			printTimeDebug(1, "Matched", *match);
 			return (&(*it));
 
 		}

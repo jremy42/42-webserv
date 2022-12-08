@@ -201,7 +201,7 @@ void	Webserv::_moveHostConfigToWildcard()
 			m_piu_vc::iterator it2;
 			for (it2 = _portIpConfigList.begin(); it2 != _portIpConfigList.end(); it2++)
 			{
-				if (it2->first.first == searchPort && it2->first.second != it->first.second && it != it2)
+				if (it2->first.first == searchPort && it != it2)
 				{
 					//if (it2->first.second == it->first.second && _checkServerName())
 					//	throw (std::runtime_error("\e[33mWebserv : Same server name on port : " + it2->first.first + " with a server_name: " + conflictServerName + "\e[0m"));
@@ -299,7 +299,7 @@ std::string Webserv::_checkServerName(std::vector<string> nextServerName, std::v
 	std::vector<string>::iterator ite = nextServerName.end();
 	for (std::vector<string>::iterator it = nextServerName.begin(); it != ite; it++)
 	{
-		//if (DEBUG_WEBSERV)
+		if (DEBUG_WEBSERV)
 			std::cout << "Check for server name :" << *it << std::endl;
 		if (find(currentServerName.begin(), currentServerName.end(), *it) != currentServerName.end())
 			return (*it);
