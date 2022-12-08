@@ -41,7 +41,7 @@ exec 6<&-
 exec 7>&-
 exec 8>&-
 
-echo -e "Content-Type: text\r"
+echo -e "Content-Type: text/html\r"
 echo -e "\r"
 
 echo "<!DOCTYPE html>"

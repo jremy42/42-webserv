@@ -1,0 +1,21 @@
+body
+{
+	background-color:black;
+	margin: 10;
+	padding: 10;
+	color: white;
+	border: 10-px solid black;
+}
+
+.header
+{
+	background-color:black ;
+	color:wheat;
+	text-align: center;
+}
+
+h1
+{
+	font-size: 50px;
+	text-align: center;
+}

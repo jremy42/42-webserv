@@ -25,6 +25,7 @@ Request::Request(int clientFd, v_config* configList )
 	_configList = configList;
 	_totalRead= 0;
 	_nameBodyFile = "";
+	_contentLength = 0;
 	_header.insert(std::pair<string, string>("Host", "no host"));
 
 }
@@ -64,6 +65,7 @@ Request	&Request::operator=(const Request &rhs)
 	_rawRequestString = rhs._rawRequestString;
 	_rawRequest = rhs._rawRequest;
 	_readRet = rhs._readRet;
+	_contentLength = rhs._contentLength;
 	return (*this);
 }
 

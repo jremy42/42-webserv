@@ -23,11 +23,11 @@ void	Location::_initLocationInfoMap(void)
 {
 	for (std::map<std::string, std::pair<int, int> >::iterator it = _configField.begin(); it != _configField.end(); it++)
 		_locationInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
-	_locationInfoMap.find("root")->second.push_back("./www");
+	//_locationInfoMap.find("root")->second.push_back("./www");
 	_locationInfoMap.find("allowed_method")->second.push_back("GET");
 	_locationInfoMap.find("index")->second.push_back("index.html");
 	_locationInfoMap.find("return")->second.push_back("no redirect");
-	_locationInfoMap.find("upload")->second.push_back( _locationInfoMap["root"][0] + "/upload");	
+	//_locationInfoMap.find("upload")->second.push_back( _locationInfoMap["root"][0] + "/upload");	
 	_locationInfoMap.find("autoindex")->second.push_back("off");	
 
 }

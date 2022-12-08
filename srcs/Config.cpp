@@ -141,6 +141,8 @@ const std::vector<std::string> Config::getParamByLocation(string &requestTarget,
 				if (DEBUG_CONFIG)
 					std::cerr << "getParamByLocation : Found a value for key [" << key << "][" << tryfind->second << "] with location" 
 					<< it->first << std::endl;
+				if (tryfind->second.empty())
+					return (defaultRet);
 				return (tryfind->second);
 			}
 		}
@@ -254,6 +256,7 @@ void	Config::_initServerInfoMap(void)
 	_serverInfoMap.find("autoindex")->second.push_back("off");
 	_serverInfoMap.find("index")->second.push_back("index.html");
 	_serverInfoMap.find("return")->second.push_back("no redirect");
+	_serverInfoMap.find("upload")->second.push_back("./www/upload");
 
 }
 

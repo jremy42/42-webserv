@@ -51,7 +51,7 @@ Response::m_is Response::_initStatusCodeMessage()
 	return ret;
 }
 
-std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/0.1</center>\n</body>\n</html>\n";
+std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/1</center>\n</body>\n</html>\n";
 std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>\n";
 
 Response::m_ss Response::_initCgiMetaVar()
@@ -408,7 +408,7 @@ void Response::_selectActualTarget(void)
 		std::vector<string>::iterator it = indexTryFiles.begin();
 		for (; it != indexTryFiles.end(); it++)
 		{
-			std::string testedIndexFile = _requestedTargetRoot + _rawRequestedTarget + "/" + *it;
+			std::string testedIndexFile = _requestedTargetRoot + "/" + *it;
 			if (DEBUG_RESPONSE)
 				std::cerr << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))
