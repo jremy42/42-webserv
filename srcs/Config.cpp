@@ -219,11 +219,12 @@ std::string Config::getMatchingLocation(string &requestTarget) const
 
 	for(;it != ite; it++)
 	{
-		std::cout << "getMatchingLocation : " << it->first << std::endl;
+		if (DEBUG_CONFIG)
+			std::cerr << "getMatchingLocation : " << it->first << std::endl;
 		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
 			return it->first;
 	}
-	//if (DEBUG_CONFIG)
+	if (DEBUG_CONFIG)
 		std::cerr << "getMatchingLocation : : No value found [" << requestTarget << "]. Using Config Default value" << std::endl;
 	return ("");
 }

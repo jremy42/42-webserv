@@ -163,6 +163,9 @@ int Server::execClientAction(int fd, int availableAction ) // mode naif activate
 		close(currentCli->getClientFd());
 		_clientListFd.erase(currentCli->getClientFd());
 		delete currentCli;
+		std::string execveError = e.what();
+		if (execveError.find("Child error :") != std::string::npos)
+			throw(std::runtime_error("Child error"));
 		return 0;
 	}
 	return 1;

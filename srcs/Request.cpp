@@ -39,14 +39,14 @@ Request::~Request(void)
 	if (_nameBodyFile.size() > 0)
 	{
 		_fs.close();
- 		/* if (unlink(_nameBodyFile.c_str()) == -1)
+ 		if (unlink(_nameBodyFile.c_str()) == -1)
  		{
  			if (DEBUG_REQUEST)
  			{
  				std::cerr << "unlink error" << std::endl;
  				std::cerr << "errno: " << strerror(errno) << std::endl;
  			}
- 		} */
+ 		}
 	}
 }
 
@@ -310,7 +310,7 @@ void Request::_parseContentType(string rawContentType)
 
 void Request::_initBodyFile(void)
 {
-	_nameBodyFile = tmpFileName("./tmp/webserv");
+	_nameBodyFile = tmpFileName("/tmp/");
 	printTimeDebug(DEBUG_REQUEST, "initBodyfile with file", _nameBodyFile);
 	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
 	if (!_fs.good())

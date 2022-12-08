@@ -1,4 +1,5 @@
 #include "Response.hpp"
+extern int g_rv;
 
 Response::m_is Response::_statusCodeMessage = _initStatusCodeMessage();
 
@@ -8,19 +9,45 @@ Response::m_is Response::_initStatusCodeMessage()
 	ret[200] = "OK";
 	ret[201] = "Created";
 	ret[202] = "Accepted";
+	ret[203] = "Non-Authoritative Information";
 	ret[204] = "No Content";
+	ret[205] = "Reset Content";
 	ret[206] = "Partial Content";
+	ret[300] = "Multiple Choices";
 	ret[301] = "Moved Permanently";
+	ret[302] = "Found";
 	ret[400] = "Bad Request";
+	ret[401] = "Unauthorized";
+	ret[402] = "Payment Required";
+	ret[403] = "Forbidden";
 	ret[404] = "Not Found";
 	ret[405] = "Method Not Allowed";
+	ret[406] = "Not Acceptable";
+	ret[407] = "Proxy Authentication Required";
 	ret[408] = "Request Timeout";
+	ret[409] = "Conflict";
+	ret[410] =	"Gone";
+	ret[411] = "Length Required";
+	ret[412] = "Precondition Failed";
 	ret[413] = "Payload Too Large";
-	ret[403] = "Forbidden";
+	ret[414] = "URI Too Long";
+	ret[415] = "Unsupported Media Type";
+	ret[416] = "Range Not Satisfiable";
+	ret[417] = "Expectation Failed";
+	ret[418] = "I'm a teapot";
+	ret[421] = "Misdirected Request";
+	ret[422] = "Unprocessable Entity";
+	ret[423] = "Locked";
+	ret[424] = "Failed Dependency";
 	ret[500] = "Internal Server Error";
 	ret[501] = "Not Implemented";
+	ret[502] = "Bad Gateway";
 	ret[503] = "Service Unavailable";
+	ret[504] = "Gateway Timeout";
 	ret[505] = "HTTP Version Not Supported";
+	ret[506] = "Variant Also Negotiates";
+	ret[507] = "Insufficient Storage";
+	ret[508] = "Loop Detected";
 	return ret;
 }
 
@@ -247,6 +274,8 @@ void Response::_createErrorMessageBody(void)
 	{
 		if (DEBUG_RESPONSE)
 			std::cerr << "No error page is specified for this error and location -> Building Body from _defaultErrorBodyToSend" << std::endl;
+		if (_statusCodeMessage.find(_statusCode) == _statusCodeMessage.end())
+			_statusCode = 500;
 		string errorMessage(itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second);
 		_generateErrorBodyFromTemplate(errorMessage);
 		_ss << _defaultErrorBodyToSend;
@@ -531,38 +560,40 @@ void Response::_methodPOST(void)
 		if (_state == R_WAIT_CGI_EXEC)
 			_waitCGIfile();
 	}
-	try {
-		if (_request->getContentType().size() > 0 && _request->getContentType()[0] != "multipart/form-data")
-		{
-			if (_request->getTransfertEncoding() == "chunked")
-				_chunkedPartFile();
-			else
-				_monoPartFile();
-			_statusCode = 201;
-			_state = R_FILE_READY;
-			_ss << "File uploaded\n";
-			_bodyLength = _ss.str().size();
-		}
-		else
-		{
-		
-			Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
-			multipart.createFilesFromBody();
-			_state = R_FILE_READY;
-			_ss << multipart.getReturnMessage();
-			_bodyLength = multipart.getReturnMessage().size();
-			if (multipart.getError())
-				_statusCode = 206;
-			else
+	else {
+		try {
+			if (_request->getContentType().size() > 0 && _request->getContentType()[0] != "multipart/form-data")
+			{
+				if (_request->getTransfertEncoding() == "chunked")
+					_chunkedPartFile();
+				else
+					_monoPartFile();
 				_statusCode = 201;
+				_state = R_FILE_READY;
+				_ss << "File uploaded\n";
+				_bodyLength = _ss.str().size();
+			}
+			else
+			{
+			
+				Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
+				multipart.createFilesFromBody();
+				_state = R_FILE_READY;
+				_ss << multipart.getReturnMessage();
+				_bodyLength = multipart.getReturnMessage().size();
+				if (multipart.getError())
+					_statusCode = 206;
+				else
+					_statusCode = 201;
+			}
 		}
-	}
-	catch (std::exception &e)
-	{
-		std::cerr << e.what() << std::endl;
-		_statusCode = 500;
-		_createErrorMessageBody();
-		_state = R_FILE_READY;
+		catch (std::exception &e)
+		{
+			std::cerr << e.what() << std::endl;
+			_statusCode = 500;
+			_createErrorMessageBody();
+			_state = R_FILE_READY;
+		}
 	}
 	// access sur le fichier droit d'ecriture
 	// if file existe append ?
@@ -619,8 +650,9 @@ void Response::_extractHeaderFromCgiOutputFile(void)
 			return;
 	}
 	_bodyLength -= 2;
+	
 
-	if (DEBUG_RESPONSE)
+	//if (DEBUG_RESPONSE)
 		std::cerr << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
 }
 
@@ -689,9 +721,9 @@ void Response::_initCGIfile(void)
 	else
 	{
 		if (_requestBodyFileSize != 0 && dup2(_inChild, STDIN_FILENO) == -1)
-			throw(std::runtime_error(std::string("Child DUP2 error 0") + strerror(errno)));
+			throw(std::runtime_error(std::string("Child error : DUP2 error 0 : ") + strerror(errno)));
 		if (dup2(_outChild, STDOUT_FILENO) == -1)
-			throw(std::runtime_error(std::string("Child DUP2 error 1") + strerror(errno)));
+			throw(std::runtime_error(std::string("Child error : DUP2 error 1 : ") + strerror(errno)));
 		_cgiMetaVar = _initCgiMetaVar();
 		_setCgiMetaVar();
 		_setProtocolSpecificMetavar();
@@ -702,7 +734,7 @@ void Response::_initCGIfile(void)
 		if (DEBUG_RESPONSE)
 			std::cerr << "actual Target : [" << _actualTarget << "] CGI-executable : [" << _cgiExecutable << "]" << std::endl;
 		execve(_cgiExecutable.c_str(), arg, _createEnvArray());
-		throw(std::runtime_error(std::string("Execve error ") + strerror(errno)));
+		throw(std::runtime_error(std::string("Child error : error : ") + strerror(errno)));
 	}
 }
 
