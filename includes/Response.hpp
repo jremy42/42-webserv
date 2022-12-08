@@ -119,6 +119,7 @@ class Response
 // POST
 		void							_methodPOST(void);
 		void 							_monoPartFile(void);
+		void							_chunkedPartFile(void);
 // DELETE
 		void							_methodDELETE(void);
 // CGI

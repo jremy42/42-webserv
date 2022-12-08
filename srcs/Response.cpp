@@ -490,6 +490,35 @@ void Response::_monoPartFile(void)
 	retrieveRequestBody.close();
 }
 
+void Response::_chunkedPartFile(void)
+{
+	std::fstream retrieveRequestChunkedBody;
+	std::string buff;
+ 	retrieveRequestChunkedBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
+	if (!retrieveRequestChunkedBody.good())
+		throw(std::runtime_error(string("Chunked: cannot open body file: ") + strerror(errno)));
+	std::string fileName =  _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
+	std::fstream fileToWrite;
+	fileToWrite.open(fileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
+	if (!fileToWrite.good())
+		throw(std::runtime_error(string("Chunked: cannot open file to write: ") + strerror(errno)));
+	
+	while(getline(retrieveRequestChunkedBody, buff, '\n'))
+	{
+		int size = strtol(buff.c_str(), NULL, 16);
+		if (size == 0)
+			break;
+		char *buffChunked = new char[size];
+		retrieveRequestChunkedBody.read(buffChunked, size);
+		fileToWrite.write(buffChunked, size);
+		delete[] buffChunked;
+	}
+	
+	fileToWrite.close();
+	retrieveRequestChunkedBody.close();
+}
+
+
 void Response::_methodPOST(void)
 {
 
@@ -505,7 +534,10 @@ void Response::_methodPOST(void)
 	try {
 		if (_request->getContentType().size() > 0 && _request->getContentType()[0] != "multipart/form-data")
 		{
-			_monoPartFile();
+			if (_request->getTransfertEncoding() == "chunked")
+				_chunkedPartFile();
+			else
+				_monoPartFile();
 			_statusCode = 201;
 			_state = R_FILE_READY;
 			_ss << "File uploaded\n";

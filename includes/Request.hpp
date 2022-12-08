@@ -76,7 +76,7 @@ class Request
 		string 				getBodyFile(void);
 		string				getLog(void);
 		v_s					getContentType(void) const;
-
+		string				getTransfertEncoding(void) const;
 
 	private:
 		int				_state;

@@ -39,14 +39,14 @@ Request::~Request(void)
 	if (_nameBodyFile.size() > 0)
 	{
 		_fs.close();
- 		if (unlink(_nameBodyFile.c_str()) == -1)
+ 		/* if (unlink(_nameBodyFile.c_str()) == -1)
  		{
  			if (DEBUG_REQUEST)
  			{
  				std::cerr << "unlink error" << std::endl;
  				std::cerr << "errno: " << strerror(errno) << std::endl;
  			}
- 		}
+ 		} */
 	}
 }
 
@@ -332,12 +332,12 @@ int Request::_parseHeaderForBody(void)
 	string rawContentLength = _header.find("Content-Length") != _header.end() ? _header.find("Content-Length")->second : "";
 	string rawTransferEncoding = _header.find("Transfer-Encoding") != _header.end() ? _header.find("Transfer-Encoding")->second : "";
 
-	if (rawContentType.empty() || rawTransferEncoding == "chunked" || rawContentLength.empty())
+/* 	if (rawContentType.empty() || rawTransferEncoding == "chunked" || rawContentLength.empty())
 	{
 		_state = R_ERROR;
 		_statusCode = 400;
 		return 0;
-	}
+	} */
 	_parseContentType(rawContentType);
 	_contentLength = atoi(rawContentLength.c_str());
 	if (_contentLength > _clientMaxBodySize)
@@ -584,6 +584,14 @@ std::string Request::getLog(void)
 Request::v_s Request::getContentType(void) const
 {
 	return _contentType;
+}
+
+
+std::string Request::getTransfertEncoding(void) const
+{
+	string rawTransferEncoding = _header.find("Transfer-Encoding") != _header.end() ? _header.find("Transfer-Encoding")->second : "";
+
+	return rawTransferEncoding;
 }
 
 /* void Request::_handleBodyChunked(void)
