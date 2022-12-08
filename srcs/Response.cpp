@@ -652,7 +652,7 @@ void Response::_extractHeaderFromCgiOutputFile(void)
 	_bodyLength -= 2;
 	
 
-	//if (DEBUG_RESPONSE)
+	if (DEBUG_RESPONSE)
 		std::cerr << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
 }
 
@@ -882,10 +882,7 @@ void Response::_sendHeaderToClient(void)
 				  << "About to write client response on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, MSG_NOSIGNAL);
 	if (ret == -1)
-	{
-		if (DEBUG_RESPONSE)
-			std::cerr << "Error in writeClientResponse" << std::endl;
-	}
+		throw(std::runtime_error("Webserv: Response : write failure"));
 	else
 	{
 		_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
@@ -918,8 +915,8 @@ void Response::_sendBodyToClient(void)
 	}
 	ret = send(_clientFd, bufBody, bodyStream.gcount(), MSG_NOSIGNAL);
 	_bodyLength -= ret;
-	if (ret == -1 && DEBUG_RESPONSE)
-		std::cerr << "Error in writeClientResponse in Body state" << std::endl;
+	if (ret == -1)
+		throw(std::runtime_error("Webserv: Response : write failure"));
 	if (ret != bodyStream.gcount() && DEBUG_RESPONSE)
 		std::cerr << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 	if (_bodyLength == 0)

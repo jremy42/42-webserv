@@ -175,7 +175,6 @@ int Client::executeAction()
 	{
 		delete _request;
 		_request = NULL;
-		_state = S_CLOSE_FD;
 	}
 	//printTimeDebug(DEBUG_CLIENT, "Client State at end of executeAction", getStateStr());
 	//printTimeDebug(DEBUG_CLIENT, "executeAction OUT", "");

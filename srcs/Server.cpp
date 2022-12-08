@@ -203,9 +203,9 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 			continue;
 		if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
 		{
-				close(_serverFd);
-				freeaddrinfo(result);
-				throw(std::runtime_error(string("Webserv : ") + strerror(errno)));
+			close(_serverFd);
+			freeaddrinfo(result);
+			throw(std::runtime_error(string("Webserv : ") + strerror(errno)));
 
 		}
 		unsigned int uaddr = ((struct sockaddr_in*)(result_it->ai_addr))->sin_addr.s_addr;
