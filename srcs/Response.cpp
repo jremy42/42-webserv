@@ -250,17 +250,18 @@ std::string Response::getlineStatus(void)
 }
 void Response::_createErrorMessageBody(void)
 {
-	string requestTarget = _request->getTarget();
-	string customErrorPage = _config->getErrorPageByLocation(requestTarget, _statusCode);
-	string matchingLocationRoot = _config->getParamByLocation(requestTarget, "root").at(0);
-	string errorPageFile = matchingLocationRoot + "/" + customErrorPage;
+	/* string requestTarget = _request->getTarget();
+	string matchingLocationRoot = _config->getParamByLocation(requestTarget, "root").at(0); */
+	string customErrorPage = _config->getErrorPageByLocation(_rawRequestedTarget, _statusCode);
+
+	string errorPageFile = _requestedTargetRoot + "/" + customErrorPage;
 
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "_createErrorMessageBody start" << std::endl;
-		std::cerr << "requestTarget : [" << requestTarget << "]" << std::endl;
+	/* 	std::cerr << "requestTarget : [" << requestTarget << "]" << std::endl;
+		std::cerr << "matchingLocationRoot : [" << matchingLocationRoot << "]" << std::endl; */
 		std::cerr << "customErrorPage : [" << customErrorPage << "]" << std::endl;
-		std::cerr << "matchingLocationRoot : [" << matchingLocationRoot << "]" << std::endl;
 		std::cerr << "errorPageFile : [" << errorPageFile << "]" << std::endl;
 	}
 	if (customErrorPage != "" && fileExist(errorPageFile) && !isDir(errorPageFile))
@@ -408,7 +409,7 @@ void Response::_selectActualTarget(void)
 		std::vector<string>::iterator it = indexTryFiles.begin();
 		for (; it != indexTryFiles.end(); it++)
 		{
-			std::string testedIndexFile = _requestedTargetRoot + "/" + *it;
+			std::string testedIndexFile = _actualTarget + "/" + *it;
 			if (DEBUG_RESPONSE)
 				std::cerr << "Testing index file :" << testedIndexFile << std::endl;
 			if (fileExist(testedIndexFile) && !isDir(testedIndexFile))

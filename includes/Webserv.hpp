@@ -62,7 +62,7 @@ class Webserv
 		void					_loadFile(const char *fileName);
 		string					_checkServerName(std::vector<string> nextServerName, std::vector<string> currentServerName);
 		unsigned long			_getMaxFd();
-		void					_moveHostConfigToWildcard();
+		void					_moveHostConfigToWildcard(int depth);
 };
 
 #endif

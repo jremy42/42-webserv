@@ -565,7 +565,16 @@ const Config	*Request::getMatchingConfig(void) const
 
 		}
 	}
-	printTimeDebug(DEBUG_REQUEST, "No host matching in config : Defaulting to first host/server_name", "");
+	for (it = _configList->begin(); it != ite; it++)
+	{
+		if (it->getHost() != 0)
+		{
+			printTimeDebug(1, "found default match requested ip/port server_name not ok ", "");
+			return (&(*it));
+
+		}
+	}
+	printTimeDebug(1, "No match host/servername in config : Defaulting to first wildcard", "");
 	return (&_configList->begin()[0]);
 }
 

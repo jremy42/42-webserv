@@ -173,7 +173,7 @@ int		Webserv::parseRawConfig(void)
 			catch (const std::exception &e) 
 			{
 				 std::cerr  << "\e[31m" << e.what() << "\e[0m" << std::endl;
-				 throw(std::runtime_error("Webserv: Config creation failure RTFM!!!!!😡 😡 😡 😡 😡 😡"));
+				 throw(std::runtime_error("Webserv: Config creation failure"));
 			}
 		}
 		if (DEBUG_WEBSERV)
@@ -184,8 +184,9 @@ int		Webserv::parseRawConfig(void)
 	return (1);
 }
 
-void	Webserv::_moveHostConfigToWildcard()
+void	Webserv::_moveHostConfigToWildcard(int depth)
 {
+	std::cout << depth << std::endl;
 	m_piu_vc::iterator it;
 	int 				searchPort;
 	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end(); it++)
@@ -205,12 +206,13 @@ void	Webserv::_moveHostConfigToWildcard()
 				{
 					//if (it2->first.second == it->first.second && _checkServerName())
 					//	throw (std::runtime_error("\e[33mWebserv : Same server name on port : " + it2->first.first + " with a server_name: " + conflictServerName + "\e[0m"));
-					if (DEBUG_WEBSERV)
+					//if (DEBUG_WEBSERV)
 						std::cerr << "\e[36mFound a Host/Port pair matching Wildcard for port : Port[" << it2->first.first << "] Host : [" << it2->first.second << "]\e[0m" << std::endl;
 					v_config tmpVconfig = it2->second;
 					for (v_config::iterator confIt = tmpVconfig.begin(); confIt != tmpVconfig.end(); confIt++)
 						it->second.push_back(*confIt);
 					_portIpConfigList.erase(it2);
+					return _moveHostConfigToWildcard(depth + 1);
 				}
 			}
 		}
@@ -223,7 +225,7 @@ int		Webserv::createServerListByPortConfig(void)
 {
 	m_piu_vc::iterator it;
 
-	_moveHostConfigToWildcard();
+	_moveHostConfigToWildcard(0);
 	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end() && _openFd < _maxFd ; it++)
 	{
 		try {

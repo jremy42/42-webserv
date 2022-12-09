@@ -1,0 +1,21 @@
+body
+{
+	background-color: whitesmoke;
+	margin: 10;
+	padding: 10;
+	color: black;
+	border: 10-px solid whitesmoke;
+}
+
+.header
+{
+	background-color: whitesmoke ;
+	color: black;
+	text-align: center;
+}
+
+h1
+{
+	font-size: 50px;
+	text-align: center;
+}
