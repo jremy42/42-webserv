@@ -176,6 +176,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	_config = config;
 	_statusCode = statusCode;
 	_state = R_INIT;
+	_pid = -1;
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
@@ -203,6 +204,11 @@ Response::~Response(void)
 		std::cerr << "Response : Default Destructor called" << std::endl;
 	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
 		unlink(_nameOut);
+	if (_pid != -1)
+	{
+		kill(_pid, SIGKILL);
+		waitpid(_pid, NULL, 0);
+	}
 }
 
 Response &Response::operator=(const Response &rhs)
@@ -320,8 +326,8 @@ void Response::_cleanRawRequestTarget(void)
 		_rawRequestedTarget = targetParts.top() + _rawRequestedTarget;
 		targetParts.pop();
 	}
-/* 	if (_rawRequestedTarget.empty())
-		_rawRequestedTarget = "/"; */
+	if (_rawRequestedTarget.empty())
+		_rawRequestedTarget = "/";
 		//_rawRequestedTarget = "/" + _rawRequestedTarget;
 	if (DEBUG_RESPONSE)
 		std::cerr << "clean target: [" << _rawRequestedTarget << "]" << std::endl;
@@ -338,8 +344,11 @@ void Response::_parseRawRequestTarget(void)
 	std::cout << "_matchingLocation: " << _matchingLocation << std::endl;
 	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size());
 	requestTargetWithOutLocation.erase(0, (requestTargetWithOutLocation[0] == '/' ? 1 : 0));
-	_rawActualTarget = _requestedTargetRoot + "/" + requestTargetWithOutLocation;
+	if (_requestedTargetRoot.size() > 0)
+		_requestedTargetRoot += _requestedTargetRoot[_requestedTargetRoot.size() - 1] == '/' ? "" : "/";
+	_rawActualTarget = _requestedTargetRoot + requestTargetWithOutLocation;
 	_actualTarget = _rawActualTarget;
+
 
 	std::size_t posFirstSlash = _rawActualTarget.find_first_of("/", _requestedTargetRoot.size());
 	std::size_t posLastQuestionMark = _rawActualTarget.find_last_of("?");
@@ -363,8 +372,10 @@ void Response::_parseRawRequestTarget(void)
 		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 	}
 	_urlDecodeString(_PATH_INFO);
-	if (DEBUG_RESPONSE)
+	if (DEBUG_RESPONSE_TARGET)
 	{
+		std::cout << "_rawRequestedTarget: " << _rawRequestedTarget << std::endl;
+		std::cout << "_matchingLocation: " << _matchingLocation << std::endl;
 		std::cerr << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
 		std::cerr << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
 		std::cerr << "_rawActualTarget : [" << _rawActualTarget << "]" << std::endl;
@@ -741,6 +752,7 @@ void Response::_initCGIfile(void)
 	}
 	else
 	{
+		_pid = -1;
 		if (_requestBodyFileSize != 0 && dup2(_inChild, STDIN_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child error : DUP2 error 0 : ") + strerror(errno)));
 		if (dup2(_outChild, STDOUT_FILENO) == -1)

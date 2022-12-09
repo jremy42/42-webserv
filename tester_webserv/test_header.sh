@@ -8,7 +8,7 @@ function test_header ()
 	(( TEST_NUMBER++ ))
 	echo -e "####################################"
 	echo -e "Testing"  "'$1'" "ref : $TEST_NUMBER"
-	(cat "$1" && sleep 1)| telnet localhost 5001
+	(cat "$1" && sleep 1)| telnet localhost 8080
     RET=$?
     echo -e "RET:$RET"
 	echo -e "####################################"

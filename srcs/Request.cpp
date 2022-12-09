@@ -190,6 +190,7 @@ int	Request::parseHeader(string rawHeader)
 	string				header_key;
 	string				header_value;
 	std::size_t			colonPos;
+	bool			initializeHost = false;
 
 	while (std::getline(buf, bufExtract, '\n'))
 	{
@@ -208,8 +209,19 @@ int	Request::parseHeader(string rawHeader)
 		header_key = strtrim(header_key, "\f\t\n\r\v ");
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
 		//std::cerr << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
-		if (header_key == "Host" && _header.find("Host")->second == "no host")
+		if (header_key == "Host" && _header.find("Host")->second == "no host" && initializeHost == false)
+		{
 			_header.erase("Host");
+			initializeHost = true;
+		}
+		if (_header.find(header_key) != _header.end())
+		{
+			if (DEBUG_REQUEST)
+				std::cerr << "Multiple Value Header : [" << header_key << "][" << header_value << "]" << std::endl;
+			_statusCode = 400;
+			_state = R_ERROR;
+			return -1;
+		}
 		_header.insert(std::pair<string, string>(header_key, header_value));
 		if (DEBUG_REQUEST)
 			std::cerr << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
