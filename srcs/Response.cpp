@@ -526,7 +526,14 @@ void Response::_chunkedPartFile(void)
 
 	while (getline(retrieveRequestChunkedBody, buff, '\n'))
 	{
-		int size = strtol(buff.c_str(), NULL, 16);
+		unsigned long size = strtol(buff.c_str(), NULL, 16);
+		if (size > MAX_BODY_SIZE_HARD_LIMIT)
+		{
+			fileToWrite.close();
+			retrieveRequestChunkedBody.close();
+			unlink(fileName.c_str());
+			throw(std::runtime_error(string("Chunked: bad request : wrong chunked part")));
+		}
 		if (size == 0)
 			break;
 		char *buffChunked = new char[size];
@@ -536,6 +543,7 @@ void Response::_chunkedPartFile(void)
 			delete[] buffChunked;
 			fileToWrite.close();
 			retrieveRequestChunkedBody.close();
+			unlink(fileName.c_str());
 			throw(std::runtime_error(string("Chunked: cannot read body file: ") + strerror(errno)));
 		}
 		fileToWrite.write(buffChunked, size);
@@ -544,6 +552,7 @@ void Response::_chunkedPartFile(void)
 			delete[] buffChunked;
 			fileToWrite.close();
 			retrieveRequestChunkedBody.close();
+			unlink(fileName.c_str());
 			throw(std::runtime_error(string("Chunked: cannot write Newfile: ") + strerror(errno)));
 		}
 		delete[] buffChunked;
@@ -582,7 +591,8 @@ void Response::_methodPOST(void)
 			}
 			else
 			{
-
+				if (_request->getBoundaryDelim() == "")
+					throw(std::runtime_error("bad request : No boundary delimiter found"));
 				Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
 				multipart.createFilesFromBody();
 				_state = R_FILE_READY;
@@ -596,8 +606,12 @@ void Response::_methodPOST(void)
 		}
 		catch (std::exception &e)
 		{
-			std::cerr << e.what() << std::endl;
-			_statusCode = 500;
+			std::string ret(e.what());
+			if (ret.find("bad request : ") != std::string::npos)
+				_statusCode = 400;
+			else
+				_statusCode = 500;
+			std::cerr << "Error in POST method : " << e.what() << std::endl;
 			_createErrorMessageBody();
 			_state = R_FILE_READY;
 		}
@@ -897,7 +911,7 @@ void Response::_sendHeaderToClient(void)
 void Response::_sendBodyToClient(void)
 {
 	int ret;
-	int buff_size = 0;
+	unsigned long buff_size = 0;
 	char *bufBody;
 	std::istream *bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
 	std::istream &bodyStream = *bodyStreamPtr;

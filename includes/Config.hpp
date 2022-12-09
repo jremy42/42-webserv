@@ -17,7 +17,7 @@
 # include "Location.hpp"
 
 # ifndef DEBUG_CONFIG
-#  define DEBUG_CONFIG 1
+#  define DEBUG_CONFIG 0
 # endif
 # define MAX_BODY_SIZE_HARD_LIMIT 32 * 1024 * 1024
 # define MIN_BODY_SIZE_HARD_LIMIT 32

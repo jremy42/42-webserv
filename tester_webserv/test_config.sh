@@ -2,7 +2,7 @@
 
 TEST_NUMBER="0"
 EXEC="../webserv"
-VALGRIND="valgrind"
+#VALGRIND="valgrind"
 TEST_FILES=""
 
 function test_config ()

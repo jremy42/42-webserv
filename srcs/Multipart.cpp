@@ -14,7 +14,7 @@ Multipart::Multipart(string bodyFile, string boundaryDelim, string uploadDir)
 	printTimeDebug(DEBUG_MULTIPART, "create Multipart with tmpfile", _bodyFile);
 	_fs.open(_bodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
 	if (!_fs.good())
-		throw(std::runtime_error(string("Multipart: cannot open body file") + strerror(errno)));
+		throw(std::runtime_error(string("Multipart: cannot open body file :") + strerror(errno)));
 }
 
 Multipart::Multipart(const Multipart &src)
@@ -87,12 +87,19 @@ int Multipart::_extractHeader(void)
 		if (bufExtract == "\r")
 			break;
 		colonPos = bufExtract.find(':');
-		if (DEBUG_MULTIPART &&(colonPos == std::string::npos
+		if ((colonPos == std::string::npos
 				|| colonPos == bufExtract.length() - 1
 				|| colonPos == 1))
 		{
-			std::cerr << "[" << string("--" + _boundaryDelim) << "]" << std::endl;
-			std::cerr << "[" << bufExtract << "]" << std::endl;
+			if (DEBUG_MULTIPART)
+			{
+				std::cerr << "[" << string("--" + _boundaryDelim) << "]" << std::endl;
+				std::cerr << "[" << bufExtract << "]" << std::endl;
+			}
+			_fsNewFile.close();
+			_fs.close();
+			unlink(_fileName.c_str());
+			throw(std::runtime_error("Multipart: bad request : cannot extract header"));
 		}
 		header_key = string(bufExtract.begin(), bufExtract.begin() + colonPos);
 		header_value = string(bufExtract.begin() + colonPos + 1, bufExtract.end());
