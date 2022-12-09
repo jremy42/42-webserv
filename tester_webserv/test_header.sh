@@ -8,14 +8,30 @@ function test_header ()
 	(( TEST_NUMBER++ ))
 	echo -e "####################################"
 	echo -e "Testing"  "'$1'" "ref : $TEST_NUMBER"
-	(cat "$1" && sleep 1)| telnet localhost 8080
-    RET=$?
-    echo -e "RET:$RET"
+	(cat "$1" && sleep 1)| telnet localhost 8080 > ./.test_stdout 2>./.test_stderr
+	RET=$(grep "HTTP/1.1 400 Bad Request" ./.test_stdout)
 	echo -e "####################################"
 }
 
 echo "##### LAUNCH TEST#####"
-for i in `ls bad_request/**/*`
+
+if ! test -z "$1"
+then
+	TEST_FILES="$1"
+else
+	TEST_FILES=`ls bad_request/**/*`
+fi
+
+for i in $TEST_FILES
 do
 	test_header "$i"
+	if [ -z "$RET" ]
+	then
+		echo -e "\e[31mWebserv should have rejected bad	request : $i\e[0m"
+		echo "STDOUT"
+		test -s ./.test_stdout && cat ./.test_stdout || echo "File empty"
+		echo "STDERR"
+		test -s ./.test_stderr && cat ./.test_stderr || echo "File empty"
+		exit
+	fi
 done
