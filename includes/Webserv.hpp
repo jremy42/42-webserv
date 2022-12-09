@@ -18,9 +18,6 @@
 #  define DEBUG_WEBSERV 0
 # endif
 
-# define CLIENT 0
-# define SERVER 0
-
 class Webserv
 {
 	public:
