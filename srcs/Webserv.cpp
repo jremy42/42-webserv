@@ -13,8 +13,6 @@ Webserv::Webserv(string fileName)
 {
 	_openFd = 0;
 	_maxFd = _getMaxFd();
-	if (_maxFd < 10)
-		throw(std::runtime_error("Webserv: not enough available fd to run webserv" ));
 	if (DEBUG_WEBSERV)
 		std::cerr << "Webserv: max fd available: " << _maxFd << std::endl;
 	_loadFile(fileName.c_str());
@@ -223,6 +221,8 @@ int		Webserv::createServerListByPortConfig(void)
 	m_piu_vc::iterator it;
 
 	_moveHostConfigToWildcard(0);
+	if(_portIpConfigList.size() > _maxFd - 3)
+		throw std::runtime_error("Webserv: No server created. not enough file descriptor available");
 	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end() && _openFd < _maxFd ; it++)
 	{
 		try {
@@ -254,7 +254,7 @@ int		Webserv::execServerLoop(void)
 		for (std::map<int, int>::iterator it = _fdAvailable.begin(); it != ite; it++)
 		{
 
-			if (_fdServerList.find(it->first) != _fdServerList.end() && _openFd < _maxFd - 10)
+			if (_fdServerList.find(it->first) != _fdServerList.end() && _openFd < _maxFd / 2)
 			{
 				try {
 					if (DEBUG_SERVER)

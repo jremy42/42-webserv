@@ -305,21 +305,24 @@ void Response::_cleanRawRequestTarget(void)
 
 	while (getline(_rawRequestedTargetSteam, buf, '/'))
 	{
-		if (buf == ".." && !targetParts.empty())
+		if (!_rawRequestedTargetSteam.eof())
+			buf += "/";
+		if (buf == "../" && !targetParts.empty())
 			targetParts.pop();
-		else if (buf != ".")
+		else if (buf != "./")
 			targetParts.push(buf);
 	}
 	_rawRequestedTarget.erase();
 	while (!targetParts.empty())
 	{
-		if (!_rawRequestedTarget.empty())
-			targetParts.top() += "/";
+		/* if (!_rawRequestedTarget.empty())
+			targetParts.top() += "/"; */
 		_rawRequestedTarget = targetParts.top() + _rawRequestedTarget;
 		targetParts.pop();
 	}
-	if (_rawRequestedTarget.empty())
-		_rawRequestedTarget = "/";
+/* 	if (_rawRequestedTarget.empty())
+		_rawRequestedTarget = "/"; */
+		//_rawRequestedTarget = "/" + _rawRequestedTarget;
 	if (DEBUG_RESPONSE)
 		std::cerr << "clean target: [" << _rawRequestedTarget << "]" << std::endl;
 }
@@ -330,7 +333,9 @@ void Response::_parseRawRequestTarget(void)
 	_matchingLocation = _config->getMatchingLocation(_rawRequestedTarget);
 	_cleanRawRequestTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
-	_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
+	//_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
+	std::cout << "_rawRequestedTarget: " << _rawRequestedTarget << std::endl;
+	std::cout << "_matchingLocation: " << _matchingLocation << std::endl;
 	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size());
 	requestTargetWithOutLocation.erase(0, (requestTargetWithOutLocation[0] == '/' ? 1 : 0));
 	_rawActualTarget = _requestedTargetRoot + "/" + requestTargetWithOutLocation;
