@@ -1,0 +1,13 @@
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+HTTP1.1 400 Bad Request
+content-length: 147
+
+<html>
+<head><title>400 Bad Request</title></head>
+<body>
+<center><h1>400 Bad Request</h1></center>
+<hr><center>webserv/1</center>
+</body>
+</html>
