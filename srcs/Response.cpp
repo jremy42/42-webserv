@@ -26,7 +26,7 @@ Response::m_is Response::_initStatusCodeMessage()
 	ret[407] = "Proxy Authentication Required";
 	ret[408] = "Request Timeout";
 	ret[409] = "Conflict";
-	ret[410] =	"Gone";
+	ret[410] = "Gone";
 	ret[411] = "Length Required";
 	ret[412] = "Precondition Failed";
 	ret[413] = "Payload Too Large";
@@ -228,7 +228,6 @@ Response &Response::operator=(const Response &rhs)
 	_targetStatus = rhs._targetStatus;
 	_cgiExecutable = rhs._cgiExecutable;
 
-
 	_PATH_INFO = rhs._PATH_INFO;
 	_QUERY_STRING = rhs._QUERY_STRING;
 	_cgiMetaVar = rhs._cgiMetaVar;
@@ -250,17 +249,13 @@ std::string Response::getlineStatus(void)
 }
 void Response::_createErrorMessageBody(void)
 {
-	/* string requestTarget = _request->getTarget();
-	string matchingLocationRoot = _config->getParamByLocation(requestTarget, "root").at(0); */
 	string customErrorPage = _config->getErrorPageByLocation(_rawRequestedTarget, _statusCode);
-
 	string errorPageFile = _requestedTargetRoot + "/" + customErrorPage;
 
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "_createErrorMessageBody start" << std::endl;
-	/* 	std::cerr << "requestTarget : [" << requestTarget << "]" << std::endl;
-		std::cerr << "matchingLocationRoot : [" << matchingLocationRoot << "]" << std::endl; */
+
 		std::cerr << "customErrorPage : [" << customErrorPage << "]" << std::endl;
 		std::cerr << "errorPageFile : [" << errorPageFile << "]" << std::endl;
 	}
@@ -304,23 +299,15 @@ int Response::_urlDecodeString(string &strToDecode)
 
 void Response::_cleanRawRequestTarget(void)
 {
-	std::stack<std::string>	targetParts;
-	std::stringstream		_rawRequestedTargetSteam(_rawRequestedTarget);
-	std::string				buf;
+	std::stack<std::string> targetParts;
+	std::stringstream _rawRequestedTargetSteam(_rawRequestedTarget);
+	std::string buf;
 
 	while (getline(_rawRequestedTargetSteam, buf, '/'))
 	{
-		if (buf == "..")
-		{
-			if (targetParts.empty())
-			{
-				_statusCode = 403;
-				return ;
-			}
-			else
-				targetParts.pop();
-		}
-		else
+		if (buf == ".." && !targetParts.empty())
+			targetParts.pop();
+		else if (buf != ".")
 			targetParts.push(buf);
 	}
 	_rawRequestedTarget.erase();
@@ -328,7 +315,7 @@ void Response::_cleanRawRequestTarget(void)
 	{
 		if (!_rawRequestedTarget.empty())
 			targetParts.top() += "/";
-		_rawRequestedTarget = targetParts.top() +  _rawRequestedTarget;
+		_rawRequestedTarget = targetParts.top() + _rawRequestedTarget;
 		targetParts.pop();
 	}
 	if (_rawRequestedTarget.empty())
@@ -338,13 +325,13 @@ void Response::_cleanRawRequestTarget(void)
 }
 
 void Response::_parseRawRequestTarget(void)
-{	
+{
 	_rawRequestedTarget = _request->getTarget();
 	_matchingLocation = _config->getMatchingLocation(_rawRequestedTarget);
 	_cleanRawRequestTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
 	_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
-	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size()); 
+	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size());
 	requestTargetWithOutLocation.erase(0, (requestTargetWithOutLocation[0] == '/' ? 1 : 0));
 	_rawActualTarget = _requestedTargetRoot + "/" + requestTargetWithOutLocation;
 	_actualTarget = _rawActualTarget;
@@ -506,12 +493,13 @@ void Response::_methodGET(void)
 void Response::_monoPartFile(void)
 {
 	std::fstream retrieveRequestBody;
- 	retrieveRequestBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
+	retrieveRequestBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
 	if (!retrieveRequestBody.good())
 		throw(std::runtime_error(string("Monopart: cannot open body file: ") + strerror(errno)));
-	std::string fileName =  _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
+	std::string fileName = _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
 	std::fstream fileToWrite;
-	std::cout << "file name : " << fileName << std::endl;
+	if (DEBUG_RESPONSE)
+		std::cerr << "file name : " << fileName << std::endl;
 	fileToWrite.open(fileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
 	if (!fileToWrite.good())
 		throw(std::runtime_error(string("Monopart: cannot open file to write: ") + strerror(errno)));
@@ -524,30 +512,46 @@ void Response::_chunkedPartFile(void)
 {
 	std::fstream retrieveRequestChunkedBody;
 	std::string buff;
- 	retrieveRequestChunkedBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
+	retrieveRequestChunkedBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
 	if (!retrieveRequestChunkedBody.good())
 		throw(std::runtime_error(string("Chunked: cannot open body file: ") + strerror(errno)));
-	std::string fileName =  _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
+	std::string fileName = _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
 	std::fstream fileToWrite;
 	fileToWrite.open(fileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
 	if (!fileToWrite.good())
+	{
+		retrieveRequestChunkedBody.close();
 		throw(std::runtime_error(string("Chunked: cannot open file to write: ") + strerror(errno)));
-	
-	while(getline(retrieveRequestChunkedBody, buff, '\n'))
+	}
+
+	while (getline(retrieveRequestChunkedBody, buff, '\n'))
 	{
 		int size = strtol(buff.c_str(), NULL, 16);
 		if (size == 0)
 			break;
 		char *buffChunked = new char[size];
 		retrieveRequestChunkedBody.read(buffChunked, size);
+		if (!retrieveRequestChunkedBody.good())
+		{
+			delete[] buffChunked;
+			fileToWrite.close();
+			retrieveRequestChunkedBody.close();
+			throw(std::runtime_error(string("Chunked: cannot read body file: ") + strerror(errno)));
+		}
 		fileToWrite.write(buffChunked, size);
+		if (!fileToWrite.good())
+		{
+			delete[] buffChunked;
+			fileToWrite.close();
+			retrieveRequestChunkedBody.close();
+			throw(std::runtime_error(string("Chunked: cannot write Newfile: ") + strerror(errno)));
+		}
 		delete[] buffChunked;
 	}
-	
+
 	fileToWrite.close();
 	retrieveRequestChunkedBody.close();
 }
-
 
 void Response::_methodPOST(void)
 {
@@ -561,8 +565,10 @@ void Response::_methodPOST(void)
 		if (_state == R_WAIT_CGI_EXEC)
 			_waitCGIfile();
 	}
-	else {
-		try {
+	else
+	{
+		try
+		{
 			if (_request->getContentType().size() > 0 && _request->getContentType()[0] != "multipart/form-data")
 			{
 				if (_request->getTransfertEncoding() == "chunked")
@@ -576,7 +582,7 @@ void Response::_methodPOST(void)
 			}
 			else
 			{
-			
+
 				Multipart multipart(_requestBodyFile, _request->getBoundaryDelim(), _request->getUploadDir());
 				multipart.createFilesFromBody();
 				_state = R_FILE_READY;
@@ -596,10 +602,6 @@ void Response::_methodPOST(void)
 			_state = R_FILE_READY;
 		}
 	}
-	// access sur le fichier droit d'ecriture
-	// if file existe append ?
-	//  else create file
-	//  create response
 }
 
 void Response::_methodDELETE(void)
@@ -617,7 +619,7 @@ void Response::_methodDELETE(void)
 		_createErrorMessageBody();
 		_state = R_FILE_READY;
 		return;
-	}	
+	}
 	if (ret == 0)
 	{
 		_statusCode = 200;
@@ -651,7 +653,6 @@ void Response::_extractHeaderFromCgiOutputFile(void)
 			return;
 	}
 	_bodyLength -= 2;
-	
 
 	if (DEBUG_RESPONSE)
 		std::cerr << "real CGI body length after removing header : [" << _bodyLength << "]" << std::endl;
@@ -909,6 +910,14 @@ void Response::_sendBodyToClient(void)
 		buff_size = WRITE_BUFFER_SIZE;
 	bufBody = new char[buff_size];
 	bodyStream.read(bufBody, buff_size);
+	if (!bodyStream.good())
+	{
+		std::ifstream* toClose = dynamic_cast<std::ifstream*>(&bodyStream);
+		if (toClose)
+			toClose->close();
+		delete[] bufBody;
+		throw(std::runtime_error("Webserv: Response : read failure"));
+	}
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "read [" << bodyStream.gcount() << "] from body file" << std::endl;
@@ -918,6 +927,8 @@ void Response::_sendBodyToClient(void)
 	_bodyLength -= ret;
 	if (ret == -1)
 		throw(std::runtime_error("Webserv: Response : write failure"));
+	if (ret == 0)
+		throw(std::runtime_error("Webserv: Response : client cannot receive data"));
 	if (ret != bodyStream.gcount() && DEBUG_RESPONSE)
 		std::cerr << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 	if (_bodyLength == 0)

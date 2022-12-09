@@ -16,13 +16,13 @@ Webserv::Webserv(string fileName)
 	if (_maxFd < 10)
 		throw(std::runtime_error("Webserv: not enough available fd to run webserv" ));
 	if (DEBUG_WEBSERV)
-		std::cout << "Webserv: max fd available: " << _maxFd << std::endl;
+		std::cerr << "Webserv: max fd available: " << _maxFd << std::endl;
 	_loadFile(fileName.c_str());
 	if (DEBUG_WEBSERV)
 	{
-		std::cout << "Config list :" << std::endl;
+		std::cerr << "Config list :" << std::endl;
 		for (v_string::iterator it = _rawConfig.begin(); it != _rawConfig.end(); it++)
-			std::cout << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
+			std::cerr << "-----Start Config-----" << std::endl << *it << "------End Config------" << std::endl;
 	}
 	return ;
 }
@@ -69,9 +69,9 @@ void Webserv::_loadFile(const char * fileName)
 		if (DEBUG_WEBSERV)
 		{
 			if (nextLine.empty() || nextLine.find_first_not_of("\f\t\n\r\v ") == std::string::npos)
-				std::cout << "[Empty Line]" << std::endl;
+				std::cerr << "[Empty Line]" << std::endl;
 			else
-				std::cout << nextLine << std::endl;
+				std::cerr << nextLine << std::endl;
 		}
 		if (!nextLine.empty()
 			&& !strtrim(nextLine, "\f\t\n\r\v ").empty() && nextLine[0] != '#')
@@ -186,7 +186,6 @@ int		Webserv::parseRawConfig(void)
 
 void	Webserv::_moveHostConfigToWildcard(int depth)
 {
-	std::cout << depth << std::endl;
 	m_piu_vc::iterator it;
 	int 				searchPort;
 	for (it = _portIpConfigList.begin(); it != _portIpConfigList.end(); it++)
@@ -204,9 +203,7 @@ void	Webserv::_moveHostConfigToWildcard(int depth)
 			{
 				if (it2->first.first == searchPort && it != it2)
 				{
-					//if (it2->first.second == it->first.second && _checkServerName())
-					//	throw (std::runtime_error("\e[33mWebserv : Same server name on port : " + it2->first.first + " with a server_name: " + conflictServerName + "\e[0m"));
-					//if (DEBUG_WEBSERV)
+					if (DEBUG_WEBSERV)
 						std::cerr << "\e[36mFound a Host/Port pair matching Wildcard for port : Port[" << it2->first.first << "] Host : [" << it2->first.second << "]\e[0m" << std::endl;
 					v_config tmpVconfig = it2->second;
 					for (v_config::iterator confIt = tmpVconfig.begin(); confIt != tmpVconfig.end(); confIt++)
@@ -217,7 +214,7 @@ void	Webserv::_moveHostConfigToWildcard(int depth)
 			}
 		}
 		if (DEBUG_WEBSERV)
-			std::cout << "After WildCard Clean" << std::endl << it->second << std::endl;
+			std::cerr << "After WildCard Clean" << std::endl << it->second << std::endl;
 	}
 }
 
@@ -263,7 +260,7 @@ int		Webserv::execServerLoop(void)
 					if (DEBUG_SERVER)
 						std::cerr << "\e[32mACCEPT NEW CLIENT\e[0m\n";
 					if (DEBUG_SERVER)
-						std::cout << "Number of openfd : [" <<_openFd << "]" << std::endl;
+						std::cerr << "Number of openfd : [" <<_openFd << "]" << std::endl;
 					int newFd = _fdServerList.find(it->first)->second->acceptNewClient();
 					_evListener.trackNewFd(newFd, EPOLLIN | EPOLLOUT);
 					_openFd++;
@@ -302,7 +299,7 @@ std::string Webserv::_checkServerName(std::vector<string> nextServerName, std::v
 	for (std::vector<string>::iterator it = nextServerName.begin(); it != ite; it++)
 	{
 		if (DEBUG_WEBSERV)
-			std::cout << "Check for server name :" << *it << std::endl;
+			std::cerr << "Check for server name :" << *it << std::endl;
 		if (find(currentServerName.begin(), currentServerName.end(), *it) != currentServerName.end())
 			return (*it);
 	}

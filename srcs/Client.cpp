@@ -23,11 +23,11 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 	printLog(1, _clientFd, 1, "connection accepted");
 	if (DEBUG_CLIENT)
 	{
-		std::cout << "create client with fd :" << _clientFd << std::endl;
-		std::cout << "====================================================================================" << std::endl;
-		std::cout << "create client with configList:" << std::endl;
-		std::cout << _configList << std::endl;
-		std::cout << "====================================================================================" << std::endl;
+		std::cerr << "create client with fd :" << _clientFd << std::endl;
+		std::cerr << "====================================================================================" << std::endl;
+		std::cerr << "create client with configList:" << std::endl;
+		std::cerr << _configList << std::endl;
+		std::cerr << "====================================================================================" << std::endl;
 	}
 	_state = S_INIT;
 	_myServ = myServ;
@@ -94,10 +94,10 @@ Client::v_config	Client::_matchingConfigListByHost(v_config *configList, unsigne
 	}
 	if (DEBUG_CLIENT)
 	{
-		std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-		std::cout << "ret: \n";
-		std::cout << ret << std::endl;
-		std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+		std::cerr << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+		std::cerr << "ret: \n";
+		std::cerr << ret << std::endl;
+		std::cerr << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 	}
 	return ret;
 }
@@ -114,11 +114,21 @@ int Client::executeAction()
 	//	sleep(1);
 	//	printAvailableAction(DEBUG_CLIENT,_clientFd, _availableActions);
 	}
+	if (_availableActions & EPOLLOUT && ft_get_time() > _timeoutClient && _state == S_RESWRITE)
+	{
+		if (_response != NULL)
+			delete _response;
+		_response = new Response(_clientFd, _request, _request->getConfig(), 408);
+		_timeoutClient = ft_get_time() + TIMEOUT_CLIENT / 2;
+		_state = S_RESWRITE;
+		return 1;
+	}
 	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP || ft_get_time() > _timeoutClient)
 	{
 		_state = S_CLOSE_FD;
 		return 1;
 	}
+	
 	if ((_availableActions & EPOLLIN) && (_state == S_INIT))
 	{
 			_timeoutRequest = ft_get_time() + TIMEOUT_REQUEST;

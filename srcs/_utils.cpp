@@ -45,16 +45,16 @@ std::ostream	&operator<<(std::ostream &o, const std::vector<std::string> &vec)
 {
 	for (unsigned long i = 0; i < vec.size(); i++)
 	{
-		std::cout << (i != 0 ? ", " : "");
-		std::cout << "[" << i << "][" << vec[i] << "]";
+		o << (i != 0 ? ", " : "");
+		o << "[" << i << "][" << vec[i] << "]";
 	}
 	return (o);
 }
 
 std::ostream	&operator<<(std::ostream &o, const std::pair<std::string, std::vector<std::string> > &pair)
 {
-	std::cout << "[" << pair.first << "] : ";
-	std::cout << pair.second;
+	o << "[" << pair.first << "] : ";
+	o << pair.second;
 	return (o);
 }
 
@@ -62,7 +62,7 @@ std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::vecto
 {
 	std::map<std::string, std::vector<std::string> >::const_iterator	it = map.begin();
 	for (; it != map.end(); it++)
-		std::cout << *it << std::endl;
+		o << *it << std::endl;
 	return (o);
 }
 
@@ -70,7 +70,7 @@ std::ostream	&operator<<(std::ostream &o, const std::map<int, std::string> &map)
 {
 	std::map<int, std::string>::const_iterator	it = map.begin();
 	for (; it != map.end(); it++)
-		std::cout << "key [" << it->first << "] value:[" << it->second << "]" << std::endl;
+		o << "key [" << it->first << "] value:[" << it->second << "]" << std::endl;
 	return (o);
 }
 
@@ -78,7 +78,7 @@ std::ostream	&operator<<(std::ostream &o, const std::map<std::string, std::strin
 {
 	std::map<std::string, std::string>::const_iterator	it = map.begin();
 	for (; it != map.end(); it++)
-		std::cout << "key [" << it->first << "] value:[" << it->second << "]" << std::endl;
+		o << "key [" << it->first << "] value:[" << it->second << "]" << std::endl;
 	return (o);
 }
 

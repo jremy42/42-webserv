@@ -20,20 +20,20 @@ Server::Server(v_config configList)
 	}
 	if (DEBUG_SERVER)
 	{
-		std::cout << "______________________CREATING SERVER________________________________\n";
-		std::cout << "serverFD : [" << _serverFd << "]" << std::endl;
-		std::cout << "Create server listen port :" << _port << std::endl;
+		std::cerr << "______________________CREATING SERVER________________________________\n";
+		std::cerr << "serverFD : [" << _serverFd << "]" << std::endl;
+		std::cerr << "Create server listen port :" << _port << std::endl;
 		v_config::iterator ite = configList.end();
 		int i = 0;
 		for (v_config::iterator it = configList.begin(); it != ite; it++)
 		{
-			std::cout << "------------configList " << i << "------------------"<< std::endl;
-			std::cout << *it << std::endl;
-			std::cout << "--------------------------------z-------------------- " << std::endl;
+			std::cerr << "------------configList " << i << "------------------"<< std::endl;
+			std::cerr << *it << std::endl;
+			std::cerr << "--------------------------------z-------------------- " << std::endl;
 
 			i++;
 		}
-		std::cout << "___________________________________________________________________\n";
+		std::cerr << "___________________________________________________________________\n";
 	}
 	printLogServer(1, _serverFd );
 
@@ -85,7 +85,7 @@ Server::v_config	Server::_matchingConfigListByHost(unsigned int host)
 		if (it->getHost() == host)
 		{
 			if(DEBUG_SERVER)
-				std::cout << " add new config by host" << std::endl;
+				std::cerr << " add new config by host" << std::endl;
 			ret.push_back(*it);
 		}
 	}
@@ -96,7 +96,7 @@ Server::v_config	Server::_matchingConfigListByHost(unsigned int host)
 			if (it->getHost() == 0)
 			{
 				if(DEBUG_SERVER)
-					std::cout << " add new config for wildcard" << std::endl;
+					std::cerr << " add new config for wildcard" << std::endl;
 				ret.push_back(*it);
 			}
 		}

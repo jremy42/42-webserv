@@ -81,19 +81,18 @@ int Multipart::_extractHeader(void)
 		if (bufExtract == (string("--" + _boundaryDelim + "\r")))
 		{
 			if (DEBUG_MULTIPART)
-				std::cout << "continue" << std::endl;
+				std::cerr << "continue" << std::endl;
 			continue;
 		}
 		if (bufExtract == "\r")
 			break;
 		colonPos = bufExtract.find(':');
-		if (colonPos == std::string::npos
+		if (DEBUG_MULTIPART &&(colonPos == std::string::npos
 				|| colonPos == bufExtract.length() - 1
-				|| colonPos == 1)
+				|| colonPos == 1))
 		{
-
-			std::cout << "[" << string("--" + _boundaryDelim) << "]" << std::endl;
-			std::cout << "[" << bufExtract << "]" << std::endl;
+			std::cerr << "[" << string("--" + _boundaryDelim) << "]" << std::endl;
+			std::cerr << "[" << bufExtract << "]" << std::endl;
 		}
 		header_key = string(bufExtract.begin(), bufExtract.begin() + colonPos);
 		header_value = string(bufExtract.begin() + colonPos + 1, bufExtract.end());
@@ -101,7 +100,7 @@ int Multipart::_extractHeader(void)
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
 		_boundaryHeader.insert(std::pair<string, string>(header_key, header_value));
 		if (DEBUG_MULTIPART)
-			std::cout << "Inserted :" << " new header key-value in Boundary header : [" << header_key << "][" << header_value << "]" << std::endl;
+			std::cerr << "Inserted :" << " new header key-value in Boundary header : [" << header_key << "][" << header_value << "]" << std::endl;
 	}
 	if (_boundaryHeader.empty())
 		return 0;
@@ -117,7 +116,7 @@ int 	Multipart::_createFileFromHeader(void)
 		return 0;
 	_fileName = _uploadDir + "/" + _fileName;
 	if (DEBUG_MULTIPART)
-		std::cout << "Creating new file : " << _fileName << std::endl;
+		std::cerr << "Creating new file : " << _fileName << std::endl;
 	_fsNewFile.open(_fileName.c_str(), std::ofstream::binary | std::ifstream::out | std::ifstream::trunc);
 	if (!_fsNewFile.good())
 	{

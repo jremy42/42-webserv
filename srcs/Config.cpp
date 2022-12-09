@@ -38,12 +38,12 @@ void	Config::_burnExternalBrackets(std::string &rawServerConfig)
 Config::Config(std::string rawServerConfig)
 {
 	if (DEBUG_CONFIG)
-		std::cout << "rawServerConfig : >" << rawServerConfig << "<" << std::endl;
+		std::cerr << "rawServerConfig : >" << rawServerConfig << "<" << std::endl;
 	_initServerInfoMap();
 	_burnExternalBrackets(rawServerConfig);
 	_createServerInfoMap(rawServerConfig);
 	if(DEBUG_CONFIG)
-		std::cout << "------------Done Creating the serverInfoMap-------------" << std::endl
+		std::cerr << "------------Done Creating the serverInfoMap-------------" << std::endl
 				<< _serverInfoMap << "--------------------------------------------------------" << std::endl;
 	if (_serverInfoMap.empty())
 		throw(std::runtime_error("webserv: empty conf, server block ignored"));
@@ -54,8 +54,8 @@ Config::Config(std::string rawServerConfig)
 	_listenPort = atoi(_serverInfoMap["listen"][1].c_str());
 	if (DEBUG_CONFIG)
 	{
-		std::cout << "\e[32mlisten[0] :" << _serverInfoMap["listen"][0].c_str() << "\e[0m" << std::endl;
-		std::cout << "\e[32mlisten[1] :" << _serverInfoMap["listen"][1].c_str() << "\e[0m" << std::endl;
+		std::cerr << "\e[32mlisten[0] :" << _serverInfoMap["listen"][0].c_str() << "\e[0m" << std::endl;
+		std::cerr << "\e[32mlisten[1] :" << _serverInfoMap["listen"][1].c_str() << "\e[0m" << std::endl;
 	}
 	if (_serverInfoMap["listen"][0] == "*")
 		_host = 0;
@@ -278,15 +278,14 @@ void	Config::_createServerInfoMap(std::string &rawServerConf)
 				string key(_getNextLocationBlock(nextLine));
 				Location newLocation(nextLine);
 				if (DEBUG_CONFIG)
-					std::cout << "\e[33mKey :[" << key << "]\e[0m" << std::endl;
+					std::cerr << "\e[33mKey :[" << key << "]\e[0m" << std::endl;
 				if (_location.insert(std::pair<string, Location>(key, newLocation)).second == false)
 					throw(std::runtime_error("Webserv: Config: too many location with same key : [" + key + "] WARNING : location ignored" ));
 			}
 			catch(const std::exception& e)
 			{
 				std::cerr << e.what() << std::endl;
-				throw(std::runtime_error("Webserv: Config: FATAL ERROR Config ignored"));
-
+				throw(std::runtime_error("Webserv: Config: FATAL ERROR"));
 			}
 		}
 		else if (nextBlockDelim == ';')
@@ -393,11 +392,11 @@ std::ostream	&operator<<(std::ostream &o, const Config config)
 	Config::m_s_vs const &serverInfoMap = config.getServerInfoMap();
 	Config::m_s_l const &location = config.getLocation();
 
-	std::cout << serverInfoMap << std::endl;
+	o << serverInfoMap << std::endl;
 	Config::m_s_l::const_iterator ite = location.end();
 
 	for (Config::m_s_l::const_iterator it = location.begin(); it != ite; it++)
-		std::cout << "key: [" << (*it).first << "]\n" << (*it).second << std::endl;
+		o << "key: [" << (*it).first << "]\n" << (*it).second << std::endl;
 		 
 	return (o);
 }

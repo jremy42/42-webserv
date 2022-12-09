@@ -165,8 +165,8 @@ int	Request::parseRequestLine(string rawRequestLine)
 		_requestLine.insert(std::pair<string, string>(_requestLineField[i], bufExtract));
 		if (DEBUG_REQUEST)
 		{
-			std::cout << "[" << _requestLineField[i] << "]";
-			std::cout << "[" << _requestLine.find(_requestLineField[i])->second << "]" << std::endl;
+			std::cerr << "[" << _requestLineField[i] << "]";
+			std::cerr << "[" << _requestLine.find(_requestLineField[i])->second << "]" << std::endl;
 		}
 		i++;
 	}
@@ -204,10 +204,10 @@ int	Request::parseHeader(string rawHeader)
 		}
 		header_key = string(bufExtract.begin(), bufExtract.begin() + colonPos);
 		header_value = string(bufExtract.begin() + colonPos + 1, bufExtract.end());
-		//std::cout << "BEFORE" "[" << header_key << "][" << header_value << "]" << std::endl;
+		//std::cerr << "BEFORE" "[" << header_key << "][" << header_value << "]" << std::endl;
 		header_key = strtrim(header_key, "\f\t\n\r\v ");
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
-		//std::cout << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
+		//std::cerr << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
 		if (header_key == "Host" && _header.find("Host")->second == "no host")
 			_header.erase("Host");
 		_header.insert(std::pair<string, string>(header_key, header_value));
@@ -240,7 +240,8 @@ void Request::_handleRequestLine(void)
 	{
 		if (!isprint(*it) && (*it) != '\r' && (*it) != '\n')
 		{
-			std::cerr << "Request Line is not printable with char :["<< (int)(*it) << "]"<< std::endl;
+			if (DEBUG_REQUEST)
+				std::cerr << "Request Line is not printable with char :["<< (int)(*it) << "]"<< std::endl;
 			_state = R_ERROR;
 			_statusCode = 501;
 			return ;
@@ -269,7 +270,7 @@ void Request::_handleHeader(void)
 	v_c_it it = _rawRequest.begin();
 
 	if (DEBUG_REQUEST)
-		std::cout << "Handle header" << std::endl;
+		std::cerr << "Handle header" << std::endl;
 	if (_rawRequest.size() > MAX_HEADER_SIZE)
 	{
 		_state = R_ERROR;
@@ -317,7 +318,8 @@ void Request::_initBodyFile(void)
 	_fs.open(_nameBodyFile.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::app);
 	if (!_fs.good())
 	{
-		std::cerr << "Error while opening file : " << _nameBodyFile << std::endl;
+		if (DEBUG_REQUEST)
+			std::cerr << "Error while opening file : " << _nameBodyFile << std::endl;
 		_state = R_ERROR;
 		_statusCode = 500;
 		return;
@@ -378,8 +380,8 @@ void Request::_handleBody(void)
 
 	if (DEBUG_REQUEST)
 	{
-		std::cout << "Handle body" << std::endl;
-		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
+		std::cerr << "Handle body" << std::endl;
+		std::cerr << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
 	}
 	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
 	{
@@ -403,7 +405,7 @@ int Request::readClientRequest(void)
 	ssize_t				read_ret = 0;
 
 	if (DEBUG_REQUEST)
-		std::cout << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
+		std::cerr << "Request State at beginning of readClientRequest :" <<  getStateStr() << std::endl;
 	memset(buf, 0, sizeof(buf));
 	read_ret = read(_clientFd, buf, READ_BUFFER_SIZE - 1);
 	if (read_ret == -1)
@@ -477,8 +479,8 @@ int	Request::handleRequest(void)
 		_state = R_END;
 	if (DEBUG_REQUEST)
 	{															
-		std::cout << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr() << "]" << std::endl;
-		std::cout << "Max read = [" << _totalRead<< "]" << std::endl;
+		std::cerr << "Request State at end of readClientRequest : [" << _state << "][" <<  getStateStr() << "]" << std::endl;
+		std::cerr << "Max read = [" << _totalRead<< "]" << std::endl;
 	}
 	return (_state);
 
@@ -547,8 +549,8 @@ const Config	*Request::getMatchingConfig(void) const
 		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), Requesthost);
 		if (match != currentCheckedConfig.end() && it->getHost() != 0)
 		{
-			printTimeDebug(1, "found a match for requested host/server_name", "");
-			printTimeDebug(1, "Matched", *match);
+			printTimeDebug(DEBUG_REQUEST, "found a match for requested host/server_name", "");
+			printTimeDebug(DEBUG_REQUEST, "Matched", *match);
 			return (&(*it));
 
 		}
@@ -559,8 +561,8 @@ const Config	*Request::getMatchingConfig(void) const
 		match = find(currentCheckedConfig.begin(), currentCheckedConfig.end(), Requesthost);
 		if (match != currentCheckedConfig.end())
 		{
-			printTimeDebug(1, "found a wildcard for requested host/server_name", "");
-			printTimeDebug(1, "Matched", *match);
+			printTimeDebug(DEBUG_REQUEST, "found a wildcard for requested host/server_name", "");
+			printTimeDebug(DEBUG_REQUEST, "Matched", *match);
 			return (&(*it));
 
 		}
@@ -569,12 +571,12 @@ const Config	*Request::getMatchingConfig(void) const
 	{
 		if (it->getHost() != 0)
 		{
-			printTimeDebug(1, "found default match requested ip/port server_name not ok ", "");
+			printTimeDebug(DEBUG_REQUEST, "found default match requested ip/port server_name not ok ", "");
 			return (&(*it));
 
 		}
 	}
-	printTimeDebug(1, "No match host/servername in config : Defaulting to first wildcard", "");
+	printTimeDebug(DEBUG_REQUEST, "No match host/servername in config : Defaulting to first wildcard", "");
 	return (&_configList->begin()[0]);
 }
 
@@ -620,56 +622,3 @@ std::string Request::getTransfertEncoding(void) const
 
 	return rawTransferEncoding;
 }
-
-/* void Request::_handleBodyChunked(void)
-{
-	v_c_it ite = _rawRequest.end();
-	v_c_it it = _rawRequest.begin();
-
-	if (DEBUG_REQUEST)
-	{
-		std::cout << "Handle body" << std::endl;
-		std::cout << "ClientMaxBodySize:" << _clientMaxBodySize << std::endl; 
-	}
-	if (getFileSize(_nameBodyFile) > _clientMaxBodySize)
-	{
-		_statusCode = 413;
-		_state = R_ERROR;
-		return;
-	}
-	std::cout << "NextChunkSize:" << _nextChunkSize << std::endl;
-	for (; it != ite; it++)
-	{
-		if (_nextChunkSize == -1 )
-		{
-			if (DEBUG_REQUEST)
-				std::cout << "getNextSize" << std::endl;
-			for (; it + 1 != ite; it++)
-			{
-				if (*it == '\r' && *(it + 1) == '\n')
-				{
-					std::cout << "rawChunkSize: [" << _rawChunkedSize << "]" << std::endl;
-					_nextChunkSize = strtol(_rawChunkedSize.c_str(), NULL, 16);
-					_rawChunkedSize.clear();
-					std::cout << "_nextChunkSize: [" << _nextChunkSize << "]" << std::endl;
-					if (_nextChunkSize == 0)
-					{
-						_state = R_END;
-						_fs.flush();
-						_rawRequest.clear();
-						return;
-					}
-					it += 1;
-				break;
-				}
-				else
-					_rawChunkedSize.push_back(*it);
-			}
-			continue;
-		}
-		_fs << *it;
-		_nextChunkSize--;
-	}
-	_fs.flush();
-	_rawRequest.clear();
-} */

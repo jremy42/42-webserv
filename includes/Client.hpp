@@ -18,8 +18,8 @@
 #  define DEBUG_CLIENT 0
 # endif
 
-# define TIMEOUT_REQUEST 30000
-# define TIMEOUT_CLIENT 60000
+# define TIMEOUT_REQUEST 10000
+# define TIMEOUT_CLIENT 30000
 
 enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};
 class Server;

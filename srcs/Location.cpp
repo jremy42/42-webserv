@@ -175,15 +175,15 @@ void Location::_parseCgi(string extension, string executable)
 
 std::ostream	&operator<<(std::ostream &o, const Location &Location)
 {
-	std::cout << "-------------------Location Printer Start-------------------" << std::endl;
-	std::cout << Location.getLocationInfoMap();
-	std::cout << "####################Location ErrorPage Start################" << std::endl;
-	std::cout << Location.getErrorPageLocation();
-	std::cout << "####################Location ErrorPage end################" << std::endl;
-	std::cout << "####################Location CGI Start################" << std::endl;
-	std::cout << Location.getCgi();
-	std::cout << "####################Location CGI end################" << std::endl;
-	std::cout << "--------------------Location Printer End--------------------" << std::endl;
+	std::cerr << "-------------------Location Printer Start-------------------" << std::endl;
+	std::cerr << Location.getLocationInfoMap();
+	std::cerr << "####################Location ErrorPage Start################" << std::endl;
+	std::cerr << Location.getErrorPageLocation();
+	std::cerr << "####################Location ErrorPage end################" << std::endl;
+	std::cerr << "####################Location CGI Start################" << std::endl;
+	std::cerr << Location.getCgi();
+	std::cerr << "####################Location CGI end################" << std::endl;
+	std::cerr << "--------------------Location Printer End--------------------" << std::endl;
 	return (o);
 }
 
