@@ -528,16 +528,21 @@ void Response::_chunkedPartFile(void)
 {
 	std::fstream retrieveRequestChunkedBody;
 	std::string buff;
+
+	if (DEBUG_RESPONSE)
+		std::cerr << "Chunked : RequestChunkedBodyfilename : " << _requestBodyFile << std::endl;
 	retrieveRequestChunkedBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
 	if (!retrieveRequestChunkedBody.good())
 		throw(std::runtime_error(string("Chunked: cannot open body file: ") + strerror(errno)));
 	std::string fileName = _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
+	if (DEBUG_RESPONSE)
+		std::cerr << "file name : " << fileName << std::endl;
 	std::fstream fileToWrite;
 	fileToWrite.open(fileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
 	if (!fileToWrite.good())
 	{
 		retrieveRequestChunkedBody.close();
-		throw(std::runtime_error(string("Chunked: cannot open file to write: ") + strerror(errno)));
+		throw(std::runtime_error(string("Chunked: cannot create file in upload dir. (Hint : check existence and permission for upload dir) : ") + strerror(errno)));
 	}
 
 	while (getline(retrieveRequestChunkedBody, buff, '\n'))

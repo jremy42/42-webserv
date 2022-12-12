@@ -18,7 +18,7 @@
 # include "_utils.hpp"
 
 # ifndef DEBUG_MULTIPART
-#  define DEBUG_MULTIPART 0
+#  define DEBUG_MULTIPART 1
 # endif
 
 

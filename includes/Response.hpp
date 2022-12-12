@@ -28,7 +28,7 @@
 
 # define MAX_PATH 4092
 # ifndef DEBUG_RESPONSE
-#  define DEBUG_RESPONSE 0
+#  define DEBUG_RESPONSE 1
 # endif
 # ifndef DEBUG_RESPONSE_TARGET
 #  define DEBUG_RESPONSE_TARGET 1
