@@ -229,7 +229,7 @@ void	Location::_parseUploadDir(void)
 			if (_locationInfoMap.find("upload") ==  _locationInfoMap.end()
 			|| _locationInfoMap["upload"].size() == 0)
 			{
-				printLog(1, 0, 1, string("\e[33mWebserv: config : no upload dir set[0m").c_str());
+				printLog(1, 0, 1, string("\e[33mWebserv: config : no upload dir set\e[0m").c_str());
 				return;
 			}
 			if(!fileExist(_locationInfoMap["upload"][0]))

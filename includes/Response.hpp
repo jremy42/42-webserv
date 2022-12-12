@@ -31,7 +31,7 @@
 #  define DEBUG_RESPONSE 0
 # endif
 # ifndef DEBUG_RESPONSE_TARGET
-#  define DEBUG_RESPONSE_TARGET 0
+#  define DEBUG_RESPONSE_TARGET 1
 # endif
 
 enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};
@@ -77,12 +77,15 @@ class Response
 		string							_requestedTargetRoot;
 		string							_rawActualTarget;
 		string							_actualTarget;
+		string							_requestTargetPartMatchedWithLocation;
 		string							_targetExtension;
 		string							_targetStatus;
 		string							_cgiExecutable;// Empty si la target est un regular file
+		string							_rawRequestedTargetWithOutQuery;
 		//Meta-var for CGI
 		string							_PATH_INFO;
 		string							_QUERY_STRING;
+		string							_checkReturnDir;
 		m_ss							_cgiMetaVar;
 		//From request
 		string							_requestBodyFile;
@@ -111,6 +114,7 @@ class Response
 		int								_writeClientResponse(void);
 		void							_sendHeaderToClient(void);
 		void							_sendBodyToClient(void);
+		void							_returnDir(void);
 //GET
 		void							_methodGET(void);
 		int								_createAutoIndex(const string &pathToDir);

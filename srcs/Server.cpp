@@ -145,7 +145,7 @@ int Server::execClientAction(int fd, int availableAction )
 			{
 				if (DEBUG_SERVER)
 					std::cerr << "Closing and removing Client with read return = 0" << std::endl;
-				printLog(1, currentCli->getClientFd(), 1, " connection close");
+				printLog(1, currentCli->getClientFd(), 1, "connection close");
 				close(currentCli->getClientFd());
 				_clientListFd.erase(currentCli->getClientFd());
 				delete currentCli;
@@ -156,7 +156,7 @@ int Server::execClientAction(int fd, int availableAction )
 	catch (std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
-		printLog(1, currentCli->getClientFd(), 1, " connection close because system error");
+		printLog(1, currentCli->getClientFd(), 1, "connection close because system error");
 		close(currentCli->getClientFd());
 		_clientListFd.erase(currentCli->getClientFd());
 		delete currentCli;

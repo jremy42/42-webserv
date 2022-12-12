@@ -336,17 +336,20 @@ void Response::_parseRawRequestTarget(void)
 	_matchingLocation = _config->getMatchingLocation(_rawRequestedTarget);
 	_cleanRawRequestTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
+	_requestTargetPartMatchedWithLocation = _rawRequestedTarget.substr(0, _matchingLocation.size());
+	_requestTargetPartMatchedWithLocation += _requestTargetPartMatchedWithLocation[_requestTargetPartMatchedWithLocation.size() - 1] == '/' ? "" : "/";
 
 	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size());
 	requestTargetWithOutLocation.erase(0, (requestTargetWithOutLocation[0] == '/' ? 1 : 0));
-	if (_requestedTargetRoot.size() > 0)
-		_requestedTargetRoot += _requestedTargetRoot[_requestedTargetRoot.size() - 1] == '/' ? "" : "/";
+ 	if (_requestedTargetRoot.size() > 0)
+		_requestedTargetRoot += _requestedTargetRoot[_requestedTargetRoot.size() - 1] == '/' ? "" : "/"; 
 	_rawActualTarget = _requestedTargetRoot + requestTargetWithOutLocation;
 	_actualTarget = _rawActualTarget;
 
 
 	std::size_t posFirstSlash = _rawActualTarget.find_first_of("/", _requestedTargetRoot.size());
 	std::size_t posLastQuestionMark = _rawActualTarget.find_last_of("?");
+	_checkReturnDir = _rawActualTarget.substr(0, posLastQuestionMark);
 	while (posFirstSlash != std::string::npos)
 	{
 		std::string testFile = _rawActualTarget.substr(0, posFirstSlash);
@@ -374,6 +377,7 @@ void Response::_parseRawRequestTarget(void)
 		std::cerr << "_rawRequestedTarget : [" << _rawRequestedTarget << "]" << std::endl;
 		std::cerr << "_requestedTargetRoot : [" << _requestedTargetRoot << "]" << std::endl;
 		std::cerr << "_rawActualTarget : [" << _rawActualTarget << "]" << std::endl;
+		std::cout <<"_checkReturnDir: [" <<  _checkReturnDir << "]" << std::endl;
 		std::cerr << "_actualTarget : [" << _actualTarget << "]" << std::endl;
 		std::cerr << "_QUERY_STRING : [" << _QUERY_STRING << "]" << std::endl;
 		std::cerr << "_PATH_INFO : [" << _PATH_INFO << "]" << std::endl;
@@ -393,13 +397,19 @@ void Response::_parseRawRequestTarget(void)
 void Response::_selectActualTarget(void)
 {
 	_parseRawRequestTarget();
+	_rawRequestedTargetWithOutQuery = _rawRequestedTarget.substr(0, _rawRequestedTarget.find_last_of("?"));
+
 	if (fileExist(_actualTarget) && !isDir(_actualTarget))
 	{
 		if (DEBUG_RESPONSE)
 			std::cerr << "Requested file is standard" << std::endl;
 		_targetStatus = "File_ok";
 	}
-	else if (fileExist(_actualTarget) && isDir(_actualTarget))
+	else if (fileExist(_actualTarget) && isDir(_actualTarget) && _rawRequestedTargetWithOutQuery[_rawRequestedTargetWithOutQuery.size() - 1] != '/')
+	{
+		_targetStatus = "Redirect_directory";
+	}
+	else if (fileExist(_actualTarget) && isDir(_actualTarget) && _actualTarget.size() > 0 &&_actualTarget[_actualTarget.size() - 1] == '/')
 	{
 		std::vector<string> indexTryFiles = _config->getParamByLocation(_rawRequestedTarget, "index");
 		if (DEBUG_RESPONSE)
@@ -790,14 +800,28 @@ void Response::_checkAutorizationForMethod(void)
 		_statusCode = 405;
 }
 
+void Response::_returnDir(void)
+{
+	if (_targetStatus == "Redirect_directory")
+	{
+		_statusCode = 301;
+		_header += "location: " + _rawRequestedTarget + "/";
+		if (_QUERY_STRING.size() > 0) 
+			_header += "?" + _QUERY_STRING;
+		_header += "\n";
+	}
+}
+
 void Response::_checkRedirect(void)
 {
 	string requestTarget = _request->getTarget();
+
 	if (_config->getParamByLocation(requestTarget, "return")[0] == "no redirect")
 		return;
 	else
 	{
-		std::cerr << "REDIRECT\n";
+		if (DEBUG_RESPONSE)
+			std::cerr << "REDIRECT\n";
 		_statusCode = atoi(_config->getParamByLocation(requestTarget, "return")[0].c_str());
 		_header += "location: " + _config->getParamByLocation(requestTarget, "return")[1] + "\n";
 	}
@@ -843,6 +867,7 @@ int Response::_createResponse(void)
 
 	if (_state == R_INIT)
 	{
+		_returnDir();
 		_checkRedirect();
 		_checkAutorizationForMethod();
 	}
