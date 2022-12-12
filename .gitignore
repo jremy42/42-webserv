@@ -45,3 +45,9 @@ webserv
 
 #video
 *.mp4
+
+#tmp
+/tmp*
+
+#test
+test_webserv/.*
