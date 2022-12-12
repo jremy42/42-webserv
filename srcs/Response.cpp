@@ -349,6 +349,11 @@ void Response::_parseRawRequestTarget(void)
 
 	std::size_t posFirstSlash = _rawActualTarget.find_first_of("/", _requestedTargetRoot.size());
 	std::size_t posLastQuestionMark = _rawActualTarget.find_last_of("?");
+	if (posLastQuestionMark != std::string::npos)
+	{
+		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);
+		_actualTarget = _actualTarget.substr(0, posLastQuestionMark);
+	}
 	_checkReturnDir = _rawActualTarget.substr(0, posLastQuestionMark);
 	while (posFirstSlash != std::string::npos)
 	{
@@ -361,8 +366,7 @@ void Response::_parseRawRequestTarget(void)
 		}
 		posFirstSlash = _rawActualTarget.find_first_of("/", posFirstSlash + 1);
 	}
-	if (posLastQuestionMark != std::string::npos)
-		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);
+
 	std::size_t posLastDot = _actualTarget.find_last_of(".");
 	if (posLastDot != std::string::npos)
 	{
@@ -1019,7 +1023,12 @@ int Response::_writeClientResponse(void)
 	if (_fullHeader.size())
 		_sendHeaderToClient();
 	else if (_fullHeader.empty())
-		_sendBodyToClient();
+	{
+		if (_bodyLength == 0)
+			_state = R_OVER;
+		else
+			_sendBodyToClient();
+	}
 	if (DEBUG_RESPONSE)
 		std::cerr << "writeResponse OUT[\e[31m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 	return 1;
@@ -1068,7 +1077,7 @@ std::string Response::_generateHTMLBodyWithPath(void)
 	{
 		size_t pos = HTMLbody.find("/title_placeholder");
 		HTMLbody.erase(pos, strlen("/title_placeholder"));
-		HTMLbody.insert(pos, _request->getTarget());
+		HTMLbody.insert(pos, _rawRequestedTargetWithOutQuery);
 	}
 	return (HTMLbody);
 }
@@ -1078,7 +1087,7 @@ int Response::_createAutoIndex(const string &pathToDir)
 	const char *path = pathToDir.c_str();
 	std::map<string, unsigned int> dirMap = _populateDirectoryMap(path);
 	string HTMLbody = _generateHTMLBodyWithPath();
-	string cleanTargetDir = _request->getTarget();
+	string cleanTargetDir = _rawRequestedTargetWithOutQuery;
 	string cleanPathToDir = pathToDir + (pathToDir[pathToDir.size() - 1] != '/' ? "/" : "");
 
 	cleanTargetDir += cleanTargetDir[cleanTargetDir.size() - 1] != '/' ? "/" : "";
