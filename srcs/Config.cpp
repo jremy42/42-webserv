@@ -249,7 +249,7 @@ void	Config::_initServerInfoMap(void)
 {
 	for (std::map<std::string, std::pair<int, int> >::iterator it = _configField.begin(); it != _configField.end(); it++)
 		_serverInfoMap.insert(std::pair<std::string, std::vector<std::string> >((*it).first, std::vector<string>()));
-	_serverInfoMap.find("listen")->second.push_back("*:80");
+	_serverInfoMap.find("listen")->second.push_back("*:8080");
 	_serverInfoMap.find("root")->second.push_back("./www");
 	_serverInfoMap.find("client_max_body_size")->second.push_back("8m");
 	_serverInfoMap.find("allowed_method")->second.push_back("GET");
@@ -506,4 +506,15 @@ const Config::m_is	&Config::getErrorPageConfig(void) const
 	const m_is	&errorRef = this->_errorPage;
 	return (errorRef);
 
+}
+
+void Config::_parseRoot(void)
+{
+	if (_serverInfoMap.find("root") ==  _serverInfoMap.end()
+	|| _serverInfoMap["root"].size() == 0)
+		return;
+	if(!fileExist(_serverInfoMap["root"][0]))
+		printLog(1, 0, 1, string("\e[33mWebserv: config : root dir : no such file or directory[" + _serverInfoMap["root"][0] + "]\e[0m").c_str());
+	if (!isDir(_serverInfoMap["root"][0]))
+		printLog(1, 0, 1, string("\e[33mWebserv: config : root dir : is not a directory[" + _serverInfoMap["root"][0] + "]\e[0m").c_str());
 }

@@ -48,7 +48,8 @@ class Location
 		void												_parseErrorPage(string errorNum);
 		void												_parseCgi(string extension, string executable);
 		void												_initLocationInfoMap(void);
-
+		void												_parseUploadDir(void);
+		void 												_parseRoot(void);
 		static std::map<std::string, std::pair<int, int> >	_configField;
 		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);;
 };

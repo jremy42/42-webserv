@@ -79,6 +79,7 @@ class Config
 		void		_parseListenHostPort(void);
 		void		_parseClientMaxBodySize(void);
 		void		_parseErrorPage(string errorNum);
+		void		_parseRoot(void);
 		static std::map<std::string, std::pair<int, int> >	_configField;
 		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);
 };

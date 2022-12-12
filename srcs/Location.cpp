@@ -40,6 +40,8 @@ Location::Location(string rawLocation)
 	_createLocationInfoMap(rawLocation);
 	_parseAllowedMethods();
 	_parseAutoindex();
+	_parseUploadDir();
+	_parseRoot();
 	if (DEBUG_LOCATION)
 	{
 		std::cerr << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
@@ -213,4 +215,37 @@ void Location::_parseAutoindex(void)
 
 	if (autoIndexValue.compare("on") && autoIndexValue.compare("off"))
 		throw(std::runtime_error("Webserv: config : not valid autoindex value : [" + autoIndexValue +  "]"));
+}
+
+
+void	Location::_parseUploadDir(void)
+{
+	std::vector<string>::iterator	it = _locationInfoMap["allowed_method"].begin();
+	std::vector<string>::iterator	ite = _locationInfoMap["allowed_method"].end();
+
+	if (find(it, ite, "POST") != ite
+		|| find(it, ite, "DELETE") != ite)
+		{
+			if (_locationInfoMap.find("upload") ==  _locationInfoMap.end()
+			|| _locationInfoMap["upload"].size() == 0)
+			{
+				printLog(1, 0, 1, string("\e[33mWebserv: config : no upload dir set[0m").c_str());
+				return;
+			}
+			if(!fileExist(_locationInfoMap["upload"][0]))
+				printLog(1, 0, 1, string("\e[33mWebserv: config : upload dir : no such file or directory[" + _locationInfoMap["upload"][0] + "]\e[0m").c_str());
+			if (!isDir(_locationInfoMap["upload"][0]))
+				printLog(1, 0, 1, string("\e[33mWebserv: config : upload dir : is not a directory[" + _locationInfoMap["upload"][0] + "]\e[0m").c_str());
+		}
+}
+
+void Location::_parseRoot(void)
+{
+	if (_locationInfoMap.find("root") ==  _locationInfoMap.end()
+		|| _locationInfoMap["root"].size() == 0)
+		return;
+	if(!fileExist(_locationInfoMap["root"][0]))
+		printLog(1, 0, 1, string("\e[33mWebserv: config : root dir : no such file or directory[" + _locationInfoMap["root"][0] + "]\e[0m").c_str());
+	if (!isDir(_locationInfoMap["root"][0]))
+		printLog(1, 0, 1, string("\e[33mWebserv: config : root dir : is not a directory[" + _locationInfoMap["root"][0] + "]\e[0m").c_str());
 }
