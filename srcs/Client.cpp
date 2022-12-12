@@ -107,12 +107,10 @@ int Client::executeAction()
 {
 	int	actionReturnValue;
 
-	//printTimeDebug(DEBUG_CLIENT, "Client State at beginning of executeAction :", getStateStr());
-	//if (_availableActions & EPOLLIN)
 	if (DEBUG_CLIENT)
 	{
-	//	sleep(1);
-	//	printAvailableAction(DEBUG_CLIENT,_clientFd, _availableActions);
+		printTimeDebug(DEBUG_CLIENT, "Client State at beginning of executeAction :", getStateStr());
+		printAvailableAction(DEBUG_CLIENT,_clientFd, _availableActions);
 	}
 	if (_availableActions & EPOLLOUT && ft_get_time() > _timeoutClient && _state == S_RESWRITE)
 	{
@@ -145,9 +143,9 @@ int Client::executeAction()
 		{
 			printLog(1,_clientFd, 1, _request->getLog().c_str());
 			if (ft_get_time() > _timeoutRequest)
-				_response = new Response(_clientFd, _request, _request->getConfig(), 408); // passer la bonne config
+				_response = new Response(_clientFd, _request, _request->getConfig(), 408); 
 			else
-				_response = new Response(_clientFd, _request, _request->getConfig(), _request->getStatusCode()); // passer la bonne config
+				_response = new Response(_clientFd, _request, _request->getConfig(), _request->getStatusCode()); 
 			_state = S_RESWRITE;
 		}
 		if (actionReturnValue == R_ZERO_READ)
@@ -156,7 +154,7 @@ int Client::executeAction()
 	else if ((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{
 		int retHandleResponse = _response->handleResponse();
-		if (retHandleResponse == 0) // 0 si ok et j'ai ecrit, donc je prolonge le timeout
+		if (retHandleResponse == 0) 
 		{
 			_timeoutClient = ft_get_time() + TIMEOUT_CLIENT;
 			_state = S_OVER;
@@ -183,8 +181,6 @@ int Client::executeAction()
 		delete _request;
 		_request = NULL;
 	}
-	//printTimeDebug(DEBUG_CLIENT, "Client State at end of executeAction", getStateStr());
-	//printTimeDebug(DEBUG_CLIENT, "executeAction OUT", "");
 	return (1 );
 }
 

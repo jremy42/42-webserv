@@ -100,7 +100,6 @@ std::string ltoa(long statusCode)
 
 long getFileSize(std::string filename)
 {
-	//std::cout << "getFileSize FILENAME:" << filename << std::endl; 
     FILE *fp = fopen(filename.c_str(), "r");
 
     if (fp == NULL)
@@ -117,7 +116,6 @@ long getFileSize(std::string filename)
 
 std::string getFileSizeStr(std::string filename)
 {
-	//std::cout << "getFileSize FILENAME:" << filename << std::endl; 
     FILE *fp = fopen(filename.c_str(), "r");
 
     if (fp == NULL)
@@ -158,7 +156,6 @@ unsigned long	ft_get_time(void)
 	struct timeval	now;
 
 	gettimeofday(&now, NULL);
-	//std::cout << "TIME [" << now.tv_sec * 1000 + now.tv_usec / 1000 <<  "]" << std::endl;
 	return (now.tv_sec * 1000 + now.tv_usec / 1000);
 }
 
@@ -184,7 +181,6 @@ unsigned int			getipbyhost(const char *host, const char *service)
 	int	g_error;
 	in_addr_t ret;
 
-	//std::cout << "get ip by host [" << host << "][" << service << "]" << std::endl;
 	memset(&hints, 0, sizeof(struct addrinfo));
 
 	hints.ai_family = AF_INET;
@@ -193,7 +189,6 @@ unsigned int			getipbyhost(const char *host, const char *service)
 		throw(std::runtime_error(gai_strerror(g_error)));
 	ret = ((struct sockaddr_in*)(result->ai_addr))->sin_addr.s_addr;
 	freeaddrinfo(result);
-	//std::cout << "ret : [" << ret << "]" << std::endl;
 	return ret;
 }
 

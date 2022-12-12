@@ -321,14 +321,11 @@ void Response::_cleanRawRequestTarget(void)
 	_rawRequestedTarget.erase();
 	while (!targetParts.empty())
 	{
-		/* if (!_rawRequestedTarget.empty())
-			targetParts.top() += "/"; */
 		_rawRequestedTarget = targetParts.top() + _rawRequestedTarget;
 		targetParts.pop();
 	}
 	if (_rawRequestedTarget.empty())
 		_rawRequestedTarget = "/";
-		//_rawRequestedTarget = "/" + _rawRequestedTarget;
 	if (DEBUG_RESPONSE)
 		std::cerr << "clean target: [" << _rawRequestedTarget << "]" << std::endl;
 }
@@ -339,9 +336,7 @@ void Response::_parseRawRequestTarget(void)
 	_matchingLocation = _config->getMatchingLocation(_rawRequestedTarget);
 	_cleanRawRequestTarget();
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
-	//_requestedTargetRoot.erase(0, (_requestedTargetRoot[0] == '/' ? 1 : 0));
-	std::cout << "_rawRequestedTarget: " << _rawRequestedTarget << std::endl;
-	std::cout << "_matchingLocation: " << _matchingLocation << std::endl;
+
 	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size());
 	requestTargetWithOutLocation.erase(0, (requestTargetWithOutLocation[0] == '/' ? 1 : 0));
 	if (_requestedTargetRoot.size() > 0)
@@ -448,7 +443,7 @@ void Response::_selectActualTarget(void)
 	}
 }
 
-void Response::_createFileStreamFromFile(string actualTarget) // set le header avec taille qui va bien et open le Body
+void Response::_createFileStreamFromFile(string actualTarget)
 {
 	if (DEBUG_RESPONSE)
 		std::cerr << "createFsfrom file : open " << actualTarget << std::endl;
@@ -842,8 +837,7 @@ int Response::handleResponse(void)
 
 int Response::_createResponse(void)
 {
-	// status-line = HTTP-version SP status-code SP reason-phrase CRLF
-	// check methode
+
 	if (DEBUG_RESPONSE && _state != R_WAIT_CGI_EXEC)
 		std::cerr << "createResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 
@@ -861,7 +855,7 @@ int Response::_createResponse(void)
 	{
 		if (DEBUG_RESPONSE > 2)
 			std::cerr << "GET METHOD" << std::endl;
-		_methodGET(); // va set le status en R_FILE_READY a la fin du CGI ou directement si regular file
+		_methodGET(); 
 	}
 	else if (_state < R_FILE_READY && _request->getMethod() == "POST")
 	{
@@ -873,7 +867,7 @@ int Response::_createResponse(void)
 	}
 	if (_state == R_FILE_READY)
 	{
-		_lineStatus = string(_request->getProtocol() + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
+		_lineStatus = string(string("HTTP/1.1") + " " + itoa(_statusCode) + " " + _statusCodeMessage.find(_statusCode)->second + "\r\n");
 		_createFullHeader();
 		_state = R_WRITE;
 	}
@@ -1069,11 +1063,9 @@ int Response::_createAutoIndex(const string &pathToDir)
 		if (it->second != DT_DIR)
 		{
 			std::stringstream out;
-			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			out << std::left << std::setw(80 + string("<a href=\"" + it->first + "\">" + "\">").size())
 				<< "<a href=\"" + cleanTargetDir + it->first + "\">" + it->first + "</a>"
 				<< std::setw(40) << getFileSizeStr(cleanPathToDir + it->first) + " bytes" << std::endl;
-			// A clean, mais fonctionnel (A mettre dans une fonction a minima)
 			size_t pos = HTMLbody.find("<pre>\n");
 			pos += string("<pre>\n").size();
 			HTMLbody.insert(pos, out.str());
@@ -1101,6 +1093,5 @@ int Response::_createAutoIndex(const string &pathToDir)
 	}
 	_ss << HTMLbody;
 	_bodyLength = HTMLbody.size();
-	//_header += "content-length: " + itoa(_bodyLength) + "\n";
 	return (1);
 }

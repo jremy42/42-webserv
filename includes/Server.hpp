@@ -23,9 +23,6 @@
 # ifndef DEBUG_SERVER
 #  define DEBUG_SERVER 0
 # endif
-# define KEEP_ALIVE_MAX_REQUEST 1000
-# define KEEP_ALIVE_TIMEOUT 10 //secondes
-
 
 class Client;
 class Config;
@@ -46,12 +43,10 @@ class Server
 		int	acceptNewClient(void); // si != -1 Fait un accept, ajoute le fd a la client list et ajoute au epoll_ctl le fd
 		int	execClientAction(int fd, int availableAction); // Fait 1 epoll_wait et demande a 1 client de faire une seule action (read ou write)
 		int getServerFd(void);
-		// Boucler sur les 2 actions precedentes (fait dans la classe  webserv)
 
 	private:
 		Config				_config; // switch to v_config;
 		v_config			_configList;
-		//EventListener		_evLst;
 		m_client			_clientListFd;
 		int					_serverFd;
 		struct sockaddr_in	_listenSockaddr;

@@ -66,7 +66,6 @@ Server &Server::operator=(const Server &src)
 	{
 		_config = src._config;
 		_configList = src._configList;
-        //_evLst = src._evLst;
         _clientListFd = src._clientListFd;
 		_listenSockaddr = src._listenSockaddr;
 		_serverFd = src._serverFd;
@@ -116,8 +115,6 @@ int Server::acceptNewClient(void)
 	clientFd = accept(_serverFd, (struct sockaddr *)& claddr, &addrlen);
 	if (clientFd == -1 && (errno != EAGAIN || errno != EWOULDBLOCK))
 		throw(std::runtime_error(string("Webserv: accept failed:") + strerror(errno)));
-	//printf("serverFd: [%d] | client fd : [%d]\n",_serverFd, clientFd);
-	
 	if (clientFd > 0)
 	{
 		serverIpAddrlen = sizeof(struct sockaddr_in);
@@ -136,7 +133,7 @@ int Server::acceptNewClient(void)
 	return 0;
 }
 
-int Server::execClientAction(int fd, int availableAction ) // mode naif activate 
+int Server::execClientAction(int fd, int availableAction )
 {
 	Client* currentCli = _clientListFd.find(fd)->second;
 	currentCli->setAvailableActions(availableAction);

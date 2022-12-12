@@ -50,7 +50,6 @@ Config::Config(std::string rawServerConfig)
 
 	_parseListenHostPort();
 	_parseClientMaxBodySize();
-	// WARNING -> valeurs a verfier avant de les recup
 	_listenPort = atoi(_serverInfoMap["listen"][1].c_str());
 	if (DEBUG_CONFIG)
 	{
@@ -62,12 +61,10 @@ Config::Config(std::string rawServerConfig)
 	else
 		_host = getipbyhost(_serverInfoMap["listen"][0].c_str(), _serverInfoMap["listen"][1].c_str());
 	_rootDirectory = _serverInfoMap["root"][0];
-	//Check de la conf a faire ici dans un fx, en incluant le check ci dessous	
 	if (_listenPort < 0)
 		throw(std::runtime_error("webserv: Wrong Port : " + itoa(_listenPort) + ". Value must be above 1024"));
 	if (_listenPort > 65536)
 		throw(std::runtime_error("webserv: Wrong Port : " + itoa(_listenPort) + ". Value must be below 65536"));
-	//Check de la conf a faire ici dans un fx, en incluant le check ci dessous	
 }
 
 

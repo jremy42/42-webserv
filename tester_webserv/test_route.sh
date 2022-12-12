@@ -6,7 +6,7 @@ function test_route ()
 	echo -e "Testing"  "$1" "$2" "ref : $TEST_NUMBER"
 	FILE="$1";
 	shift
-	curl $* > .ret 2> .err
+	curl -L $* > .ret 2> .err
 	diff .ret $FILE > .diff
 	test -s .diff  &&  echo -e "\e[31mTest $TEST_NUMBER failed\e[0m" || echo -e "\e[32mTest $TEST_NUMBER passed\e[0m"
 	test -s .diff && cat .diff && exit 1
@@ -45,4 +45,4 @@ test_route 	"404_default" "http://172.17.0.1:5001/coucou"
 test_route 	"404_default" "http://172.17.0.1:5001/404custom/toto" 
 
 test_route "../www/test_page/dir2/2" "-H Host:test_page" "http://localhost:5001/dir1/dir3/2" 
-
+test_route "../www/test_page/1" "-H Host:test_page" "http://localhost:5001/redirect1"  

@@ -27,7 +27,7 @@
 # define REQUEST_LINE_FIELD 3
 
 # ifndef DEBUG_REQUEST
-#  define DEBUG_REQUEST 1
+#  define DEBUG_REQUEST 0
 # endif
 
 enum {R_REQUESTLINE, R_HEADER, R_SET_CONFIG, R_INIT_BODY_FILE, R_BODY, R_BOUNDARY_HEADER,R_END, R_ERROR, R_ZERO_READ};
@@ -73,7 +73,6 @@ class Request
 		m_ss				getHeader(void) const;
 		string 				getBoundaryDelim(void) const;
 		string 				getUploadDir(void) const;
-		string 				getBodyFile(void);
 		string				getLog(void);
 		v_s					getContentType(void) const;
 		string				getTransfertEncoding(void) const;
@@ -107,7 +106,7 @@ class Request
 		int		parseRequestLine(string rawRequestLine);
 		int		parseHeader(string rawRequestLine);
 		int		checkRequestLine(void);
-		int		checkHeader(void);
+		int		_checkHeader(bool initializedHost);
 		void	_setConfig(void);
 		// check_header
 		int	_checkAutorizationForMethod(void);

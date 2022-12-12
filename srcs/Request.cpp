@@ -175,10 +175,10 @@ int	Request::parseRequestLine(string rawRequestLine)
 	return 0;
 }
 
-int Request::checkHeader()
+int Request::_checkHeader(bool initializedHost)
 {
 	if (_requestLine.find("http_version")->second == "HTTP/1.1"
-	&& (_header.find("Host")->second == "no host"))
+	&& ( initializedHost == false && _header.find("Host")->second == "no host"))
 		return -1;
 	return 0;
 }
@@ -205,10 +205,8 @@ int	Request::parseHeader(string rawHeader)
 		}
 		header_key = string(bufExtract.begin(), bufExtract.begin() + colonPos);
 		header_value = string(bufExtract.begin() + colonPos + 1, bufExtract.end());
-		//std::cerr << "BEFORE" "[" << header_key << "][" << header_value << "]" << std::endl;
 		header_key = strtrim(header_key, "\f\t\n\r\v ");
 		header_value = strtrim(header_value, "\f\t\n\r\v ");
-		//std::cerr << "AFTER" << "[" << header_key << "][" << header_value << "]" << std::endl;
 		if (header_key == "Host" && _header.find("Host")->second == "no host" && initializeHost == false)
 		{
 			_header.erase("Host");
@@ -226,7 +224,7 @@ int	Request::parseHeader(string rawHeader)
 		if (DEBUG_REQUEST)
 			std::cerr << "Inserted :" << " new header key-value : [" << header_key << "][" << header_value << "]" << std::endl;
 	}
-	if (checkHeader() == -1)
+	if (_checkHeader(initializeHost) == -1)
 	{
 		_statusCode = 400;
 		_state = R_ERROR;
@@ -318,7 +316,6 @@ void Request::_parseContentType(string rawContentType)
 	while (std::getline(buf, bufExtract, ';'))
 	{
 		bufExtract = strtrim(bufExtract, "\f\t\n\r\v ");
-		//printTimeDebug(DEBUG_REQUEST, "insert", bufExtract);
 		_contentType.push_back(bufExtract);
 	}
 }
@@ -348,12 +345,6 @@ int Request::_parseHeaderForBody(void)
 	string rawContentLength = _header.find("Content-Length") != _header.end() ? _header.find("Content-Length")->second : "";
 	string rawTransferEncoding = _header.find("Transfer-Encoding") != _header.end() ? _header.find("Transfer-Encoding")->second : "";
 
-/* 	if (rawContentType.empty() || rawTransferEncoding == "chunked" || rawContentLength.empty())
-	{
-		_state = R_ERROR;
-		_statusCode = 400;
-		return 0;
-	} */
 	_parseContentType(rawContentType);
 	_contentLength = atoi(rawContentLength.c_str());
 	if (_contentLength > _clientMaxBodySize)
@@ -606,11 +597,6 @@ Request::string Request::getUploadDir(void) const
 {
 	string requestTarget = this->getTarget();
 	return _config->getParamByLocation(requestTarget, "upload")[0];
-}
-
-Request::string Request::getBodyFile(void)
-{
-	return _nameBodyFile;
 }
 
 std::string Request::getLog(void)
