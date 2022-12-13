@@ -662,6 +662,8 @@ void Response::_methodPOST(void)
 
 void Response::_methodDELETE(void)
 {
+	int ret = 0;
+
 	if (_cgiExecutable != "")
 	{
 		if (DEBUG_RESPONSE && _state == R_INIT)
@@ -673,10 +675,7 @@ void Response::_methodDELETE(void)
 	}
 	else 
 	{
-
-		int ret;
-
-		if (isDir(_actualTarget))
+		if (_targetStatus != "File_nok" && isDir(_actualTarget))
 			ret = rmdir(_actualTarget.c_str());
 		else if (_targetStatus == "File_ok")
 			ret = unlink(_actualTarget.c_str());

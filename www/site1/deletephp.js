@@ -10,7 +10,7 @@ deleteButton.addEventListener("click", function() {
 		}
 		else
 		{
-			alert("File not found");
+			alert("Dir not found");
 		}
 	});
 });

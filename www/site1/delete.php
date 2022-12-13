@@ -11,13 +11,17 @@
 	if ($_SERVER["REQUEST_METHOD"] == "DELETE")
 	{
 		$d = dir("/tmp/upload");
+		if (!$d) {
+			echo "Error: cannot open directory";
+			header("Status: 404");
+			exit;
+		}
 		while (false !== ($entry = $d->read())) {
 			if ($entry != "." && $entry != "..")
 				unlink("/tmp/upload/" . $entry);
 		 }
 		 $d->close();
 	}
-
 ?>
 
 
