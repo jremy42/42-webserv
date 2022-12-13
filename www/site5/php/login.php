@@ -3,7 +3,7 @@
 ?>
 
 <?php
-	if ($_SESSION["isLogged"])
+	if (isset($_SESSION["isLogged"]))
 	{		
 		header("Location: index.php");
 		exit();
