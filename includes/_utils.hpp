@@ -6,7 +6,7 @@
 # include <map>
 # include <iostream>
 # include <sstream>
-# include <stdio.h>
+# include <cstdio>
 # include <sys/types.h>
 # include <sys/stat.h>
 
@@ -15,7 +15,7 @@
 
 # include <arpa/inet.h>
 # include <netdb.h>
-# include <string.h>
+# include <cstring>
 # include <sys/epoll.h>
 # include <time.h>
 # include <cstdlib>

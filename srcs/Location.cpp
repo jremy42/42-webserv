@@ -158,6 +158,20 @@ const Location::m_ss	&Location::getCgi(void) const
 	return (cgiRef);
 }
 
+std::string Location::getCgiExecWithExtension(std::string extension) const
+{
+	if (_cgi.find(extension) != _cgi.end())
+		return (_cgi.find(extension)->second);
+	return ("");
+}
+
+std::string Location::getErrorPageWithCode(int code) const
+{
+	if (_errorPage.find(code) != _errorPage.end())
+		return (_errorPage.find(code)->second);
+	return ("");
+}
+
 void Location::_parseErrorPage(string errorNum)
 {
 	int errorCode  = atoi(errorNum.c_str());

@@ -6,10 +6,10 @@
 # include <iostream>
 # include <sys/epoll.h>
 # include <fcntl.h>
-# include <stdio.h>
+# include <cstdio>
 # include <unistd.h>
-# include <stdlib.h>
-# include <string.h>
+# include <cstdlib>
+# include <cstring>
 # include <algorithm>
 # include "Config.hpp"
 # include "Server.hpp"

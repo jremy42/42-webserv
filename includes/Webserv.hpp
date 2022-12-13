@@ -4,7 +4,7 @@
 # include <iostream>
 # include <fcntl.h>
 # include <unistd.h>
-# include <stdlib.h>
+# include <cstdlib>
 # include <fstream>
 # include <algorithm>
 # include <sys/time.h>
@@ -13,6 +13,8 @@
 # include "Client.hpp"
 # include "Config.hpp"
 # include "EventListener.hpp"
+# include <iterator>
+
 
 # ifndef DEBUG_WEBSERV
 #  define DEBUG_WEBSERV 0

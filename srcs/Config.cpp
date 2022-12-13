@@ -149,68 +149,6 @@ const std::vector<std::string> Config::getParamByLocation(string &requestTarget,
 	return (defaultRet);
 }
 
-std::string Config::getErrorPageByLocation(string &requestTarget, int errorCode) const
-{
-
-	std::map<int, string>::const_iterator				tryfind;
-	m_s_l::const_reverse_iterator 				it = _location.rbegin();
-	m_s_l::const_reverse_iterator 				ite = _location.rend();
-
-	for(;it != ite; it++)
-	{
-		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
-		{
-			tryfind = it->second.getErrorPageLocation().find(errorCode);
-			if (tryfind != it->second.getErrorPageLocation().end())
-			{
-				if (DEBUG_CONFIG)
-					std::cerr << "getErrorPageByLocation : Found a value for errorCode [" << errorCode << "][" << tryfind->second << "] with location" 
-					<< it->first << std::endl;
-				return (tryfind->second);
-			}
-		}
-	}
-	m_is::const_iterator it2 = _errorPage.begin();
-	m_is::const_iterator ite2 = _errorPage.end();
-	for(;it2 != ite2; it2++)
-	{
-		if (it2->first == errorCode)
-		{
-			if (DEBUG_CONFIG)
-				std::cerr << "getErrorPageByLocation : Found a default value for errorCode [" << errorCode << "][" << it->second << "] with default" << std::endl;
-			return (it2->second);
-		}
-	}
-	if (DEBUG_CONFIG)
-		std::cerr << "getErrorPageByLocation : : No value found for errorCode [" << errorCode << "]. Using Config Default value" << std::endl;
-	return ("");
-}
-
-std::string Config::getCgiByLocation(string &requestTarget, string extension) const
-{
-	std::map<string, string>::const_iterator				tryfind;
-	m_s_l::const_reverse_iterator 				it = _location.rbegin();
-	m_s_l::const_reverse_iterator 				ite = _location.rend();
-
-	for(;it != ite; it++)
-	{
-		if (requestTarget.substr(0, it->first.size()).compare(it->first) == 0)
-		{
-			tryfind = it->second.getCgi().find(extension);
-			if (tryfind != it->second.getCgi().end())
-			{
-				if (DEBUG_CONFIG)
-					std::cerr << "getCgiByLocation : Found a value for extension [" << extension << "][" << tryfind->second << "] with location" 
-					<< it->first << std::endl;
-				return (tryfind->second);
-			}
-		}
-	}
-	if (DEBUG_CONFIG)
-		std::cerr << "getCgiByLocation : : No value found for extension [" << extension << "]" << std::endl;
-	return ("");
-
-}
 std::string Config::getMatchingLocation(string &requestTarget) const
 {
 	m_s_l::const_reverse_iterator 				it = _location.rbegin();

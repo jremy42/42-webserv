@@ -1,7 +1,5 @@
 #include "Webserv.hpp"
 #include "Request.hpp"
-#include <iterator>
-#include <algorithm>
 
 extern int	g_rv;
 

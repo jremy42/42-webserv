@@ -7,14 +7,14 @@
 # include <unistd.h>
 # include <stdexcept>
 # include <cstring>
-# include <errno.h>
+# include <cerrno>
 # include <iostream>
 # include <sstream>
 # include <iterator>
 # include <iomanip>
 # include <fstream>
-# include <stdlib.h>
-# include <string.h>
+# include <cstdlib>
+# include <cstring>
 # include "_utils.hpp"
 
 # ifndef DEBUG_MULTIPART

@@ -177,6 +177,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	_statusCode = statusCode;
 	_state = R_INIT;
 	_pid = -1;
+	_bodyLength = 0;
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
@@ -255,7 +256,12 @@ std::string Response::getlineStatus(void)
 }
 void Response::_createErrorMessageBody(void)
 {
-	string customErrorPage = _config->getErrorPageByLocation(_rawRequestedTarget, _statusCode);
+	string customErrorPage;
+	//string customErrorPage = _config->getErrorPageByLocation(_rawRequestedTarget, _statusCode);
+	if (_config->getLocation().find(_matchingLocation) != _config->getLocation().end())
+		customErrorPage = _config->getLocation().find(_matchingLocation)->second.getErrorPageWithCode(_statusCode);
+	else
+		customErrorPage = "";	
 	string errorPageFile = _requestedTargetRoot + "/" + customErrorPage;
 
 	if (DEBUG_RESPONSE)
@@ -371,7 +377,12 @@ void Response::_parseRawRequestTarget(void)
 	if (posLastDot != std::string::npos)
 	{
 		_targetExtension = _actualTarget.substr(posLastDot);
-		_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
+		//_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
+		if (_config->getLocation().find(_matchingLocation) != _config->getLocation().end())
+			_cgiExecutable = _config->getLocation().find(_matchingLocation)->second.getCgiExecWithExtension(_targetExtension);
+		else
+			_cgiExecutable = "";
+		
 	}
 	_urlDecodeString(_PATH_INFO);
 	if (DEBUG_RESPONSE_TARGET)

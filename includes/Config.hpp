@@ -4,7 +4,7 @@
 # include <iostream>
 # include <fcntl.h>
 # include <unistd.h>
-# include <stdlib.h>
+# include <cstdlib>
 # include <algorithm>
 # include <fstream>
 # include <map>
@@ -62,9 +62,6 @@ class Config
 		std::string getHostStr(void) const;
 		const m_s_l		&getLocation(void) const;
 		const m_is		&getErrorPageConfig(void) const;
-
-		std::string getErrorPageByLocation(string &requestTarget, int errorCode) const;
-		std::string getCgiByLocation(string &requestTarget, string extension) const;
 		std::string getMatchingLocation(string &requestTarget) const;
 
 

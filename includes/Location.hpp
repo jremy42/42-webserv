@@ -4,7 +4,7 @@
 # include <iostream>
 # include <fcntl.h>
 # include <unistd.h>
-# include <stdlib.h>
+# include <cstdlib>
 # include <algorithm>
 # include <fstream>
 # include <map>
@@ -34,6 +34,9 @@ class Location
 		const m_s_vs	&getLocationInfoMap(void) const;
 		const m_is		&getErrorPageLocation(void) const;
 		const m_ss		&getCgi(void) const;
+		std::string		getCgiExecWithExtension(std::string extension) const;
+		std::string		getErrorPageWithCode(int errorCode) const;
+
 
 
 	private:
