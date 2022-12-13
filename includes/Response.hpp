@@ -138,6 +138,7 @@ class Response
 		void							_initCGIfile(void);
 		void							_waitCGIfile(void);
 		void							_extractHeaderFromCgiOutputFile(void);
+	
 };
 
 #endif

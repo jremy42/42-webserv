@@ -806,6 +806,8 @@ void Response::_checkAutorizationForMethod(void)
 
 void Response::_returnDir(void)
 {
+	if (_header.find("location: ") != string::npos)
+		return;
 	if (_targetStatus == "Redirect_directory")
 	{
 		_statusCode = 301;
@@ -818,8 +820,9 @@ void Response::_returnDir(void)
 
 void Response::_checkRedirect(void)
 {
+	if (_header.find("location: ") != string::npos)
+		return;
 	string requestTarget = _request->getTarget();
-
 	if (_config->getParamByLocation(requestTarget, "return")[0] == "no redirect")
 		return;
 	else
@@ -876,15 +879,19 @@ int Response::_createResponse(void)
 		std::cerr << "createResponse IN[\e[32m" << ft_get_time_sec() << "\e[0m]" << std::endl;
 
 	if (_state == R_INIT)
-	{
-		_returnDir();
+	{		
 		_checkRedirect();
+		_returnDir();
 		_checkAutorizationForMethod();
 		_discardStaticContentWithPathInfo();
 	}
-	if (_statusCode > 300 && _state == R_INIT)
+	if (_statusCode > 308 && _state == R_INIT)
 	{
 		_createErrorMessageBody();
+		_state = R_FILE_READY;
+	}
+	else if (_statusCode >= 300 && _statusCode <= 308 && _state == R_INIT)
+	{
 		_state = R_FILE_READY;
 	}
 	if (_state < R_FILE_READY && _request->getMethod() == "GET")

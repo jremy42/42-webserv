@@ -42,6 +42,7 @@ Location::Location(string rawLocation)
 	_parseAutoindex();
 	_parseUploadDir();
 	_parseRoot();
+	_parseRedirect();
 	if (DEBUG_LOCATION)
 	{
 		std::cerr << "Location Info Map at end of constructor : ~>" << _locationInfoMap << "<~" << std::endl;
@@ -249,3 +250,15 @@ void Location::_parseRoot(void)
 	if (!isDir(_locationInfoMap["root"][0]))
 		printLog(1, 0, 1, string("\e[33mWebserv: config : root dir : is not a directory[" + _locationInfoMap["root"][0] + "]\e[0m").c_str());
 }
+
+
+void Location::_parseRedirect(void)
+{
+	std::string redirectCodeStr = _locationInfoMap["return"][0];
+	if (redirectCodeStr == "no redirect")
+		return;
+	int  redirectCode = atoi(redirectCodeStr.c_str());
+	if (redirectCodeStr.find_first_not_of("1234567890") != std::string::npos || (redirectCode < 300 || redirectCode > 308))
+		throw(std::runtime_error("Webserv: config: location: not valid field in return, must be valid redirect code : [" + redirectCodeStr + "]"));
+		
+	}

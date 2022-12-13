@@ -50,6 +50,7 @@ class Location
 		void												_initLocationInfoMap(void);
 		void												_parseUploadDir(void);
 		void 												_parseRoot(void);
+		void												_parseRedirect(void);
 		static std::map<std::string, std::pair<int, int> >	_configField;
 		static std::map<std::string, std::pair<int, int> >	_initConfigField(void);;
 };
