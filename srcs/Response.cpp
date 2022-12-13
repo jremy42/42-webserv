@@ -51,7 +51,7 @@ Response::m_is Response::_initStatusCodeMessage()
 	return ret;
 }
 
-std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/1</center>\n</body>\n</html>\n";
+std::string Response::_errorBodyTemplate = "<html>\n<head><title>Error_placeholder</title></head>\n<body>\n<center><h1>Error_placeholder</h1></center>\n<hr><center>webserv/1.0</center>\n</body>\n</html>\n";
 std::string Response::_autoIndexBodyTemplate = "<html><head><title>Index of /title_placeholder</title></head>\n<body>\n<h1>Index of /title_placeholder</h1><hr><pre>\n</pre><hr>\n</body></html>\n";
 
 Response::m_ss Response::_initCgiMetaVar()
@@ -863,6 +863,12 @@ int Response::handleResponse(void)
 		return (1);
 }
 
+void Response::_discardStaticContentWithPathInfo(void)
+{
+	if (_cgiExecutable == "" && _PATH_INFO.size() > 0 && _targetStatus == "File_ok")
+		_statusCode = 404;
+}
+
 int Response::_createResponse(void)
 {
 
@@ -874,6 +880,7 @@ int Response::_createResponse(void)
 		_returnDir();
 		_checkRedirect();
 		_checkAutorizationForMethod();
+		_discardStaticContentWithPathInfo();
 	}
 	if (_statusCode > 300 && _state == R_INIT)
 	{

@@ -115,6 +115,7 @@ class Response
 		void							_sendHeaderToClient(void);
 		void							_sendBodyToClient(void);
 		void							_returnDir(void);
+		void							_discardStaticContentWithPathInfo(void);
 //GET
 		void							_methodGET(void);
 		int								_createAutoIndex(const string &pathToDir);

@@ -310,11 +310,11 @@ std::pair<std::string, std::string>		getClientHostnameAndService(int acceptSysCa
 	std::pair<std::string, std::string>  result;
 
 	if (getpeername(acceptSysCallReturnedFd, (struct sockaddr *)&clientAddr, &addrlen))
-		return (std::make_pair("getClientHostNameFromSocket : getpeername ERROR", ""));
+		return (std::make_pair("ERROR", ""));
 	memset(host, 0, sizeof(host));
 	memset(host, 0, sizeof(service));
 	if (getnameinfo((struct sockaddr *)&clientAddr, addrlen, host, hostlen, service, servicelen, 0))
-		return (std::make_pair("getClientHostNameFromSocket : getnameinfo ERROR", ""));
+		return (std::make_pair("ERROR", ""));
 	result = std::pair<std::string, std::string>(host, service);
 	return (result);
 }
