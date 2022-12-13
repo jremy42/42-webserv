@@ -50,4 +50,4 @@ webserv
 /tmp*
 
 #test
-test_webserv/.*
+tester_webserv/.*
