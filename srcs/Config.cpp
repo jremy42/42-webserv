@@ -453,3 +453,10 @@ void Config::_parseRoot(void)
 	if (!isDir(_serverInfoMap["root"][0]))
 		printLog(1, 0, 1, string("\e[33mWebserv: config : root dir : is not a directory[" + _serverInfoMap["root"][0] + "]\e[0m").c_str());
 }
+
+std::string Config::getErrorPageWithCode(int code) const
+{
+	if (_errorPage.find(code) != _errorPage.end())
+		return (_errorPage.find(code)->second);
+	return ("");
+}

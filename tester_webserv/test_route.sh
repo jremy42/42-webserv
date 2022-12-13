@@ -1,7 +1,8 @@
 #!/bin/bash
-
+TEST_NUMBER=0;
 function test_route ()
 {
+	TEST_NUMBER=$((TEST_NUMBER + 1))
 	echo -e "####################################"
 	echo -e "Testing"  "$1" "$2" "ref : $TEST_NUMBER"
 	FILE="$1";
@@ -60,3 +61,9 @@ test_route "../www/test_page/1" "-H Host:test_page" "http://localhost:5001/redir
 
 test_route "../www/site3/index.html" "-H Host:172.17.0.1" "http://localhost:5001"  
 test_route "../www/site4/index.html" "-H Host:localhost" "http://172.17.0.1:5001"  
+
+#test error pages
+test_route "../www/site1/404.html" "-H Host:localhost" "http://localhost:5003/dsadad"  
+test_route "../www/site1/404-2.html" "-H Host:localhost" "http://localhost:5004/dsadad"  
+test_route "../www/site1/404.html" "-H Host:coucou" "http://localhost:5004/dsadad"  
+test_route "../www/site1/simple.html" "-H Host:titi" "http://localhost:5004/dsadad"  

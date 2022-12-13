@@ -63,6 +63,8 @@ class Config
 		const m_s_l		&getLocation(void) const;
 		const m_is		&getErrorPageConfig(void) const;
 		std::string getMatchingLocation(string &requestTarget) const;
+		std::string		getErrorPageWithCode(int errorCode) const;
+
 
 
 

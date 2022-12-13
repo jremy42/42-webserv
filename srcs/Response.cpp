@@ -260,8 +260,9 @@ void Response::_createErrorMessageBody(void)
 	//string customErrorPage = _config->getErrorPageByLocation(_rawRequestedTarget, _statusCode);
 	if (_config->getLocation().find(_matchingLocation) != _config->getLocation().end())
 		customErrorPage = _config->getLocation().find(_matchingLocation)->second.getErrorPageWithCode(_statusCode);
-	else
-		customErrorPage = "";	
+	if (customErrorPage == "")
+		customErrorPage = _config->getErrorPageWithCode(_statusCode);
+
 	string errorPageFile = _requestedTargetRoot + "/" + customErrorPage;
 
 	if (DEBUG_RESPONSE)
