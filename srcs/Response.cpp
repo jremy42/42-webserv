@@ -118,7 +118,7 @@ void Response::_setCgiMetaVar(void)
 	_cgiMetaVar["SERVER_NAME"] = _request->getHost();
 	_cgiMetaVar["SERVER_PORT"] = getRequestedPortFromSocket(_clientFd);
 	_cgiMetaVar["SERVER_PROTOCOL"] = _request->getProtocol();
-	_cgiMetaVar["SERVER_SOFTWARE"] = "Jhonny's and Fredo's WeBsErV";
+	_cgiMetaVar["SERVER_SOFTWARE"] = "Jonny's and Fredo's WeBsErV";
 }
 
 char **Response::_createEnvArray(void)
@@ -662,32 +662,43 @@ void Response::_methodPOST(void)
 
 void Response::_methodDELETE(void)
 {
+	int ret = 0;
 
-	int ret;
-
-	if (isDir(_actualTarget))
-		ret = rmdir(_actualTarget.c_str());
-	else if (_targetStatus == "File_ok")
-		ret = unlink(_actualTarget.c_str());
-	else
+	if (_cgiExecutable != "")
 	{
-		_statusCode = 404;
-		_createErrorMessageBody();
+		if (DEBUG_RESPONSE && _state == R_INIT)
+			std::cerr << "\e[33mCGI\e[0m" << std::endl;
+		if (_state == R_INIT)
+			_initCGIfile();
+		if (_state == R_WAIT_CGI_EXEC)
+			_waitCGIfile();
+	}
+	else 
+	{
+		if (_targetStatus != "File_nok" && isDir(_actualTarget))
+			ret = rmdir(_actualTarget.c_str());
+		else if (_targetStatus == "File_ok")
+			ret = unlink(_actualTarget.c_str());
+		else
+		{
+			_statusCode = 404;
+			_createErrorMessageBody();
+			_state = R_FILE_READY;
+			return;
+		}
+		if (ret == 0)
+		{
+			_statusCode = 200;
+			_ss << _actualTarget << " : Successfully deleted\n";
+		}
+		else
+		{
+			_statusCode = 500;
+			_ss << _actualTarget << " : " << strerror(errno) << std::endl;
+		}
+		_bodyLength = _ss.str().size();
 		_state = R_FILE_READY;
-		return;
 	}
-	if (ret == 0)
-	{
-		_statusCode = 200;
-		_ss << _actualTarget << " : Successfully deleted\n";
-	}
-	else
-	{
-		_statusCode = 500;
-		_ss << _actualTarget << " : " << strerror(errno) << std::endl;
-	}
-	_bodyLength = _ss.str().size();
-	_state = R_FILE_READY;
 }
 
 void Response::_extractHeaderFromCgiOutputFile(void)
