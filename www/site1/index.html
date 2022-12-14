@@ -28,5 +28,15 @@
 		<li><a href="./php/login.php"> testing  Cookie login</a></li>
 		<li><a href="./php/post.php"> testing post with cgi</a></li>
 	</ul>
+	<div>
+		<span>Request count (resets after 10s of inactivity) : </span><span id="request_count">action_count</span>
+	</div>
+	<script>
+		var webservCookieArray = document.cookie.split(';');
+		var webservCookie = webservCookieArray.find((elem) => {
+			return elem.includes("Webserv-cookie");
+		});
+		document.getElementById("request_count").innerHTML=webservCookie.split('=')[1];
+	</script>
 </body>
 </html>

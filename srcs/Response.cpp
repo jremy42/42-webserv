@@ -800,6 +800,7 @@ void Response::_initCGIfile(void)
 void Response::_createFullHeader(void)
 {
 	_header += "content-length: " + itoa(_bodyLength) + "\n";
+	_handleCookie();
 	_fullHeader = v_c(_lineStatus.begin(), _lineStatus.end());
 	_fullHeader.insert(_fullHeader.end(), _header.begin(), _header.end());
 	_fullHeader.push_back('\n');
@@ -807,6 +808,37 @@ void Response::_createFullHeader(void)
 		std::cerr << "Full Header size : [" << _fullHeader.size() << "]" << std::endl;
 }
 
+void Response::_handleCookie(void)
+{
+	m_ss	requestHeader = _request->getHeader();
+	string	headerCookieVal = requestHeader.find("Cookie") != requestHeader.end() ? requestHeader.find("Cookie")->second : "";
+
+	if (headerCookieVal != "")
+	{
+		if (SHOW_COOKIE)
+			std::cerr << "Request Header Cookie : [" << headerCookieVal << "]" << std::endl;
+	}
+	else
+	{
+		if (SHOW_COOKIE)
+			std::cerr << "Request Header Cookie is not set" << std::endl;
+	}
+	if (headerCookieVal.find("Webserv-cookie=") != std::string::npos)
+	{
+		if (SHOW_COOKIE > 1)
+			std::cerr << "Updating the Webserv cookie value" << std::endl;
+		int oldCookieVal = atoi(headerCookieVal.substr(headerCookieVal.find("Webserv-cookie=") + 15).c_str());
+		std::cerr << "Old Value was : [" << oldCookieVal << "]" << std::endl;
+		_header += string("Set-Cookie: Webserv-cookie=") + itoa(oldCookieVal + 1) + "; Max-Age=10 ; Path=/\n";
+	}
+	else
+	{
+		if (SHOW_COOKIE > 1)
+			std::cerr << "Setting the Webserv cookie" << std::endl;
+		_header += "Set-Cookie: Webserv-cookie=0; Max-Age=10 ; Path=/\n";
+	}
+
+}
 void Response::_checkAutorizationForMethod(void)
 {
 	string requestTarget = _request->getTarget();

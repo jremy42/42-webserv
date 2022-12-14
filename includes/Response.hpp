@@ -33,6 +33,9 @@
 # ifndef DEBUG_RESPONSE_TARGET
 #  define DEBUG_RESPONSE_TARGET 0
 # endif
+# ifndef SHOW_COOKIE
+#  define SHOW_COOKIE 2
+# endif
 
 enum {R_INIT, R_WAIT_CGI_EXEC, R_FILE_READY, R_WRITE, R_OVER};
 
@@ -138,7 +141,9 @@ class Response
 		void							_initCGIfile(void);
 		void							_waitCGIfile(void);
 		void							_extractHeaderFromCgiOutputFile(void);
-	
+// COOKIES
+		void							_handleCookie(void);
+
 };
 
 #endif
