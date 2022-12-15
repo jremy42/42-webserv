@@ -5,10 +5,14 @@ EXEC="../webserv"
 function test_header ()
 {
 	(( TEST_NUMBER++ ))
+	if [[ "$1" == *"bad_request/timeout/"* ]]
+	then
+		TIME=6
+	fi
 	echo -e "####################################"
 	echo -e "Testing"  "'$1'" "ref : $TEST_NUMBER"
 	(cat "$1" && sleep $TIME)| telnet localhost 8080 > ./.test_stdout 2>./.test_stderr
-	RET=$(grep -e "HTTP/1.1 400 Bad Request" -e "HTTP/1.1 405 Method Not Allowed" -e "HTTP/1.1 501 Not Implemented" ./.test_stdout)
+	RET=$(grep -e "HTTP/1.1 400 Bad Request" -e "HTTP/1.1 405 Method Not Allowed" -e "HTTP/1.1 501 Not Implemented" -e "HTTP/1.1 408 Request Timeout ./.test_stdout)
 	echo -e "####################################"
 }
 

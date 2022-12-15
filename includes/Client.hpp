@@ -19,7 +19,7 @@
 # endif
 
 # define TIMEOUT_REQUEST 5000
-# define TIMEOUT_CLIENT 10000
+# define TIMEOUT_CLIENT 45000
 
 enum {S_INIT, S_REQREAD, S_RESWRITE, S_OVER, S_CLOSE_FD};
 class Server;

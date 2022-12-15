@@ -29,7 +29,7 @@
 <html>
 <head>
 	<title>Our Website</title>
-	<link rel="stylesheet" type="text/css" href="./css/style.css">
+	<link rel="stylesheet" type="text/css" href="/css/style.css">
 	<script defer src="deletephp.js"></script>
 </head>
 <body>

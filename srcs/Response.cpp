@@ -828,6 +828,7 @@ void Response::_handleCookie(void)
 
 	if (headerCookieVal != "")
 	{
+		printLog(1, _clientFd, 1, string("Header Cookie : [" + headerCookieVal + "]").c_str());
 		if (SHOW_COOKIE)
 			std::cerr << "Request Header Cookie : [" << headerCookieVal << "]" << std::endl;
 	}
@@ -841,7 +842,8 @@ void Response::_handleCookie(void)
 		if (SHOW_COOKIE > 1)
 			std::cerr << "Updating the Webserv cookie value" << std::endl;
 		int oldCookieVal = atoi(headerCookieVal.substr(headerCookieVal.find("Webserv-cookie=") + 15).c_str());
-		std::cerr << "Old Value was : [" << oldCookieVal << "]" << std::endl;
+		if (SHOW_COOKIE > 1)
+			std::cerr << "Old Value was : [" << oldCookieVal << "]" << std::endl;
 		_header += string("Set-Cookie: Webserv-cookie=") + itoa(oldCookieVal + 1) + "; Max-Age=10 ; Path=/\n";
 	}
 	else
