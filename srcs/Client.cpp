@@ -112,7 +112,7 @@ int Client::executeAction()
 		printTimeDebug(DEBUG_CLIENT, "Client State at beginning of executeAction :", getStateStr());
 		printAvailableAction(DEBUG_CLIENT,_clientFd, _availableActions);
 	}
-	if (_availableActions & EPOLLOUT && ft_get_time() > _timeoutClient && _state == S_RESWRITE)
+	if (_availableActions & EPOLLOUT && ((ft_get_time() > _timeoutClient && _state == S_RESWRITE ) || (ft_get_time() > _timeoutRequest && _state == S_REQREAD)))
 	{
 		if (_response != NULL)
 			delete _response;
@@ -123,10 +123,19 @@ int Client::executeAction()
 	}
 	if (_availableActions & EPOLLERR || _availableActions & EPOLLHUP || ft_get_time() > _timeoutClient)
 	{
+		if (_response != NULL)
+		{
+			delete _response;
+			_response = NULL;
+		}
+		if (_request != NULL)
+		{
+			delete _request;
+			_request = NULL;
+		}
 		_state = S_CLOSE_FD;
 		return 1;
 	}
-	
 	if ((_availableActions & EPOLLIN) && (_state == S_INIT))
 	{
 			_timeoutRequest = ft_get_time() + TIMEOUT_REQUEST;
@@ -138,8 +147,10 @@ int Client::executeAction()
 		_state = S_REQREAD;
 		actionReturnValue = _request->handleRequest();
 		if (DEBUG_CLIENT)
-			std::cerr << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;
-		if (actionReturnValue == R_END || actionReturnValue == R_ERROR || ft_get_time() > _timeoutRequest)
+			std::cerr << "timeout request [" << _timeoutRequest << "] : " << (ft_get_time() > _timeoutRequest ? "OVER" : "CONTINUE") <<  std::endl;	
+		if (actionReturnValue == R_ZERO_READ)
+			_state = S_CLOSE_FD;
+		else if (actionReturnValue == R_END || actionReturnValue == R_ERROR )
 		{
 			printLog(1,_clientFd, 1, _request->getLog().c_str());
 			if (ft_get_time() > _timeoutRequest)
@@ -148,8 +159,6 @@ int Client::executeAction()
 				_response = new Response(_clientFd, _request, _request->getConfig(), _request->getStatusCode()); 
 			_state = S_RESWRITE;
 		}
-		if (actionReturnValue == R_ZERO_READ)
-			_state = S_CLOSE_FD;
 	}
 	else if ((_availableActions & EPOLLOUT) && _state == S_RESWRITE)
 	{

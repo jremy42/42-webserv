@@ -26,6 +26,7 @@ Request::Request(int clientFd, v_config* configList )
 	_totalRead= 0;
 	_nameBodyFile = "";
 	_contentLength = 0;
+	_config = NULL;
 	_header.insert(std::pair<string, string>("Host", "no host"));
 
 }
@@ -527,6 +528,8 @@ void Request::_setConfig(void)
 
 const Config *Request::getConfig(void) const
 {
+	if (_config == NULL)
+		return (&(_configList->at(0)));
 	return _config;
 }
 

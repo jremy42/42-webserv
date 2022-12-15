@@ -169,6 +169,8 @@ Response::Response()
 
 Response::Response(int clientFd, Request *request, const Config *config, int statusCode)
 {
+	if(config == NULL)
+		throw std::runtime_error("Response : Config is NULL");
 	if (DEBUG_RESPONSE)
 		std::cerr << "Response : Parametric Constructor called" << std::endl;
 	_clientFd = clientFd;

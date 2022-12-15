@@ -46,7 +46,7 @@ void EventListener::trackNewFd(int fd, int option)
 std::map<int, int> EventListener::fdAvailable()
 {
 	std::map<int, int> _fdList;
-	_fd_available = epoll_wait(_epfd, _evlist, MAX_FD, 5);
+	_fd_available = epoll_wait(_epfd, _evlist, MAX_FD, 0);
 	if (_fd_available == -1)
 		throw(std::runtime_error(std::string("Webserv:") + strerror(errno)));
 	for (int i = 0; i < _fd_available; i++)
