@@ -98,6 +98,8 @@ class Response
 		char							_nameOut[32];
 		int								_inChild;
 		int								_outChild;
+		// POST
+		string							_postFileName;
 
 		static std::map<int, string>	_statusCodeMessage;
 		static string					_errorBodyTemplate;

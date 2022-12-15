@@ -42,8 +42,9 @@ void EventListener::trackNewFd(int fd, int option)
     struct epoll_event ev;
 	ev.events = option;
 	ev.data.fd = fd;
+	std::cerr << "track new fd: " << fd << std::endl;
 	if (epoll_ctl(_epfd, EPOLL_CTL_ADD, fd, &ev) == -1)
-		throw(std::runtime_error(std::string("Webserv:") + strerror(errno)));
+		throw(std::runtime_error(std::string("Webserv track NewFd:") + strerror(errno)));
 };
 
 std::map<int, int> EventListener::fdAvailable()
@@ -51,7 +52,7 @@ std::map<int, int> EventListener::fdAvailable()
 	std::map<int, int> _fdList;
 	_fd_available = epoll_wait(_epfd, _evlist, MAX_FD, 5);
 	if (_fd_available == -1)
-		throw(std::runtime_error(std::string("Webserv:") + strerror(errno)));
+		throw(std::runtime_error(std::string("Webserv: fdAvailable") + strerror(errno)));
 	for (int i = 0; i < _fd_available; i++)
 		_fdList.insert(std::pair<int, int>(_evlist[i].data.fd, _evlist[i].events));
 	return  _fdList;

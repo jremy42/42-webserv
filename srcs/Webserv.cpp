@@ -227,12 +227,13 @@ int		Webserv::createServerListByPortConfig(void)
 			Server *newServer = new Server((*it).second);
 			_serverList.push_back(newServer);
 			_evListener.trackNewFd(newServer->getServerFd(), EPOLLIN);
+			std::cerr << "server insert fd:" << newServer->getServerFd() << std::endl;
 			_fdServerList.insert(std::pair<int, Server*>(newServer->getServerFd(), newServer));
 			_openFd++;
 		}
 		catch (const std::exception &e)
 		{
-			std::cerr << e.what() << std::endl;
+			std::cerr << "Creating server :" << e.what() << std::endl;
 		}
 	}
 	if(_serverList.size() == 0)
@@ -266,7 +267,7 @@ int		Webserv::execServerLoop(void)
 				}
 				catch (const std::exception &e)
 				{
-					std::cerr << e.what() << std::endl;
+					std::cerr << "accept new client :" <<e.what() << std::endl;
 				}
 			}
 			else if (_fdClientList.find(it->first) != _fdClientList.end())

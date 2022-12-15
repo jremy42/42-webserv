@@ -15,7 +15,7 @@ Server::Server(v_config configList)
 
 	} catch (const std::exception &e)
 	{
-		std::cerr << e.what() << std::endl;
+		std::cerr << "Catch createPassiveSocket" << e.what() << std::endl;
 		throw(std::runtime_error("Webserv: Server creation failure"));
 	}
 	if (DEBUG_SERVER)
@@ -128,7 +128,18 @@ int Server::acceptNewClient(void)
 			_clientAddressPrint((struct sockaddr *)& claddr);
 		}
 		Client *newClient = new Client(clientFd, &_configList, this, (unsigned int)requestedServerIp.sin_addr.s_addr);
-		_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient));
+		std::cout << "new client fd : " << clientFd << std::endl;
+		if (_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient)).second == false)
+		{
+			delete _clientListFd.find(clientFd)->second;
+			_clientListFd.erase(clientFd);
+			if (_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient)).second == false)
+			{
+				delete newClient;
+				throw(std::runtime_error("Webserv: Client replace failure"));
+			}
+			
+		}
 		return clientFd;
 	}
 	return 0;
@@ -146,7 +157,7 @@ int Server::execClientAction(int fd, int availableAction )
 			{
 				if (DEBUG_SERVER)
 					std::cerr << "Closing and removing Client with read return = 0" << std::endl;
-				printLog(1, currentCli->getClientFd(), 1, "connection close");
+				printLog(1, currentCli->getClientFd(), 2, "connection close", itoa(currentCli->getClientFd()).c_str());
 				close(currentCli->getClientFd());
 				_clientListFd.erase(currentCli->getClientFd());
 				delete currentCli;
@@ -156,7 +167,7 @@ int Server::execClientAction(int fd, int availableAction )
 	}
 	catch (std::exception &e)
 	{
-		std::cerr << e.what() << std::endl;
+		std::cerr << "Execute Client Action :" << e.what() << std::endl;
 		printLog(1, currentCli->getClientFd(), 1, "connection close because system error");
 		close(currentCli->getClientFd());
 		_clientListFd.erase(currentCli->getClientFd());
@@ -203,7 +214,7 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		{
 			close(_serverFd);
 			freeaddrinfo(result);
-			throw(std::runtime_error(string("Webserv : ") + strerror(errno)));
+			throw(std::runtime_error(string("Webserv setsockopt: ") + strerror(errno)));
 
 		}
 		unsigned int uaddr = ((struct sockaddr_in*)(result_it->ai_addr))->sin_addr.s_addr;
@@ -222,7 +233,10 @@ void 				Server::_createPassiveSocket(const char *service, const char *host)
 		close(_serverFd);
 	}
 	if (!result_it)
+	{
+		freeaddrinfo(result);
 		throw(std::runtime_error("Webserv: unable to create and bind listening socket"));
+	}
 	if (listen(_serverFd, _backlog) == -1)
 	{
 		close(_serverFd);

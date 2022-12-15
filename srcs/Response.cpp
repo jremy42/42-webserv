@@ -178,8 +178,10 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	_config = config;
 	_statusCode = statusCode;
 	_state = R_INIT;
-	_pid = -1;
+	_pid = -2;
 	_bodyLength = 0;
+	_outChild = -1;
+	_inChild = -1;
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
@@ -207,6 +209,7 @@ Response::~Response(void)
 		std::cerr << "Response : Default Destructor called" << std::endl;
 	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
 	{
+		std::cerr << "Response : Deleting temp file [" << _nameOut << "] and close fd :" <<_outChild << std::endl;
 		close(_outChild);
 		unlink(_nameOut);
 	}
@@ -251,6 +254,7 @@ Response &Response::operator=(const Response &rhs)
 	strcpy(_nameOut, rhs._nameOut);
 	_inChild = rhs._inChild;
 	_outChild = rhs._outChild;
+	_postFileName = rhs._postFileName;
 	return (*this);
 }
 
@@ -538,11 +542,11 @@ void Response::_monoPartFile(void)
 	retrieveRequestBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
 	if (!retrieveRequestBody.good())
 		throw(std::runtime_error(string("Monopart: cannot open body file: ") + strerror(errno)));
-	std::string fileName = _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
+	_postFileName = _request->getUploadDir() + "/" + tmpFileName("file_") + itoa(ft_get_time_sec());
 	std::fstream fileToWrite;
 	if (DEBUG_RESPONSE)
-		std::cerr << "file name : " << fileName << std::endl;
-	fileToWrite.open(fileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
+		std::cerr << "file name : " << _postFileName << std::endl;
+	fileToWrite.open(_postFileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
 	if (!fileToWrite.good())
 		throw(std::runtime_error(string("Monopart: cannot open file to write: ") + strerror(errno)));
 	fileToWrite << retrieveRequestBody.rdbuf();
@@ -560,11 +564,11 @@ void Response::_chunkedPartFile(void)
 	retrieveRequestChunkedBody.open(_requestBodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
 	if (!retrieveRequestChunkedBody.good())
 		throw(std::runtime_error(string("Chunked: cannot open body file: ") + strerror(errno)));
-	std::string fileName = _request->getUploadDir() + "/" + tmpFileName("file") + itoa(ft_get_time_sec());
+	_postFileName = _request->getUploadDir() + "/" + tmpFileName("file_") + itoa(ft_get_time_sec());
 	if (DEBUG_RESPONSE)
-		std::cerr << "file name : " << fileName << std::endl;
+		std::cerr << "file name : " << _postFileName << std::endl;
 	std::fstream fileToWrite;
-	fileToWrite.open(fileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
+	fileToWrite.open(_postFileName.c_str(), std::ofstream::binary | std::ofstream::out | std::ofstream::app);
 	if (!fileToWrite.good())
 	{
 		retrieveRequestChunkedBody.close();
@@ -578,7 +582,7 @@ void Response::_chunkedPartFile(void)
 		{
 			fileToWrite.close();
 			retrieveRequestChunkedBody.close();
-			unlink(fileName.c_str());
+			unlink(_postFileName.c_str());
 			throw(std::runtime_error(string("Chunked: bad request : wrong chunked part")));
 		}
 		if (size == 0)
@@ -590,7 +594,7 @@ void Response::_chunkedPartFile(void)
 			delete[] buffChunked;
 			fileToWrite.close();
 			retrieveRequestChunkedBody.close();
-			unlink(fileName.c_str());
+			unlink(_postFileName.c_str());
 			throw(std::runtime_error(string("Chunked: cannot read body file: ") + strerror(errno)));
 		}
 		fileToWrite.write(buffChunked, size);
@@ -599,7 +603,7 @@ void Response::_chunkedPartFile(void)
 			delete[] buffChunked;
 			fileToWrite.close();
 			retrieveRequestChunkedBody.close();
-			unlink(fileName.c_str());
+			unlink(_postFileName.c_str());
 			throw(std::runtime_error(string("Chunked: cannot write Newfile: ") + strerror(errno)));
 		}
 		delete[] buffChunked;
@@ -633,7 +637,7 @@ void Response::_methodPOST(void)
 					_monoPartFile();
 				_statusCode = 201;
 				_state = R_FILE_READY;
-				_ss << "File uploaded\n";
+				_ss << "File uploaded: ["  << _postFileName << "]\n";
 				_bodyLength = _ss.str().size();
 			}
 			else
@@ -753,8 +757,9 @@ void Response::_waitCGIfile(void)
 			std::cerr << "ret : [" << ret << "]" << std::endl;
 		if (_requestBodyFileSize != 0 && close(_inChild))
 			throw(std::runtime_error("Close error inChild"));
+		std::cerr << "client fd:" << _clientFd <<"| \e[33m pid [" << _pid << "] close outchild fd: [" << _outChild << "]\e[0m" << std::endl;
 		if (close(_outChild))
-			throw(std::runtime_error("close error outChild"));
+			throw(std::runtime_error("client fd" + itoa(_clientFd) + "| pid:" + itoa(_pid) + " \e[31m close error outChild: \e[0m" + std::string(strerror(errno))));
 		if (ret > 0)
 		{
 			_statusCode = 500;
@@ -769,8 +774,10 @@ void Response::_waitCGIfile(void)
 
 void Response::_initCGIfile(void)
 {
-	if ((_outChild = mkstemp(_nameOut)) == -1)
-		throw(std::runtime_error(std::string("_nameOut mkstemp error") + strerror(errno)));
+	if ((_outChild = mkostemp(_nameOut, O_EXCL | O_SYNC)) == -1)
+		throw(std::runtime_error(std::string("_nameOut mkstemp error: ") + strerror(errno)));
+	std::cerr <<"client fd:"<< _clientFd << " | pid :" << _pid <<"\e[32m open outchild fd:" << _outChild << "\e[0m" 
+	<< "nameOut:" << _nameOut << std::endl;
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "nameOut: [" << _nameOut << "]" << std::endl;
@@ -781,7 +788,7 @@ void Response::_initCGIfile(void)
 	if (_requestBodyFileSize != 0)
 	{
 		if ((_inChild = open(_requestBodyFile.c_str(), O_RDONLY)) == -1)
-			throw(std::runtime_error(std::string("_open error request bodyfile") + strerror(errno)));
+			throw(std::runtime_error(std::string("_open error request bodyfile: ") + strerror(errno)));
 	}
 	if ((_pid = fork()) == -1)
 		throw(std::runtime_error("Fork error"));
@@ -1004,7 +1011,7 @@ void Response::_sendHeaderToClient(void)
 {
 	int ret;
 	int buff_size;
-	char *buff;
+	char *buff = NULL;
 	int i = 0;
 
 	if (DEBUG_RESPONSE)
@@ -1019,7 +1026,17 @@ void Response::_sendHeaderToClient(void)
 				  << "About to write client response on fd [" << _clientFd << "]" << std::endl;
 	ret = send(_clientFd, buff, i, MSG_NOSIGNAL);
 	if (ret == -1)
-		throw(std::runtime_error("Webserv: Response : write failure"));
+	{
+		delete[] buff;
+		buff = NULL;
+		throw(std::runtime_error("Webserv: Response : write failure in send header :" + std::string(strerror(errno))));
+	}
+	else if (ret == 0)
+	{
+		delete[] buff;
+		buff = NULL;
+		throw(std::runtime_error("Webserv: Response : client cannot receive data :" + std::string(strerror(errno))));
+	}
 	else
 	{
 		_fullHeader.erase(_fullHeader.begin(), _fullHeader.begin() + ret);
@@ -1027,13 +1044,14 @@ void Response::_sendHeaderToClient(void)
 			std::cerr << "Sent bytes : [" << ret << "]. Remaining Content : [" << _fullHeader.size() << "]" << std::endl;
 	}
 	delete[] buff;
+	buff = NULL;
 }
 
 void Response::_sendBodyToClient(void)
 {
 	int ret;
 	unsigned long buff_size = 0;
-	char *bufBody;
+	char *bufBody = NULL;
 	std::istream *bodyStreamPtr = _selectBodySourceBetweenFileAndStringStream();
 	std::istream &bodyStream = *bodyStreamPtr;
 
@@ -1051,6 +1069,7 @@ void Response::_sendBodyToClient(void)
 		if (toClose)
 			toClose->close();
 		delete[] bufBody;
+		bufBody = NULL;
 		throw(std::runtime_error("Webserv: Response : read failure"));
 	}
 	if (DEBUG_RESPONSE)
@@ -1061,9 +1080,17 @@ void Response::_sendBodyToClient(void)
 	ret = send(_clientFd, bufBody, bodyStream.gcount(), MSG_NOSIGNAL);
 	_bodyLength -= ret;
 	if (ret == -1)
-		throw(std::runtime_error("Webserv: Response : write failure"));
+	{
+		delete[] bufBody;
+		bufBody = NULL;
+		throw(std::runtime_error("Webserv: Response : write failure in send body"));
+	}
 	if (ret == 0)
+	{
+		delete[] bufBody;
+		bufBody = NULL;
 		throw(std::runtime_error("Webserv: Response : client cannot receive data"));
+	}
 	if (ret != bodyStream.gcount() && DEBUG_RESPONSE)
 		std::cerr << "\e[32mLazy client : only [" << ret << "] out of [" << bodyStream.gcount() << "]\e[0m" << std::endl;
 	if (_bodyLength == 0)
@@ -1088,6 +1115,7 @@ void Response::_sendBodyToClient(void)
 	else
 		bodyStream.seekg(-(bodyStream.gcount() - ret), bodyStream.cur);
 	delete[] bufBody;
+	bufBody = NULL;
 }
 
 int Response::_writeClientResponse(void)
