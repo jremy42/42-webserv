@@ -48,6 +48,7 @@ Server::~Server()
 {
 	
 	for_each(_clientListFd.begin(), _clientListFd.end(), _delete_second );
+	close(_serverFd);
 	if(DEBUG_SERVER)
 		std::cerr << "Server destruction" << std::endl;
 };

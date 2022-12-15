@@ -31,7 +31,7 @@
 </head>
 <body>
 	<div class="header">
-		<h1>webserv site 3</h1>
+		<h1>webserv site 1</h1>
 		<a href="/index.html">Home</a>
 	</div>
 	

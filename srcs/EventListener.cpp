@@ -10,7 +10,10 @@ EventListener::EventListener()
 		std::cerr << "create event listener\n";
 }
 
-EventListener::~EventListener(){};
+EventListener::~EventListener()
+{
+	close(_epfd);
+};
 
 EventListener::EventListener(const EventListener & src)
 {

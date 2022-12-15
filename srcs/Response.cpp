@@ -206,10 +206,13 @@ Response::~Response(void)
 	if (DEBUG_RESPONSE)
 		std::cerr << "Response : Default Destructor called" << std::endl;
 	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
+	{
+		close(_outChild);
 		unlink(_nameOut);
+	}
 	if (_pid != -1)
 	{
-		kill(_pid, SIGKILL);
+		kill(_pid, SIGTERM);
 		waitpid(_pid, NULL, 0);
 	}
 }

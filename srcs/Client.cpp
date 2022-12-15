@@ -37,6 +37,7 @@ Client::Client(int clientFd, v_config* config, Server *myServ, unsigned int host
 
 Client::~Client()
 {
+	close(_clientFd);
 	delete _response;
 	delete _request;
 }
