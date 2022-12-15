@@ -96,6 +96,7 @@ class Response
 		//CGI
 		pid_t							_pid;
 		char							_nameOut[32];
+		string							_ourNameOut;
 		int								_inChild;
 		int								_outChild;
 		// POST

@@ -182,6 +182,7 @@ Response::Response(int clientFd, Request *request, const Config *config, int sta
 	_bodyLength = 0;
 	_outChild = -1;
 	_inChild = -1;
+	_ourNameOut = "";
 	if (DEBUG_RESPONSE)
 	{
 		std::cerr << "Create response with request with target [" << request->getTarget() << "]" << std::endl;
@@ -207,11 +208,11 @@ Response::~Response(void)
 {
 	if (DEBUG_RESPONSE)
 		std::cerr << "Response : Default Destructor called" << std::endl;
-	if (strcmp(_nameOut, "/tmp/webservXXXXXX"))
+	if (_ourNameOut != "")
 	{
-		std::cerr << "Response : Deleting temp file [" << _nameOut << "] and close fd :" <<_outChild << std::endl;
+		std::cerr << "Response : Deleting temp file [" << _ourNameOut << "] and close fd :" <<_outChild << std::endl;
 		close(_outChild);
-		unlink(_nameOut);
+		unlink(_ourNameOut.c_str());
 	}
 	if (_pid != -1)
 	{
@@ -254,6 +255,7 @@ Response &Response::operator=(const Response &rhs)
 	strcpy(_nameOut, rhs._nameOut);
 	_inChild = rhs._inChild;
 	_outChild = rhs._outChild;
+	_ourNameOut = rhs._ourNameOut;
 	_postFileName = rhs._postFileName;
 	return (*this);
 }
@@ -758,15 +760,16 @@ void Response::_waitCGIfile(void)
 		if (_requestBodyFileSize != 0 && close(_inChild))
 			throw(std::runtime_error("Close error inChild"));
 		std::cerr << "client fd:" << _clientFd <<"| \e[33m pid [" << _pid << "] close outchild fd: [" << _outChild << "]\e[0m" << std::endl;
-		if (close(_outChild))
-			throw(std::runtime_error("client fd" + itoa(_clientFd) + "| pid:" + itoa(_pid) + " \e[31m close error outChild: \e[0m" + std::string(strerror(errno))));
+		//if (close(_outChild))
+		//	std::cerr << "client fd:" << _clientFd <<"| \e[31m pid [" << _pid << "] close outchild fd: [" << _outChild << "]\e[0m" << std::endl;
+			//throw(std::runtime_error("client fd" + itoa(_clientFd) + "| pid:" + itoa(_pid) + " \e[31m close error outChild: \e[0m" + std::string(strerror(errno))));
 		if (ret > 0)
 		{
 			_statusCode = 500;
 			_state = R_INIT;
 			return;
 		}
-		_createFileStreamFromFile(_nameOut);
+		_createFileStreamFromFile(_ourNameOut);
 		_extractHeaderFromCgiOutputFile();
 		_state = R_FILE_READY;
 	}
@@ -774,13 +777,17 @@ void Response::_waitCGIfile(void)
 
 void Response::_initCGIfile(void)
 {
-	if ((_outChild = mkostemp(_nameOut, O_EXCL | O_SYNC)) == -1)
-		throw(std::runtime_error(std::string("_nameOut mkstemp error: ") + strerror(errno)));
+	//if ((_outChild = mkostemp(_nameOut, O_EXCL | O_SYNC)) == -1)
+	//	throw(std::runtime_error(std::string("_nameOut mkstemp error: ") + strerror(errno)));
+	_ourNameOut = tmpFileName("/tmp/");
+	if ((_outChild = open(_ourNameOut.c_str(), O_RDWR | O_CREAT, 0666)) == -1)
+		throw(std::runtime_error(std::string("_nameOut open error: ") + strerror(errno)));
+	//close(_outChild);
 	std::cerr <<"client fd:"<< _clientFd << " | pid :" << _pid <<"\e[32m open outchild fd:" << _outChild << "\e[0m" 
-	<< "nameOut:" << _nameOut << std::endl;
+	<< "nameOut:" << _ourNameOut << std::endl;
 	if (DEBUG_RESPONSE)
 	{
-		std::cerr << "nameOut: [" << _nameOut << "]" << std::endl;
+		std::cerr << "nameOut: [" << _ourNameOut << "]" << std::endl;
 		std::cerr << "inchild fd: [" << _inChild << "]" << std::endl;
 		std::cerr << "outchild fd: [" << _outChild << "]" << std::endl;
 		std::cerr << "open " << _actualTarget << std::endl;
@@ -802,6 +809,7 @@ void Response::_initCGIfile(void)
 	else
 	{
 		_pid = -1;
+		//_outChild = open(_ourNameOut.c_str(), O_RDWR, 0666);
 		if (_requestBodyFileSize != 0 && dup2(_inChild, STDIN_FILENO) == -1)
 			throw(std::runtime_error(std::string("Child error : DUP2 error 0 : ") + strerror(errno)));
 		if (dup2(_outChild, STDOUT_FILENO) == -1)
