@@ -35,7 +35,7 @@
 <body>
 	<div class="header">
 		<h1>Methode Delete</h1>
-		<a href="index.html">Home</a>
+		<a href="/index.html">Home</a>
 	</div>
 	<button id="deleteButton">Delete all /tmp/upload</button>
 </body>

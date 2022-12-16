@@ -47,6 +47,7 @@ long			getFileSize(std::string filename);
 
 int				isDir(std::string fileName);
 int 			fileExist(std::string fileName);
+int 			accessFileParentDir(std::string fileName);
 std::string		tmpFileName(const std::string path);
 void		__signal(int signal);
 unsigned long	ft_get_time(void);

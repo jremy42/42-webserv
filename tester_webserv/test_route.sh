@@ -1,5 +1,6 @@
 #!/bin/bash
 TEST_NUMBER=0;
+TIME=0.3;
 function test_route ()
 {
 	TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -13,6 +14,17 @@ function test_route ()
 	test -s .diff && cat .diff && exit 1
 }
 
+function test_route_telnet ()
+{
+	TEST_NUMBER=$((TEST_NUMBER + 1))
+	echo -e "####################################"
+	echo -e "Testing"  "$1" "$2" "ref : $TEST_NUMBER"
+	FILE="$1";
+	
+	(cat "$2" && sleep $TIME) | telnet $3 $4 > .ret 2> .err
+	grep $1 .ret > .diff
+	cat .diff
+}
 
 
 
@@ -23,7 +35,10 @@ test_route 	"../www/site1/post.html" "http://localhost:5001/post.html"
 test_route 	"../www/site1/delete.html" "http://localhost:5001/delete.html" 
 test_route 	"echo_sh" "http://localhost:5001/echo.sh" 
 test_route 	"404_default" "http://localhost:5001/coucou" 
-test_route 	"../www/site1/404.html" "http://localhost:5001/404custom/toto" 
+test_route 	"../www/site1/404.html" "http://localhost:5001/404custom/toto"
+test_route 	"no_access_right" "http://localhost:5001/noaccessright.html" 
+test_route 	"../www/site1/photo/poney 1.jpg" "http://localhost:5001/photo/poney 1.jpg" 
+
 
 test_route 	"../www/site1/index.html" "http://localhost:5001?coucou=1"
 test_route 	"../www/site1/simple.html" "http://localhost:5001/simple.html?coucou=1"
@@ -67,3 +82,11 @@ test_route "../www/site1/404.html" "-H Host:localhost" "http://localhost:5003/ds
 test_route "../www/site1/404-2.html" "-H Host:localhost" "http://localhost:5004/dsadad"  
 test_route "../www/site1/404.html" "-H Host:coucou" "http://localhost:5004/dsadad"  
 test_route "../www/site1/simple.html" "-H Host:titi" "http://localhost:5004/dsadad"  
+
+
+# test telnet
+
+test_route_telnet "200" "./telnet_request/telnet_request1" "localhost" "5001"
+test_route_telnet "505" "./telnet_request/telnet_request_http1.0" "localhost" "5001"
+test_route_telnet "400" "./telnet_request/telnet_request_http1.3" "localhost" "5001"
+test_route_telnet "400" "./telnet_request/telnet_request_chunked_0" "localhost" "5001"

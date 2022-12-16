@@ -147,11 +147,17 @@ int Request::checkRequestLine(void)
 		return -1;
 	}
 
-	if (_requestLine.find("http_version")->second != "HTTP/1.1")
+	if (_requestLine.find("http_version")->second == "HTTP/1.0")
 	{
 		_statusCode = 505;
 		return -1;
 	}
+	if (_requestLine.find("http_version")->second != "HTTP/1.1")
+	{
+		_statusCode = 400;
+		return -1;
+	}
+	
 	return 0;
 }
 
@@ -264,7 +270,7 @@ void Request::_handleRequestLine(void)
 			if(this->parseRequestLine(rawRequestLine) == -1)
 			{
 				_state = R_ERROR;
-				_statusCode = 400;
+				//_statusCode = 400;
 			}
 			if (_state == R_ERROR)
 				return;

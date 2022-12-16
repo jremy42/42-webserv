@@ -1,4 +1,5 @@
-#include "_utils.hpp"
+# include "_utils.hpp"
+# include "errno.h"
 
 extern int	g_rv;
 
@@ -139,9 +140,31 @@ int isDir(std::string fileName)
 
 int fileExist(std::string fileName)
 {
-  	struct stat buf;
-    return (!stat(fileName.c_str(), &buf));
+	int ret = access(fileName.c_str(), F_OK);
+
+	if (ret == 0)
+		return 1;
+	else 
+		return 0;
 }
+
+int accessFileParentDir(std::string filename)
+{
+
+	std::string parentDir;
+	
+	if(filename == "/")
+		parentDir = "/";
+	else
+		parentDir =filename.substr(0, filename.find_last_of('/'));
+	int ret = access(parentDir.c_str(), X_OK);
+
+	if (ret == -1 && errno == EACCES)
+		return 0;
+	else 
+		return 1;
+}
+
 
 void	__signal(int signal)
 {

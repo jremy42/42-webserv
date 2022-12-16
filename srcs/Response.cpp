@@ -354,12 +354,14 @@ void Response::_cleanRawRequestTarget(void)
 void Response::_parseRawRequestTarget(void)
 {
 	_rawRequestedTarget = _request->getTarget();
-	_matchingLocation = _config->getMatchingLocation(_rawRequestedTarget);
 	_cleanRawRequestTarget();
+	_urlDecodeString(_rawRequestedTarget);
+	_matchingLocation = _config->getMatchingLocation(_rawRequestedTarget);
 	_requestedTargetRoot = _config->getParamByLocation(_rawRequestedTarget, "root").at(0);
 	_requestTargetPartMatchedWithLocation = _rawRequestedTarget.substr(0, _matchingLocation.size());
 	_requestTargetPartMatchedWithLocation += _requestTargetPartMatchedWithLocation[_requestTargetPartMatchedWithLocation.size() - 1] == '/' ? "" : "/";
-
+	if (_matchingLocation.size() > _rawRequestedTarget.size())
+		throw std::runtime_error("Matching location is bigger than raw request target");
 	std::string requestTargetWithOutLocation = _rawRequestedTarget.substr(_matchingLocation.size(), _rawRequestedTarget.size());
 	requestTargetWithOutLocation.erase(0, (requestTargetWithOutLocation[0] == '/' ? 1 : 0));
  	if (_requestedTargetRoot.size() > 0)
@@ -374,11 +376,14 @@ void Response::_parseRawRequestTarget(void)
 	{
 		_QUERY_STRING = _rawActualTarget.substr(posLastQuestionMark + 1);
 		_actualTarget = _actualTarget.substr(0, posLastQuestionMark);
+
 	}
 	_checkReturnDir = _rawActualTarget.substr(0, posLastQuestionMark);
+
 	while (posFirstSlash != std::string::npos)
 	{
 		std::string testFile = _rawActualTarget.substr(0, posFirstSlash);
+
 		if (fileExist(testFile) && !isDir(testFile))
 		{
 			_actualTarget = testFile;
@@ -392,6 +397,7 @@ void Response::_parseRawRequestTarget(void)
 	if (posLastDot != std::string::npos)
 	{
 		_targetExtension = _actualTarget.substr(posLastDot);
+
 		//_cgiExecutable = _config->getCgiByLocation(_rawRequestedTarget, _targetExtension);
 		if (_config->getLocation().find(_matchingLocation) != _config->getLocation().end())
 			_cgiExecutable = _config->getLocation().find(_matchingLocation)->second.getCgiExecWithExtension(_targetExtension);
@@ -428,7 +434,12 @@ void Response::_selectActualTarget(void)
 {
 	_parseRawRequestTarget();
 	_rawRequestedTargetWithOutQuery = _rawRequestedTarget.substr(0, _rawRequestedTarget.find_last_of("?"));
-
+	if (!accessFileParentDir(_actualTarget))
+	{
+		_targetStatus = "Forbidden";
+		_statusCode = 403;
+		return;
+	}
 	if (fileExist(_actualTarget) && !isDir(_actualTarget))
 	{
 		if (DEBUG_RESPONSE)
@@ -497,7 +508,7 @@ void Response::_createFileStreamFromFile(string actualTarget)
 	{
 		if (DEBUG_RESPONSE)
 			std::cerr << "Failure opening body file '" << strerror(errno) << std::endl;
-		_statusCode = 404;
+		_statusCode = 403;
 		_fs.close();
 		return;
 	}
@@ -515,7 +526,7 @@ void Response::_methodGET(void)
 		_createAutoIndex(_actualTarget);
 		_state = R_FILE_READY;
 	}
-	else if (_targetStatus != "Index_file_nok" && _targetStatus != "File_nok")
+	else if (_targetStatus != "Index_file_nok" && _targetStatus != "File_nok" && _targetStatus != "Forbidden")
 	{
 		std::string rawTarget = _request->getTarget();
 		if (_cgiExecutable != "")
@@ -530,12 +541,23 @@ void Response::_methodGET(void)
 		else
 		{
 			_createFileStreamFromFile(_actualTarget);
-			_state = R_FILE_READY;
+			if (_statusCode > 400)
+			{
+				_createErrorMessageBody();
+				_state = R_FILE_READY;
+			}
+			else
+			{
+				_state = R_FILE_READY;
+			}
 		}
 	}
 	else
 	{
-		_statusCode = 404;
+		if (_targetStatus == "Forbidden")
+			_statusCode = 403;
+		else
+			_statusCode = 404;
 		_createErrorMessageBody();
 		_state = R_FILE_READY;
 	}
@@ -689,7 +711,7 @@ void Response::_methodDELETE(void)
 	}
 	else 
 	{
-		if (_targetStatus != "File_nok" && isDir(_actualTarget))
+		if (_targetStatus != "File_nok" && _targetStatus != "Forbidden" && isDir(_actualTarget))
 			ret = rmdir(_actualTarget.c_str());
 		else if (_targetStatus == "File_ok")
 			ret = unlink(_actualTarget.c_str());

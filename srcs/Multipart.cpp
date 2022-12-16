@@ -11,6 +11,7 @@ Multipart::Multipart(string bodyFile, string boundaryDelim, string uploadDir)
 	_currentFileError = false;
 	_boundaryDelim = boundaryDelim;
 	_uploadDir = uploadDir;
+	_returnMessage = "Post Request :\n";
 	printTimeDebug(DEBUG_MULTIPART, "create Multipart with tmpfile", _bodyFile);
 	_fs.open(_bodyFile.c_str(), std::ofstream::binary | std::ifstream::in);
 	if (!_fs.good())
