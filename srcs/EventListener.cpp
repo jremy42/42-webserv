@@ -42,7 +42,8 @@ void EventListener::trackNewFd(int fd, int option)
     struct epoll_event ev;
 	ev.events = option;
 	ev.data.fd = fd;
-	std::cerr << "track new fd: " << fd << std::endl;
+	if (DEBUG_EVENTLISTENER)
+		std::cerr << "track new fd: " << fd << std::endl;
 	if (epoll_ctl(_epfd, EPOLL_CTL_ADD, fd, &ev) == -1)
 		throw(std::runtime_error(std::string("Webserv track NewFd:") + strerror(errno)));
 };

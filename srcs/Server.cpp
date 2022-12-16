@@ -13,9 +13,10 @@ Server::Server(v_config configList)
 		else
 			_createPassiveSocket(_port.c_str(), _configList[0].getServerInfoMap().find("listen")->second[0].c_str());
 
-	} catch (const std::exception &e)
+	}
+	catch (const std::exception &e)
 	{
-		std::cerr << "Catch createPassiveSocket" << e.what() << std::endl;
+		std::cerr << "CreatePassiveSocket error : " << e.what() << std::endl;
 		throw(std::runtime_error("Webserv: Server creation failure"));
 	}
 	if (DEBUG_SERVER)
@@ -128,7 +129,8 @@ int Server::acceptNewClient(void)
 			_clientAddressPrint((struct sockaddr *)& claddr);
 		}
 		Client *newClient = new Client(clientFd, &_configList, this, (unsigned int)requestedServerIp.sin_addr.s_addr);
-		std::cout << "new client fd : " << clientFd << std::endl;
+		if (DEBUG_SERVER)
+			std::cerr << "new client fd : " << clientFd << std::endl;
 		if (_clientListFd.insert(std::pair<int, Client*>(clientFd, newClient)).second == false)
 		{
 			delete _clientListFd.find(clientFd)->second;
@@ -167,7 +169,7 @@ int Server::execClientAction(int fd, int availableAction )
 	}
 	catch (std::exception &e)
 	{
-		std::cerr << "Execute Client Action :" << e.what() << std::endl;
+		std::cerr << "Execute Client Action error :" << e.what() << std::endl;
 		printLog(1, currentCli->getClientFd(), 1, "connection close because system error");
 		close(currentCli->getClientFd());
 		_clientListFd.erase(currentCli->getClientFd());

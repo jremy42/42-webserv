@@ -219,8 +219,8 @@ void	Config::_createServerInfoMap(std::string &rawServerConf)
 			}
 			catch(const std::exception& e)
 			{
-				std::cerr << e.what() << std::endl;
-				throw(std::runtime_error("Webserv: Config: FATAL ERROR"));
+				std::cerr << "Location block creation failure : " <<  e.what() << std::endl;
+				throw(std::runtime_error("Webserv: Config: fatal error"));
 			}
 		}
 		else if (nextBlockDelim == ';')
