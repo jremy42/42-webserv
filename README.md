@@ -20,9 +20,9 @@ This project is about writing an HTTP server.Our server can:
 ### Usage :
 
 ```
-  ~/$> git clone https://github.com/mathias-mrsn/webserv.git
+ 	~/$> git clone https://github.com/mathias-mrsn/webserv.git
 	~/$> cd webserv
-  ~/webserv$> Make
+  	~/webserv$> Make
 	~/webserv$> ./webserv [configuration file]
 ```
 
@@ -30,11 +30,11 @@ This project is about writing an HTTP server.Our server can:
 
 ```
 server {
-		root ./www/site1/;
-		listen	       					127.0.0.1:8080; #config port and ip 
+		root 			./www/site1/;
+		listen			127.0.0.1:8080; #config port and ip 
 		client_max_body_size	8m; 
-		#error_page 404 404.html;
-		#error_page 413 413.html;
+		#error_page 		404 404.html;
+		#error_page 		413 413.html;
 
 		location /{
 			root ./www/site1/;
@@ -50,12 +50,10 @@ server {
 
 ### What have we learned? :
 
-- comment se servir d'un fichier de configutation nginx.
-- design d'un serveur avec la fonction epoll() et l'utilisation de son framework.
-- le protocole HTTP dans son ensemble.
-- Le fonctionnement global d'un serveur et son interaction avec les CGI.
-
-
+- How to utilize an nginx configuration file.
+- Design of a server utilizing the epoll() function and its framework.
+- The HTTP protocol in its entirety.
+- The overall operation of a server and its interaction with CGI.
 
 ### ressources:
 
