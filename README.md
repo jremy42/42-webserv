@@ -1,8 +1,11 @@
-# webserv
+# 42-webserv [![jremy's 42 webserv Score](https://badge42.vercel.app/api/v2/cl27cprhd001109mercwbbu5l/project/2772872)](https://github.com/JaeSeoKim/badge42)
+
 
 ressource :
 https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms
+
 https://medium.com/from-the-scratch/http-server-what-do-you-need-to-know-to-build-a-simple-http-server-from-scratch-d1ef8945e4fa
+
 https://developer.mozilla.org/fr/docs/Web/HTTP/Resources_and_specifications
 
 
