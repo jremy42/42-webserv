@@ -20,7 +20,7 @@ This project is about writing an HTTP server.Our server can:
 ### Usage :
 
 ```
- 	~/$> git clone https://github.com/mathias-mrsn/webserv.git
+ 	~/$> git clone https://github.com/jremy42/42-webserv.git
 	~/$> cd webserv
   	~/webserv$> Make
 	~/webserv$> ./webserv [configuration file]
