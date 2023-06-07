@@ -172,6 +172,7 @@ for testing request :
 for testing route configuration : 
 ```sh
 ./tester_webserv/test_route.sh
+```
 ---
 ## 👏 Acquired knowledge
 
